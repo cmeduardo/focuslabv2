@@ -43,6 +43,31 @@ export async function POST(request: NextRequest) {
 
     // ── Iniciar sesión ────────────────────────────────────────────────────
     if (data.action === 'start') {
+      // Fallback: si el trigger no creó el perfil, lo creamos aquí
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (!existingProfile) {
+        const username = user.user_metadata?.username ?? user.email?.split('@')[0] ?? user.id
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username,
+            full_name: user.user_metadata?.full_name ?? '',
+            avatar_url: user.user_metadata?.avatar_url ?? '',
+          })
+
+        if (profileError && profileError.code !== '23505') {
+          // 23505 = unique_violation: el perfil ya existe, ignorar
+          console.error('Error creando perfil fallback:', profileError)
+          return NextResponse.json({ error: 'Error al inicializar perfil' }, { status: 500 })
+        }
+      }
+
       const { data: session, error } = await supabase
         .from('sessions')
         .insert({

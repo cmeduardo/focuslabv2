@@ -194,6 +194,7 @@ export default function PomodoroTimer() {
                 strokeWidth={STROKE_WIDTH}
                 strokeLinecap="round"
                 strokeDasharray={CIRCUMFERENCE}
+                initial={{ strokeDashoffset: CIRCUMFERENCE }}
                 animate={{ strokeDashoffset }}
                 transition={{ duration: 0.8, ease: 'easeInOut' }}
               />
