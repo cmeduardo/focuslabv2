@@ -1,7 +1,7 @@
 'use client'
 
 // Kanban con drag & drop usando @dnd-kit
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -258,7 +258,7 @@ interface NewTaskFormProps {
 }
 
 function NewTaskForm({ onClose }: NewTaskFormProps) {
-  const { addTask } = useTaskStore()
+  const { addTask, loading } = useTaskStore()
   const { track } = useEventTracker()
 
   const [title, setTitle] = useState('')
@@ -277,11 +277,11 @@ function NewTaskForm({ onClose }: NewTaskFormProps) {
     setTagInput('')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
 
-    const task = addTask({
+    const task = await addTask({
       title: title.trim(),
       description: description.trim(),
       status: 'todo',
@@ -291,11 +291,13 @@ function NewTaskForm({ onClose }: NewTaskFormProps) {
       tags,
     })
 
-    track({
-      event_type: 'task_created',
-      category: 'tool_usage',
-      metadata: { priority, estimated_pomodoros: estimatedPomodoros, task_id: task.id },
-    })
+    if (task) {
+      track({
+        event_type: 'task_created',
+        category: 'tool_usage',
+        metadata: { priority, estimated_pomodoros: estimatedPomodoros, task_id: task.id },
+      })
+    }
 
     onClose()
   }
@@ -430,7 +432,7 @@ function NewTaskForm({ onClose }: NewTaskFormProps) {
             </button>
             <button
               type="submit"
-              disabled={!title.trim()}
+              disabled={!title.trim() || loading}
               className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40 transition-all"
               style={{ background: 'linear-gradient(135deg, #8B5CF6, #06B6D4)' }}
             >
@@ -446,8 +448,13 @@ function NewTaskForm({ onClose }: NewTaskFormProps) {
 // ── Componente principal ───────────────────────────────────────────────────────
 
 export default function TaskBoard() {
-  const { getTasksByStatus, moveTask, filterPriority, filterTag, setFilterPriority, setFilterTag, getAllTags } = useTaskStore()
+  const { getTasksByStatus, moveTask, fetchTasks, filterPriority, filterTag, setFilterPriority, setFilterTag, getAllTags } = useTaskStore()
   const { track } = useEventTracker()
+
+  // Cargar tareas desde Supabase al montar
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
   const [showForm, setShowForm] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)

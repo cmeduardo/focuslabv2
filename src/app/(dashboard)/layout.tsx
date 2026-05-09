@@ -4,6 +4,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
 import MobileNav from '@/components/layout/MobileNav'
 import { EventCaptureProvider } from '@/components/tracking/EventCapture'
+import AuthInitializer from '@/components/auth/AuthInitializer'
 
 // Layout del dashboard — protegido, requiere autenticación
 export default async function DashboardLayout({
@@ -27,6 +28,8 @@ export default async function DashboardLayout({
 
   return (
     <EventCaptureProvider>
+      {/* Inicializa useAuthStore en el cliente a partir de la sesión Supabase */}
+      <AuthInitializer />
       <div className="flex h-screen bg-[#0F0F1A] overflow-hidden">
         {/* Sidebar (desktop) */}
         <Sidebar />

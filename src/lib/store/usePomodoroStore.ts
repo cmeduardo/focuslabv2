@@ -1,6 +1,9 @@
 'use client'
 
 import { create } from 'zustand'
+import { createClient } from '@/lib/supabase/client'
+import { useAuthStore } from './useAuthStore'
+import { useTaskStore } from './useTaskStore'
 
 // Modos del timer
 export type TimerMode = 'focus' | 'short_break' | 'long_break'
@@ -41,6 +44,8 @@ interface PomodoroState {
   linkTask: (task: LinkedTask | null) => void
   setDuration: (mode: TimerMode, seconds: number) => void
   incrementInterruptions: () => void
+  // Persiste la sesión de enfoque en Supabase y actualiza pomodoros de la tarea
+  saveSession: (focusRating: number | null) => Promise<void>
 }
 
 export const usePomodoroStore = create<PomodoroState>((set, get) => ({
@@ -118,4 +123,31 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => ({
   },
 
   incrementInterruptions: () => set((s) => ({ interruptions: s.interruptions + 1 })),
+
+  saveSession: async (focusRating) => {
+    const user = useAuthStore.getState().user
+    if (!user) return
+
+    const { mode, linkedTask, interruptions, startedAt, durations } = get()
+    // Solo guardar sesiones de enfoque completadas
+    if (mode !== 'focus') return
+
+    const supabase = createClient()
+    // Columnas reales: ended_at (no completed_at), completed (bool), sin campo mode
+    await supabase.from('pomodoro_sessions').insert({
+      user_id: user.id,
+      task_id: linkedTask?.id ?? null,
+      duration_seconds: durations[mode],
+      started_at: startedAt ? new Date(startedAt).toISOString() : new Date().toISOString(),
+      ended_at: new Date().toISOString(),
+      completed: true,
+      interruptions,
+      focus_rating: focusRating,
+    })
+
+    // Incrementar contador de pomodoros en la tarea vinculada
+    if (linkedTask) {
+      await useTaskStore.getState().incrementPomodoro(linkedTask.id)
+    }
+  },
 }))

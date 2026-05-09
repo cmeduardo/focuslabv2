@@ -1,6 +1,6 @@
 'use client'
 
-// Timer Pomodoro con ring SVG animado, modos, vinculación de tarea y rating
+// Timer Pomodoro con ring SVG animado, modos, vinculación de tarea y rating, persistencia Supabase
 import { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Pause, RotateCcw, Link2, Star, Settings } from 'lucide-react'
@@ -52,7 +52,7 @@ function fmt(s: number) {
 
 export default function PomodoroTimer() {
   const store = usePomodoroStore()
-  const { tasks } = useTaskStore()
+  const { tasks, fetchTasks } = useTaskStore()
   const { track } = useEventTracker()
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const completedRef = useRef(false)
@@ -62,8 +62,13 @@ export default function PomodoroTimer() {
     completedToday, interruptions, linkedTask,
     showRating, focusRating,
     setMode, start, pause, resume, reset, tick,
-    setRating, dismissRating, linkTask,
+    setRating, dismissRating, linkTask, saveSession,
   } = store
+
+  // Cargar tareas para el selector de vinculación
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   // Avanzar el timer cada segundo
   useEffect(() => {
@@ -122,9 +127,11 @@ export default function PomodoroTimer() {
       category: 'tool_usage',
       metadata: { interruptions, focus_rating: focusRating, task_id: linkedTask?.id ?? null },
     })
+    // Persistir sesión en Supabase con el rating dado
+    saveSession(focusRating)
     dismissRating()
     setMode('short_break')
-  }, [track, interruptions, focusRating, linkedTask, dismissRating, setMode])
+  }, [track, interruptions, focusRating, linkedTask, saveSession, dismissRating, setMode])
 
   const pendingTasks = tasks.filter((t) => t.status !== 'done')
   const totalFocusMin = Math.round((completedToday * durations.focus) / 60)
@@ -402,7 +409,7 @@ export default function PomodoroTimer() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => { dismissRating(); setMode('short_break') }}
+                  onClick={() => { saveSession(null); dismissRating(); setMode('short_break') }}
                   className="flex-1 py-3 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors text-sm"
                 >
                   Saltar

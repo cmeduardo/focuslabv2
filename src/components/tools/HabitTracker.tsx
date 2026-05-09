@@ -3,7 +3,8 @@
 // Habit Tracker estilo GitHub contributions — grid mensual con check diario
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Flame, Trophy, Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, X, Flame, Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useHabitStore, type Habit } from '@/lib/store/useHabitStore'
 import { useEventTracker } from '@/hooks/useEventTracker'
 import { cn } from '@/lib/utils'
 
@@ -40,14 +41,15 @@ function calcStreak(logs: string[]): number {
   if (logs.length === 0) return 0
   const sorted = [...logs].sort((a, b) => b.localeCompare(a))
   let streak = 0
-  let cursor = new Date()
+  const cursor = new Date()
   // Comenzar desde hoy o ayer si no se completó hoy
   if (sorted[0] !== today()) cursor.setDate(cursor.getDate() - 1)
 
+  const cursorDate = new Date(cursor)
   for (const log of sorted) {
-    if (log === toDateKey(cursor)) {
+    if (log === toDateKey(cursorDate)) {
       streak++
-      cursor.setDate(cursor.getDate() - 1)
+      cursorDate.setDate(cursorDate.getDate() - 1)
     } else {
       break
     }
@@ -116,27 +118,11 @@ function ConfettiCanvas({ active }: { active: boolean }) {
   )
 }
 
-// ── Tipos ──────────────────────────────────────────────────────────────────────
-
-interface Habit {
-  id: string
-  name: string
-  icon: string
-  color: string
-  logs: string[] // YYYY-MM-DD
-  createdAt: string
-}
-
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function HabitTracker() {
+  const { habits, loading, fetchHabits, addHabit, deleteHabit, toggleLog } = useHabitStore()
   const { track } = useEventTracker()
-
-  const [habits, setHabits] = useState<Habit[]>([
-    { id: '1', name: 'Ejercicio', icon: '💪', color: '#8B5CF6', logs: [], createdAt: today() },
-    { id: '2', name: 'Lectura', icon: '📚', color: '#06B6D4', logs: [], createdAt: today() },
-    { id: '3', name: 'Hidratación', icon: '💧', color: '#84CC16', logs: [], createdAt: today() },
-  ])
 
   const [showForm, setShowForm] = useState(false)
   const [confetti, setConfetti] = useState(false)
@@ -144,6 +130,11 @@ export default function HabitTracker() {
   const [newName, setNewName] = useState('')
   const [newIcon, setNewIcon] = useState('🎯')
   const [newColor, setNewColor] = useState('#8B5CF6')
+
+  // Cargar hábitos desde Supabase al montar
+  useEffect(() => {
+    fetchHabits()
+  }, [fetchHabits])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -153,53 +144,31 @@ export default function HabitTracker() {
   // Primer día de la semana del mes (para alinear grid)
   const firstDayOfWeek = new Date(year, month, 1).getDay()
 
-  // Togglear check de un hábito
-  const toggleCheck = useCallback((habitId: string, dateKey: string) => {
-    setHabits((prev) =>
-      prev.map((h) => {
-        if (h.id !== habitId) return h
-        const isChecked = h.logs.includes(dateKey)
-        const newLogs = isChecked
-          ? h.logs.filter((d) => d !== dateKey)
-          : [...h.logs, dateKey]
-
-        if (!isChecked) {
-          setConfetti(true)
-          setTimeout(() => setConfetti(false), 2500)
-          track({
-            event_type: 'habit_checked',
-            category: 'tool_usage',
-            metadata: { habit_id: habitId, date: dateKey },
-          })
-        }
-        return { ...h, logs: newLogs }
+  // Togglear check de un hábito con confetti al marcar
+  const handleToggle = useCallback(async (habitId: string, dateKey: string, isChecked: boolean) => {
+    await toggleLog(habitId, dateKey)
+    if (!isChecked) {
+      setConfetti(true)
+      setTimeout(() => setConfetti(false), 2500)
+      track({
+        event_type: 'habit_checked',
+        category: 'tool_usage',
+        metadata: { habit_id: habitId, date: dateKey },
       })
-    )
-  }, [track])
+    }
+  }, [toggleLog, track])
 
   // Crear nuevo hábito
-  const handleCreateHabit = useCallback((e: React.FormEvent) => {
+  const handleCreateHabit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName.trim()) return
-    const habit: Habit = {
-      id: crypto.randomUUID(),
-      name: newName.trim(),
-      icon: newIcon,
-      color: newColor,
-      logs: [],
-      createdAt: today(),
-    }
-    setHabits((prev) => [...prev, habit])
-    track({ event_type: 'habit_created', category: 'tool_usage', metadata: { name: habit.name } })
+    await addHabit({ name: newName.trim(), icon: newIcon, color: newColor })
+    track({ event_type: 'habit_created', category: 'tool_usage', metadata: { name: newName.trim() } })
     setNewName('')
     setNewIcon('🎯')
     setNewColor('#8B5CF6')
     setShowForm(false)
-  }, [newName, newIcon, newColor, track])
-
-  const deleteHabit = (id: string) => {
-    setHabits((prev) => prev.filter((h) => h.id !== id))
-  }
+  }, [newName, newIcon, newColor, addHabit, track])
 
   // Nombres de días de la semana
   const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -244,17 +213,24 @@ export default function HabitTracker() {
         </button>
       </div>
 
-      {/* Lista de hábitos con grids */}
-      {habits.length === 0 && (
+      {/* Estado de carga */}
+      {loading && habits.length === 0 && (
+        <div className="text-center py-20 text-slate-500">
+          <div className="text-4xl mb-3 animate-pulse">⏳</div>
+          <p>Cargando hábitos...</p>
+        </div>
+      )}
+
+      {/* Lista vacía */}
+      {!loading && habits.length === 0 && (
         <div className="text-center py-20 text-slate-500">
           <div className="text-5xl mb-4">🌱</div>
           <p>Crea tu primer hábito</p>
         </div>
       )}
 
-      {habits.map((habit) => {
+      {habits.map((habit: Habit) => {
         const streak = calcStreak(habit.logs)
-        const bestStreak = Math.max(streak, habit.logs.length > 0 ? streak : 0)
         const completedThisMonth = habit.logs.filter((d) => d.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)).length
         const completionPct = days.length > 0 ? Math.round((completedThisMonth / days.length) * 100) : 0
 
@@ -289,7 +265,7 @@ export default function HabitTracker() {
                 {/* Botón check de hoy */}
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => toggleCheck(habit.id, todayKey)}
+                  onClick={() => handleToggle(habit.id, todayKey, habit.logs.includes(todayKey))}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={
                     habit.logs.includes(todayKey)
@@ -338,7 +314,7 @@ export default function HabitTracker() {
                       key={key}
                       whileHover={!isFuture ? { scale: 1.15 } : {}}
                       whileTap={!isFuture ? { scale: 0.9 } : {}}
-                      onClick={() => !isFuture && toggleCheck(habit.id, key)}
+                      onClick={() => !isFuture && handleToggle(habit.id, key, isChecked)}
                       disabled={isFuture}
                       title={day.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
                       className={cn(

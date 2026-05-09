@@ -1,10 +1,11 @@
 'use client'
 
 // Calendario semanal con bloques de estudio y visualización de tareas
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Plus, X, Clock, BookOpen, Zap } from 'lucide-react'
 import { useTaskStore } from '@/lib/store/useTaskStore'
+import { useCalendarStore, type TimeBlock } from '@/lib/store/useCalendarStore'
 import { useEventTracker } from '@/hooks/useEventTracker'
 import { cn } from '@/lib/utils'
 
@@ -37,17 +38,6 @@ function getWeekStart(date: Date): Date {
   d.setDate(d.getDate() + diff)
   d.setHours(0, 0, 0, 0)
   return d
-}
-
-interface TimeBlock {
-  id: string
-  dateKey: string
-  startHour: number  // float, ej: 9.5 = 9:30
-  durationHours: number
-  title: string
-  color: string
-  completed: boolean
-  type: 'study' | 'pomodoro' | 'task'
 }
 
 interface NewBlockDraft {
@@ -259,14 +249,21 @@ function NewBlockForm({ draft, onSave, onClose }: NewBlockFormProps) {
 
 export default function WeeklyCalendar() {
   const { tasks } = useTaskStore()
+  const { blocks, fetchBlocks, addBlock, toggleBlock: storeToggle, deleteBlock: storeDelete } = useCalendarStore()
   const { track } = useEventTracker()
 
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
-  const [blocks, setBlocks] = useState<TimeBlock[]>([])
   const [newBlockDraft, setNewBlockDraft] = useState<NewBlockDraft | null>(null)
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const todayKey = toDateKey(new Date())
+
+  // Cargar bloques de la semana visible desde Supabase
+  useEffect(() => {
+    const from = toDateKey(weekStart)
+    const to = toDateKey(addDays(weekStart, 6))
+    fetchBlocks(from, to)
+  }, [weekStart, fetchBlocks])
 
   const prevWeek = () => setWeekStart((d) => addDays(d, -7))
   const nextWeek = () => setWeekStart((d) => addDays(d, 7))
@@ -276,32 +273,26 @@ export default function WeeklyCalendar() {
     setNewBlockDraft({ dateKey, startHour: hour })
   }, [])
 
-  const saveBlock = useCallback((blockData: Omit<TimeBlock, 'id'>) => {
-    const block: TimeBlock = { ...blockData, id: crypto.randomUUID() }
-    setBlocks((prev) => [...prev, block])
+  const saveBlock = useCallback(async (blockData: Omit<TimeBlock, 'id'>) => {
+    await addBlock(blockData)
     track({
       event_type: 'calendar_block_created',
       category: 'tool_usage',
       metadata: { date: blockData.dateKey, start: blockData.startHour, duration: blockData.durationHours, type: blockData.type },
     })
-  }, [track])
+  }, [addBlock, track])
 
   const deleteBlock = useCallback((id: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id))
-  }, [])
+    storeDelete(id)
+  }, [storeDelete])
 
   const toggleBlock = useCallback((id: string) => {
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.id !== id) return b
-        const completed = !b.completed
-        if (completed) {
-          track({ event_type: 'calendar_block_completed', category: 'tool_usage', metadata: { block_id: id } })
-        }
-        return { ...b, completed }
-      })
-    )
-  }, [track])
+    const block = blocks.find((b) => b.id === id)
+    if (block && !block.completed) {
+      track({ event_type: 'calendar_block_completed', category: 'tool_usage', metadata: { block_id: id } })
+    }
+    storeToggle(id)
+  }, [storeToggle, blocks, track])
 
   // Tareas con fecha límite en la semana visible
   const tasksByDay = weekDays.reduce<Record<string, typeof tasks>>((acc, day) => {
