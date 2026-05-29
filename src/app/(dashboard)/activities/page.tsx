@@ -50,7 +50,7 @@ const ACTIVITIES = [
     gradient: 'from-[#F59E0B] to-[#EC4899]',
     glow: 'rgba(245,158,11,0.3)',
     tags: ['Semántica', '60 segundos', 'Velocidad'],
-    available: false,
+    available: true,
   },
   {
     slug: 'pattern-hunt',
@@ -62,7 +62,7 @@ const ACTIVITIES = [
     gradient: 'from-[#84CC16] to-[#06B6D4]',
     glow: 'rgba(132,204,22,0.3)',
     tags: ['Visual', 'Odd-one-out', 'Percepción'],
-    available: false,
+    available: true,
   },
   {
     slug: 'deep-read',
@@ -74,7 +74,7 @@ const ACTIVITIES = [
     gradient: 'from-[#EC4899] to-[#F59E0B]',
     glow: 'rgba(236,72,153,0.3)',
     tags: ['Comprensión', 'Quiz', 'Lectura'],
-    available: false,
+    available: true,
   },
 ]
 
