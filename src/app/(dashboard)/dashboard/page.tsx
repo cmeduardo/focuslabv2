@@ -1,86 +1,164 @@
 import { createClient } from '@/lib/supabase/server'
+import DashboardClient from '@/components/dashboard/DashboardClient'
 
-// Dashboard principal — overview
+// Calcula la racha actual de un hábito dado sus logs
+function calcStreak(logs: string[]): number {
+  if (!logs.length) return 0
+  const sorted = [...new Set(logs)].sort().reverse()
+  const today = new Date().toISOString().split('T')[0]
+  let streak = 0
+  let current = new Date(today)
+
+  for (const log of sorted) {
+    const logDate = log.split('T')[0]
+    const expected = current.toISOString().split('T')[0]
+    if (logDate === expected) {
+      streak++
+      current.setDate(current.getDate() - 1)
+    } else {
+      break
+    }
+  }
+  return streak
+}
+
+// Dashboard principal — carga datos reales desde Supabase (server component)
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user!.id)
-    .single()
+  if (!user) return null
+
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  const startOfDay = `${todayStr}T00:00:00.000Z`
+  const endOfDay = `${todayStr}T23:59:59.999Z`
+
+  // Últimos 7 días para sparkline
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 6)
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
+
+  // Fetch paralelo de todos los datos necesarios
+  const [
+    { data: profile },
+    { data: pomodorosHoy },
+    { data: tareasCompletadasHoy },
+    { data: habitLogs },
+    { data: pomodorosUltimos7 },
+    { data: actividadesRecientes },
+    { data: tareasRecientes },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+
+    // Pomodoros completados hoy
+    supabase
+      .from('pomodoro_sessions')
+      .select('id, focus_rating, started_at')
+      .eq('user_id', user.id)
+      .eq('completed', true)
+      .gte('started_at', startOfDay)
+      .lte('started_at', endOfDay),
+
+    // Tareas completadas hoy
+    supabase
+      .from('tasks')
+      .select('id, title, completed_at')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .gte('completed_at', startOfDay)
+      .lte('completed_at', endOfDay),
+
+    // Logs de hábitos del mes para calcular racha
+    supabase
+      .from('habit_logs')
+      .select('habit_id, completed_at')
+      .eq('user_id', user.id)
+      .gte('completed_at', sevenDaysAgoStr),
+
+    // Pomodoros de los últimos 7 días para sparkline
+    supabase
+      .from('pomodoro_sessions')
+      .select('started_at, focus_rating, completed')
+      .eq('user_id', user.id)
+      .gte('started_at', `${sevenDaysAgoStr}T00:00:00.000Z`)
+      .order('started_at', { ascending: true }),
+
+    // Actividades recientes (últimas 5)
+    supabase
+      .from('activity_results')
+      .select('activity, score, max_score, completed_at')
+      .eq('user_id', user.id)
+      .order('completed_at', { ascending: false })
+      .limit(5),
+
+    // Tareas recientes completadas (últimas 3)
+    supabase
+      .from('tasks')
+      .select('title, completed_at, status')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(3),
+  ])
+
+  // Calcular racha máxima de hábitos (el hábito con mayor racha hoy)
+  const logsByHabit: Record<string, string[]> = {}
+  for (const log of habitLogs ?? []) {
+    const key = String(log.habit_id)
+    if (!logsByHabit[key]) logsByHabit[key] = []
+    logsByHabit[key].push(log.completed_at)
+  }
+  const rachaMax = Math.max(0, ...Object.values(logsByHabit).map(calcStreak))
+
+  // Calcular focus score promedio del día (de los pomodoros hoy con rating)
+  const ratingsHoy = (pomodorosHoy ?? [])
+    .map((p) => p.focus_rating)
+    .filter((r): r is number => r !== null && r !== undefined)
+  const focusScoreHoy = ratingsHoy.length
+    ? Math.round((ratingsHoy.reduce((a, b) => a + b, 0) / ratingsHoy.length) * 20)
+    : null
+
+  // Construir datos de sparkline por día
+  const sparklineData: Array<{ day: string; pomodoros: number; score: number | null }> = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    const dayStr = d.toISOString().split('T')[0]
+    const dayLabel = d.toLocaleDateString('es', { weekday: 'short' })
+
+    const sesionesDelDia = (pomodorosUltimos7 ?? []).filter((p) =>
+      p.started_at.startsWith(dayStr)
+    )
+    const completadas = sesionesDelDia.filter((p) => p.completed)
+    const ratingsDelDia = completadas
+      .map((p) => p.focus_rating)
+      .filter((r): r is number => r !== null && r !== undefined)
+    const scoreDelDia = ratingsDelDia.length
+      ? Math.round((ratingsDelDia.reduce((a, b) => a + b, 0) / ratingsDelDia.length) * 20)
+      : null
+
+    sparklineData.push({ day: dayLabel, pomodoros: completadas.length, score: scoreDelDia })
+  }
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
   const displayName = profile?.full_name || profile?.username || 'Usuario'
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Saludo */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          {greeting}, <span className="text-gradient-primary">{displayName}</span> 👋
-        </h1>
-        <p className="text-slate-400 mt-1">
-          Aquí tienes el resumen de tu actividad de hoy.
-        </p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Pomodoros hoy', value: '0', color: '#8B5CF6', emoji: '🍅' },
-          { label: 'Tareas completadas', value: '0', color: '#06B6D4', emoji: '✅' },
-          { label: 'Racha de hábitos', value: '0 días', color: '#84CC16', emoji: '🔥' },
-          { label: 'Focus Score', value: '--', color: '#EC4899', emoji: '⚡' },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="glass-card rounded-2xl p-5 hover:border-white/20 transition-colors"
-          >
-            <div className="text-2xl mb-2">{stat.emoji}</div>
-            <div className="text-2xl font-bold" style={{ color: stat.color }}>
-              {stat.value}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Accesos rápidos */}
-      <div className="glass-card rounded-2xl p-6 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Accesos rápidos</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {[
-            { label: 'Iniciar Pomodoro', href: '/tools/pomodoro', gradient: 'from-[#8B5CF6] to-[#06B6D4]', emoji: '🍅' },
-            { label: 'Nueva tarea', href: '/tools/tasks', gradient: 'from-[#06B6D4] to-[#84CC16]', emoji: '✏️' },
-            { label: 'Actividad rápida', href: '/activities', gradient: 'from-[#EC4899] to-[#F59E0B]', emoji: '🧠' },
-          ].map((action) => (
-            <a
-              key={action.label}
-              href={action.href}
-              className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r ${action.gradient} hover:opacity-90 transition-opacity`}
-            >
-              <span className="text-2xl">{action.emoji}</span>
-              <span className="font-semibold text-white text-sm">{action.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      {/* Mensaje de bienvenida si es nuevo */}
-      {!profile?.onboarding_completed && (
-        <div className="glass-card rounded-2xl p-6 border border-[#8B5CF6]/30">
-          <h3 className="text-lg font-semibold text-white mb-2">
-            🎉 ¡Bienvenido a FocusLab!
-          </h3>
-          <p className="text-slate-400 text-sm">
-            Explora las herramientas de productividad, completa actividades cognitivas
-            y genera tu primer reporte de atención. ¡Tu viaje hacia un mejor enfoque comienza aquí!
-          </p>
-        </div>
-      )}
-    </div>
+    <DashboardClient
+      greeting={greeting}
+      displayName={displayName}
+      onboardingCompleted={profile?.onboarding_completed ?? false}
+      stats={{
+        pomodorosHoy: pomodorosHoy?.length ?? 0,
+        tareasCompletadas: tareasCompletadasHoy?.length ?? 0,
+        rachaHabitos: rachaMax,
+        focusScore: focusScoreHoy,
+      }}
+      sparklineData={sparklineData}
+      actividadesRecientes={actividadesRecientes ?? []}
+      tareasRecientes={tareasRecientes ?? []}
+    />
   )
 }

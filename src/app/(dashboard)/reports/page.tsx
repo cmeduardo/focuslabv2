@@ -1,8 +1,18 @@
-export default function ReportsPage() {
-  return (
-    <div className="max-w-2xl mx-auto text-center py-20">
-      <h1 className="text-3xl font-bold text-white mb-4">📊 Reportes</h1>
-      <p className="text-slate-400">Próximamente — Fase 5</p>
-    </div>
-  )
+import { createClient } from '@/lib/supabase/server'
+import ReportsClient from '@/components/reports/ReportsClient'
+import type { Report } from '@/types/reports'
+
+// Página de reportes — listado y generación
+export default async function ReportsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: reports } = await supabase
+    .from('reports')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  return <ReportsClient reports={(reports ?? []) as Report[]} />
 }
