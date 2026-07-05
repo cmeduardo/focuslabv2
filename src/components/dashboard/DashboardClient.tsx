@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, memo } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -74,8 +75,8 @@ function timeAgo(dateStr: string): string {
   return `hace ${Math.floor(hrs / 24)}d`
 }
 
-// Tooltip personalizado para el chart
-function CustomTooltip({ active, payload, label }: {
+// Tooltip personalizado para el chart (memoizado para evitar re-renders en hover)
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: {
   active?: boolean
   payload?: Array<{ value: number; name: string }>
   label?: string
@@ -91,7 +92,7 @@ function CustomTooltip({ active, payload, label }: {
       ))}
     </div>
   )
-}
+})
 
 export default function DashboardClient({
   greeting,
@@ -102,7 +103,8 @@ export default function DashboardClient({
   actividadesRecientes,
   tareasRecientes,
 }: Props) {
-  const statsConfig = [
+  // Memoizado: solo recalcula si cambian las stats
+  const statsConfig = useMemo(() => [
     {
       label: 'Pomodoros hoy',
       value: stats.pomodorosHoy.toString(),
@@ -131,16 +133,10 @@ export default function DashboardClient({
       emoji: '⚡',
       href: '/reports',
     },
-  ]
+  ], [stats])
 
-  // Construir timeline unificado de actividad reciente
-  const timeline: Array<{
-    type: 'activity' | 'task'
-    label: string
-    emoji: string
-    time: string
-    score?: string
-  }> = [
+  // Memoizado: timeline unificado de actividad reciente
+  const timeline = useMemo(() => [
     ...actividadesRecientes.map((a) => ({
       type: 'activity' as const,
       label: activityLabels[a.activity] ?? a.activity,
@@ -160,7 +156,7 @@ export default function DashboardClient({
       })),
   ]
     .sort(() => 0) // ya vienen ordenados por fecha del servidor
-    .slice(0, 6)
+    .slice(0, 6), [actividadesRecientes, tareasRecientes])
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -269,7 +265,7 @@ export default function DashboardClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white truncate">{item.label}</p>
-                    {item.score && (
+                    {'score' in item && item.score && (
                       <p className="text-xs text-[#84CC16]">{item.score}</p>
                     )}
                   </div>

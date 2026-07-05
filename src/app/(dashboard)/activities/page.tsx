@@ -1,6 +1,7 @@
-import Link from 'next/link'
+'use client'
 
-export const metadata = { title: 'Actividades — FocusLab' }
+import Link from 'next/link'
+import { motion } from 'framer-motion'
 
 // Metadatos de cada actividad
 const ACTIVITIES = [
@@ -89,17 +90,26 @@ export default function ActivitiesPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8">
+      <motion.div
+        className="mb-8"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
         <h1 className="text-3xl font-bold text-white mb-2">Actividades de Atención</h1>
         <p className="text-slate-400">Mini-juegos diseñados para medir y entrenar tu capacidad de concentración.</p>
-      </div>
+      </motion.div>
 
       {/* Grid de actividades */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ACTIVITIES.map((act) => {
+        {ACTIVITIES.map((act, idx) => {
           const card = (
-            <div
+            <motion.div
               className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6 flex flex-col gap-4 transition-all duration-300 hover:border-white/20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: idx * 0.06 }}
+              whileHover={act.available ? { scale: 1.02, y: -2 } : {}}
             >
               {/* Emoji + badge disponibilidad */}
               <div className="flex items-start justify-between">
@@ -146,7 +156,7 @@ export default function ActivitiesPage() {
                   </span>
                 )}
               </div>
-            </div>
+            </motion.div>
           )
 
           return act.available ? (

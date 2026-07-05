@@ -911,53 +911,78 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ---
 
-## Instrucciones de Implementación
+## Estado de Implementación
 
-Construye el proyecto en este orden:
+> **Proyecto feature-complete** (2026-04-13). Todas las fases están implementadas y el build pasa sin errores TypeScript. Único pendiente: configurar el flujo real en n8n.
 
-### Fase 1 — Fundación
-1. Inicializa el proyecto Next.js con TypeScript y Tailwind
-2. Instala dependencias: `@supabase/supabase-js`, `@supabase/ssr`, `zustand`, `framer-motion`, `recharts`, `lucide-react`, `@dnd-kit/core`, `@dnd-kit/sortable`
-3. Configura shadcn/ui con tema oscuro customizado
-4. Configura Supabase client (browser + server)
-5. Implementa autenticación (register, login, logout, middleware de protección)
-6. Crea el layout del dashboard con Sidebar y TopBar
-7. Ejecuta las migraciones SQL en Supabase
+---
 
-### Fase 2 — Event Capture Engine
-8. Implementa el Event Collector con buffer y batch sending
-9. Crea el EventCapture Provider
-10. Implementa el hook `useEventTracker`
-11. Crea el endpoint `/api/events` para recibir batches
-12. Implementa gestión de sesiones (inicio, fin, heartbeat)
+## Historial de Implementación
 
-### Fase 3 — Herramientas de Productividad
-13. Pomodoro Timer completo con tracking
-14. Task Manager con Kanban y drag & drop
-15. Habit Tracker con grid mensual
-16. Calendario semanal
+### ✅ Fase 1 — Fundación
+- Next.js 14 + TypeScript + Tailwind + shadcn/ui (tema oscuro)
+- Auth email/password con Supabase, middleware de protección de rutas
+- Layout dashboard: Sidebar colapsable, TopBar, MobileNav
+- Migraciones 001–008 ejecutadas en Supabase
+- `AuthInitializer` sincroniza sesión Supabase → useAuthStore (Zustand)
 
-### Fase 4 — Actividades de Atención
-17. Reaction Test
-18. Focus Flow
-19. Memory Matrix
-20. Word Sprint
-21. Pattern Hunt
-22. Deep Read
+### ✅ Fase 2 — Event Capture Engine
+- `EventCollector` con buffer (max 50 / cada 10s), batch via fetch + sendBeacon en unload
+- `EventCaptureProvider` envuelve el dashboard layout
+- Hook `useEventTracker` para eventos custom desde cualquier componente
+- `POST /api/events` — recibe batches, inserta en tabla `events`
+- `POST /api/sessions` — inicio, fin y heartbeat de sesión
 
-### Fase 5 — Dashboard y Reportes
-23. Dashboard principal con widgets y stats
-24. Página de reportes con listado
-25. Endpoint de generación de reportes
-26. Endpoint webhook para n8n
-27. Visualización de reportes con análisis IA
+### ✅ Fase 3 — Herramientas de Productividad
+- PomodoroTimer: ring SVG animado, modos Focus/Break/Long Break, rating 1–5, vinculación a tarea
+- TaskBoard: Kanban (To Do / In Progress / Done) con drag & drop (@dnd-kit), prioridades, tags
+- HabitTracker: grid mensual estilo GitHub, check diario con confetti, rachas
+- WeeklyCalendar: vista semanal, bloques drag-to-create (tabla `calendar_blocks`)
+- Todos los stores Zustand: optimistic updates + Supabase como fuente de verdad
 
-### Fase 6 — Polish
-28. Animaciones y transiciones
-29. Responsive design
-30. Loading states y skeleton screens
-31. Error handling y empty states
-32. Optimización de performance (React.memo, useMemo, virtualización si necesario)
+### ✅ Fase 4 — Actividades de Atención
+- ReactionTest: go/no-go, 20 rondas, reacción + consistencia
+- FocusFlow: cursor tracking sobre partícula móvil, 2 min, distractores
+- MemoryMatrix: grid 3×3 → 7×7, reproducir patrones, 9 niveles
+- WordSprint: clasificar palabras en 60s, efecto Stroop
+- PatternHunt: odd-one-out en grid, dificultad progresiva
+- DeepRead: lectura con scroll tracking + quiz de comprensión
+- Todas guardan métricas en `activity_results.metrics` (JSONB)
+
+### ✅ Fase 5 — Dashboard y Reportes
+- Dashboard: greeting, stats del día, sparkline 7 días (Recharts), timeline, accesos rápidos
+- `/reports`: listado con ReportCard, modal de generación (semana/mes/rango custom)
+- `POST /api/reports/generate`: agrega datos del período → crea reporte → dispara webhook n8n
+- `POST /api/reports/webhook`: callback de n8n → actualiza reporte con análisis IA
+- `/reports/[id]`: AttentionChart (radar cognitivo + horas pico) + InsightPanel completo
+
+### ✅ Fase 6 — Polish
+- Skeleton components: 6 variantes (`src/components/ui/skeleton.tsx`)
+- Error boundaries: `app/error.tsx` y `app/(dashboard)/error.tsx`
+- `loading.tsx` para dashboard, reports, reports/[id], tasks, habits
+- React.memo en `ReportCard`; useMemo en `DashboardClient` (statsConfig, timeline)
+- `PageTransition` con AnimatePresence en el layout del dashboard
+- Animaciones stagger + whileHover en página de actividades
+
+### ✅ Onboarding (`/onboarding`)
+- Wizard de 3 pasos: nombre+timezone → universidad/carrera/semestre → resumen+tips
+- DashboardLayout redirige aquí si `onboarding_completed = false`
+- Middleware propaga `x-pathname` header para evitar loop
+
+### ✅ Settings (`/settings`)
+- Editar perfil: nombre, username, universidad, carrera, semestre, timezone
+- Cambiar contraseña (verifica la actual via re-login antes de actualizar)
+- Cerrar sesión
+
+---
+
+## Pendiente
+
+### 🔧 Configuración n8n
+- Crear flujo en n8n que reciba el webhook de `/api/reports/generate`
+- El payload incluye `report_id`, `user_id`, datos agregados del período y métricas de atención
+- El agente IA analiza los datos y devuelve el análisis al endpoint `/api/reports/webhook`
+- Variable de entorno `N8N_WEBHOOK_URL` debe apuntar a la instancia real de n8n
 
 ---
 

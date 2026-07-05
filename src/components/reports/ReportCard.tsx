@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import type { Report, ReportStatus } from '@/types/reports'
@@ -23,7 +24,8 @@ function formatPeriod(start: string, end: string): string {
   return `${s.toLocaleDateString('es', opts)} – ${e.toLocaleDateString('es', opts)}, ${e.getFullYear()}`
 }
 
-export default function ReportCard({ report, index }: Props) {
+// Memoizado: la card no cambia mientras el reporte no cambie
+const ReportCard = memo(function ReportCard({ report, index }: Props) {
   const cfg = statusConfig[report.status]
   const summary = report.raw_data?.summary as Record<string, number> | undefined
 
@@ -97,4 +99,6 @@ export default function ReportCard({ report, index }: Props) {
       </Link>
     </motion.div>
   )
-}
+})
+
+export default ReportCard

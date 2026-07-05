@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
 import MobileNav from '@/components/layout/MobileNav'
 import { EventCaptureProvider } from '@/components/tracking/EventCapture'
 import AuthInitializer from '@/components/auth/AuthInitializer'
+import PageTransition from '@/components/layout/PageTransition'
 
 // Layout del dashboard — protegido, requiere autenticación
 export default async function DashboardLayout({
@@ -22,9 +24,17 @@ export default async function DashboardLayout({
   // Obtener perfil del usuario
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, full_name')
+    .select('username, full_name, onboarding_completed')
     .eq('id', user.id)
     .single()
+
+  // Redirigir a onboarding si el usuario no lo ha completado
+  // (excepto si ya está en /onboarding para evitar loop)
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') ?? ''
+  if (profile && !profile.onboarding_completed && !pathname.startsWith('/onboarding')) {
+    redirect('/onboarding')
+  }
 
   return (
     <EventCaptureProvider>
@@ -41,7 +51,7 @@ export default async function DashboardLayout({
             userName={profile?.full_name || profile?.username || user.email?.split('@')[0]}
           />
           <main className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
-            {children}
+            <PageTransition>{children}</PageTransition>
           </main>
         </div>
 

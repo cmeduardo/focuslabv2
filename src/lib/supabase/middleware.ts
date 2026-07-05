@@ -40,7 +40,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/tools') ||
     request.nextUrl.pathname.startsWith('/activities') ||
     request.nextUrl.pathname.startsWith('/reports') ||
-    request.nextUrl.pathname.startsWith('/settings')
+    request.nextUrl.pathname.startsWith('/settings') ||
+    request.nextUrl.pathname.startsWith('/onboarding')
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register')
@@ -56,6 +57,9 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
+
+  // Propagar el pathname actual para que los layouts server-side puedan leerlo
+  supabaseResponse.headers.set('x-pathname', request.nextUrl.pathname)
 
   return supabaseResponse
 }

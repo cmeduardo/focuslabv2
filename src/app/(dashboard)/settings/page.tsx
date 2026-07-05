@@ -1,8 +1,17 @@
-export default function SettingsPage() {
-  return (
-    <div className="max-w-2xl mx-auto text-center py-20">
-      <h1 className="text-3xl font-bold text-white mb-4">⚙️ Ajustes</h1>
-      <p className="text-slate-400">Próximamente</p>
-    </div>
-  )
+import { createClient } from '@/lib/supabase/server'
+import SettingsClient from '@/components/settings/SettingsClient'
+
+// Página de ajustes — carga el perfil del usuario desde Supabase
+export default async function SettingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  return <SettingsClient profile={profile} email={user.email ?? ''} />
 }
