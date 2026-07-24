@@ -1,273 +1,273 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+// app/api/reports/generate/route.ts
+// Endpoint que el frontend llama para generar un reporte.
+// Recopila datos del usuario, los envía al webhook de n8n,
+// y devuelve inmediatamente { report_id, status: "processing" }.
 
-const bodySchema = z.object({
-  period_start: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-  period_end: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-})
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
-// POST /api/reports/generate
-// Agrega datos del período, crea reporte y envía webhook a n8n
-export async function POST(request: NextRequest) {
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL!;
+const N8N_WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET!;
+
+export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const supabase = await createClient();
+
+    // Verificar autenticación
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const body = await request.json()
-    const parsed = bodySchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Parámetros inválidos', details: parsed.error.flatten() }, { status: 400 })
+    // Recibir período del body (opcional, default: última semana)
+    const body = await req.json().catch(() => ({}));
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const periodStart = body.period_start
+      ? new Date(body.period_start)
+      : weekAgo;
+    const periodEnd = body.period_end ? new Date(body.period_end) : now;
+
+    // --- Obtener perfil del usuario ---
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("university, career, semester")
+      .eq("id", user.id)
+      .single();
+
+    // --- Crear registro del reporte en DB ---
+    const { data: report, error: reportError } = await supabase
+      .from("reports")
+      .insert({
+        user_id: user.id,
+        status: "processing",
+        period_start: periodStart.toISOString(),
+        period_end: periodEnd.toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (reportError || !report) {
+      console.error("Error creando reporte:", reportError);
+      return NextResponse.json(
+        { error: "Error al crear el reporte" },
+        { status: 500 }
+      );
     }
 
-    const { period_start, period_end } = parsed.data
+    // --- Obtener sesiones de pomodoro del período ---
+    const { data: sessions } = await supabase
+      .from("pomodoro_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("created_at", periodStart.toISOString())
+      .lte("created_at", periodEnd.toISOString());
 
-    // Asegurar formato ISO para las queries
-    const startISO = period_start.includes('T') ? period_start : `${period_start}T00:00:00.000Z`
-    const endISO = period_end.includes('T') ? period_end : `${period_end}T23:59:59.999Z`
+    const allSessions = sessions || [];
+    // pomodoro_sessions usa campo `completed boolean`, no `status`
+    const completedPomodoros = allSessions.filter((s) => s.completed === true);
+    const interruptedPomodoros = allSessions.filter(
+      (s) => s.completed === false && s.ended_at != null
+    );
 
-    // Obtener datos del período en paralelo
-    const [
-      { data: profile },
-      { data: sesiones },
-      { data: pomodoroSesiones },
-      { data: tareas },
-      { data: habitos },
-      { data: habitLogs },
-      { data: actividades },
-      { data: eventos },
-    ] = await Promise.all([
-      supabase.from('profiles').select('university, career, semester').eq('id', user.id).single(),
+    // --- Obtener actividades cognitivas del período ---
+    const { data: activities } = await supabase
+      .from("activity_results")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("completed_at", periodStart.toISOString())
+      .lte("completed_at", periodEnd.toISOString())
+      .order("completed_at", { ascending: true });
 
-      supabase
-        .from('sessions')
-        .select('id, started_at, ended_at, duration_seconds, total_events, focus_score')
-        .eq('user_id', user.id)
-        .gte('started_at', startISO)
-        .lte('started_at', endISO),
+    const allActivities = activities || [];
 
-      supabase
-        .from('pomodoro_sessions')
-        .select('id, started_at, ended_at, duration_seconds, completed, interruptions, focus_rating')
-        .eq('user_id', user.id)
-        .gte('started_at', startISO)
-        .lte('started_at', endISO),
+    // --- Obtener tareas del período ---
+    const { data: tasks } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("created_at", periodStart.toISOString())
+      .lte("created_at", periodEnd.toISOString());
 
-      supabase
-        .from('tasks')
-        .select('id, status, priority, created_at, completed_at, due_date, estimated_pomodoros, completed_pomodoros')
-        .eq('user_id', user.id)
-        .gte('created_at', startISO)
-        .lte('created_at', endISO),
+    const allTasks = tasks || [];
+    const tasksCompleted = allTasks.filter((t) => t.status === "completed");
+    const tasksOverdue = allTasks.filter(
+      (t) => t.status !== "completed" && t.due_date && new Date(t.due_date) < now
+    );
 
-      supabase
-        .from('habits')
-        .select('id, name')
-        .eq('user_id', user.id),
+    // --- Calcular métricas de atención ---
+    const reactionTests = allActivities.filter(
+      (a) => a.activity === "reaction_test"
+    );
+    const focusFlows = allActivities.filter(
+      (a) => a.activity === "focus_flow"
+    );
+    const memoryMatrix = allActivities.filter(
+      (a) => a.activity === "memory_matrix"
+    );
 
-      supabase
-        .from('habit_logs')
-        .select('habit_id, completed_at')
-        .eq('user_id', user.id)
-        .gte('completed_at', period_start.split('T')[0])
-        .lte('completed_at', period_end.split('T')[0]),
+    const avgReactionTime =
+      reactionTests.length > 0
+        ? Math.round(
+            reactionTests.reduce((sum, a) => sum + (a.reaction_time_ms || 0), 0) /
+              reactionTests.length
+          )
+        : null;
 
-      supabase
-        .from('activity_results')
-        .select('activity, score, max_score, duration_seconds, metrics, completed_at')
-        .eq('user_id', user.id)
-        .gte('completed_at', startISO)
-        .lte('completed_at', endISO),
+    const sustainedScore =
+      focusFlows.length > 0
+        ? parseFloat(
+            (
+              focusFlows.reduce((sum, a) => sum + (a.score || 0), 0) /
+              focusFlows.length
+            ).toFixed(1)
+          )
+        : null;
 
-      supabase
-        .from('events')
-        .select('category, event_type, timestamp')
-        .eq('user_id', user.id)
-        .gte('timestamp', startISO)
-        .lte('timestamp', endISO),
-    ])
+    const memorySpan =
+      memoryMatrix.length > 0
+        ? Math.round(
+            memoryMatrix.reduce((sum, a) => sum + (a.span || 0), 0) /
+              memoryMatrix.length
+          )
+        : null;
 
-    // --- Calcular métricas agregadas ---
+    // --- Calcular patrones horarios ---
+    const hourCounts: Record<number, number> = {};
+    allSessions.forEach((s) => {
+      const hour = new Date(s.created_at).getHours();
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
 
-    // Sesiones
-    const totalSesiones = sesiones?.length ?? 0
-    const totalDuracionSeg = sesiones?.reduce((acc, s) => acc + (s.duration_seconds ?? 0), 0) ?? 0
-    const avgDuracionMin = totalSesiones > 0 ? Math.round(totalDuracionSeg / totalSesiones / 60) : 0
-    const totalEventos = eventos?.length ?? 0
+    const sortedHours = Object.entries(hourCounts)
+      .map(([h, c]) => ({ hour: parseInt(h), count: c }))
+      .sort((a, b) => b.count - a.count);
 
-    // Días activos (días únicos con al menos una sesión)
-    const diasActivos = new Set(
-      sesiones?.map((s) => s.started_at.split('T')[0]) ?? []
-    ).size
+    const peakHours = sortedHours.slice(0, 3).map((h) => h.hour);
+    const lowHours = sortedHours.slice(-3).map((h) => h.hour);
 
-    // Pomodoros
-    const pomodorosCompletados = pomodoroSesiones?.filter((p) => p.completed).length ?? 0
-    const pomodorosInterrumpidos = pomodoroSesiones?.filter((p) => !p.completed).length ?? 0
-    const completionRate = pomodoroSesiones?.length
-      ? Math.round((pomodorosCompletados / pomodoroSesiones.length) * 100) / 100
-      : 0
-    const ratingsValidos = pomodoroSesiones
-      ?.map((p) => p.focus_rating)
-      .filter((r): r is number => r !== null && r !== undefined) ?? []
-    const avgFocusRating = ratingsValidos.length
-      ? Math.round((ratingsValidos.reduce((a, b) => a + b, 0) / ratingsValidos.length) * 10) / 10
-      : null
-    const focusScoreAvg = avgFocusRating ? Math.round(avgFocusRating * 20) : null
+    // --- Calcular días activos ---
+    const activeDays = new Set(
+      allSessions.map((s) => new Date(s.created_at).toISOString().split("T")[0])
+    ).size;
 
-    // Tareas
-    const tareasCompletadas = tareas?.filter((t) => t.status === 'completed').length ?? 0
-    const tareasVencidas = tareas?.filter((t) => {
-      if (!t.due_date || t.status === 'completed') return false
-      return new Date(t.due_date) < new Date()
-    }).length ?? 0
+    // --- Calcular focus_consistency ---
+    const totalPomodoros = completedPomodoros.length + interruptedPomodoros.length;
+    const focusConsistency =
+      totalPomodoros > 0
+        ? parseFloat(
+            (completedPomodoros.length / totalPomodoros).toFixed(2)
+          )
+        : 0;
 
-    // Hábitos — consistencia (días cumplidos / días del período)
-    const diasPeriodo = Math.max(
-      1,
-      Math.round((new Date(endISO).getTime() - new Date(startISO).getTime()) / 86400000)
-    )
-    const totalHabitos = habitos?.length ?? 0
-    const logsTotales = habitLogs?.length ?? 0
-    const habitConsistency = totalHabitos > 0
-      ? Math.round((logsTotales / (totalHabitos * diasPeriodo)) * 100) / 100
-      : 0
+    // --- Calcular total focus time ---
+    const totalFocusMinutes = completedPomodoros.reduce(
+      (sum, s) => sum + (s.duration_minutes || 25),
+      0
+    );
 
-    // Patrones por hora (actividad pico)
-    const porHora: Record<number, number> = {}
-    for (const e of eventos ?? []) {
-      const h = new Date(e.timestamp).getHours()
-      porHora[h] = (porHora[h] ?? 0) + 1
-    }
-    const horaOrdenada = Object.entries(porHora)
-      .sort((a, b) => b[1] - a[1])
-    const horasPico = horaOrdenada.slice(0, 3).map(([h]) => Number(h))
-    const horasBajas = horaOrdenada.slice(-3).map(([h]) => Number(h))
+    // --- Calcular avg focus rating ---
+    const ratings = completedPomodoros
+      .filter((s) => s.focus_rating != null)
+      .map((s) => s.focus_rating);
+    const avgFocusRating =
+      ratings.length > 0
+        ? parseFloat(
+            (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+          )
+        : null;
 
-    // Métricas de atención de actividades
-    const reactionTests = actividades?.filter((a) => a.activity === 'reaction_test') ?? []
-    const focusFlows = actividades?.filter((a) => a.activity === 'focus_flow') ?? []
-    const memoryMatrix = actividades?.filter((a) => a.activity === 'memory_matrix') ?? []
+    // --- Calcular habit consistency ---
+    const totalDaysInPeriod = Math.ceil(
+      (periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const habitConsistency =
+      totalDaysInPeriod > 0
+        ? parseFloat((activeDays / totalDaysInPeriod).toFixed(2))
+        : 0;
 
-    const avgReactionTime = reactionTests.length
-      ? Math.round(
-          reactionTests
-            .map((a) => (a.metrics as Record<string, number>).avg_reaction_time_ms ?? 0)
-            .reduce((a, b) => a + b, 0) / reactionTests.length
-        )
-      : null
-
-    const avgFocusAccuracy = focusFlows.length
-      ? Math.round(
-          focusFlows
-            .map((a) => (a.metrics as Record<string, number>).accuracy_percent ?? 0)
-            .reduce((a, b) => a + b, 0) / focusFlows.length
-        )
-      : null
-
-    const avgMemorySpan = memoryMatrix.length
-      ? Math.round(
-          memoryMatrix
-            .map((a) => (a.metrics as Record<string, number>).working_memory_span ?? 0)
-            .reduce((a, b) => a + b, 0) / memoryMatrix.length
-        )
-      : null
-
-    // Construir raw_data completo
-    const rawData = {
+    // --- Construir payload para n8n ---
+    const payload = {
+      report_id: report.id,
+      user_id: user.id,
+      period: {
+        start: periodStart.toISOString(),
+        end: periodEnd.toISOString(),
+      },
+      user_profile: {
+        university: profile?.university || null,
+        career: profile?.career || null,
+        semester: profile?.semester || null,
+      },
       summary: {
-        total_sessions: totalSesiones,
-        total_focus_time_minutes: Math.round(totalDuracionSeg / 60),
-        total_events: totalEventos,
-        active_days: diasActivos,
-        avg_session_duration_minutes: avgDuracionMin,
+        total_sessions: allSessions.length,
+        total_focus_time_minutes: totalFocusMinutes,
+        total_events: allActivities.length,
+        active_days: activeDays,
+        avg_session_duration_minutes:
+          completedPomodoros.length > 0
+            ? Math.round(totalFocusMinutes / completedPomodoros.length)
+            : 0,
       },
       attention_metrics: {
         avg_reaction_time_ms: avgReactionTime,
-        sustained_attention_score: avgFocusAccuracy,
-        working_memory_span: avgMemorySpan,
-        focus_consistency: completionRate,
+        sustained_attention_score: sustainedScore,
+        working_memory_span: memorySpan,
+        focus_consistency: focusConsistency,
       },
       productivity_metrics: {
-        pomodoros_completed: pomodorosCompletados,
-        pomodoros_interrupted: pomodorosInterrumpidos,
-        completion_rate: completionRate,
+        pomodoros_completed: completedPomodoros.length,
+        pomodoros_interrupted: interruptedPomodoros.length,
+        completion_rate: focusConsistency,
         avg_focus_rating: avgFocusRating,
-        tasks_completed: tareasCompletadas,
-        tasks_overdue: tareasVencidas,
+        tasks_completed: tasksCompleted.length,
+        tasks_overdue: tasksOverdue.length,
         habit_consistency: habitConsistency,
       },
       patterns: {
-        peak_focus_hours: horasPico,
-        low_focus_hours: horasBajas,
+        peak_focus_hours: peakHours,
+        low_focus_hours: lowHours,
       },
-      activity_history: (actividades ?? []).map((a) => ({
+      activity_history: allActivities.slice(-20).map((a) => ({
         activity: a.activity,
         score: a.score,
-        max_score: a.max_score,
+        max_score: a.max_score || 100,
         completed_at: a.completed_at,
       })),
-    }
+    };
 
-    // Crear el reporte en Supabase con estado 'pending'
-    const { data: reporte, error: reporteError } = await supabase
-      .from('reports')
-      .insert({
-        user_id: user.id,
-        period_start: startISO,
-        period_end: endISO,
-        status: 'pending',
-        raw_data: rawData,
-        focus_score_avg: focusScoreAvg,
-        generated_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
+    // --- Enviar a n8n (async, no esperamos la respuesta del análisis) ---
+    fetch(N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Secret": N8N_WEBHOOK_SECRET,
+      },
+      body: JSON.stringify(payload),
+    }).catch((err) => {
+      console.error("Error enviando webhook a n8n:", err);
+      // Marcar reporte como fallido si no se pudo enviar
+      supabase
+        .from("reports")
+        .update({ status: "failed" })
+        .eq("id", report.id)
+        .then(() => {});
+    });
 
-    if (reporteError || !reporte) {
-      console.error('Error creando reporte:', reporteError)
-      return NextResponse.json({ error: 'Error al crear el reporte' }, { status: 500 })
-    }
-
-    // Enviar webhook a n8n si la URL está configurada
-    const n8nUrl = process.env.N8N_WEBHOOK_URL
-    if (n8nUrl && !n8nUrl.includes('example.com')) {
-      const webhookPayload = {
-        report_id: reporte.id,
-        user_id: user.id,
-        period: { start: startISO, end: endISO },
-        user_profile: {
-          university: profile?.university ?? null,
-          career: profile?.career ?? null,
-          semester: profile?.semester ?? null,
-        },
-        ...rawData,
-      }
-
-      // Marcar como processing
-      await supabase
-        .from('reports')
-        .update({ status: 'processing' })
-        .eq('id', reporte.id)
-
-      // Disparar webhook en background (sin await para no bloquear la respuesta)
-      fetch(n8nUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.N8N_WEBHOOK_SECRET
-            ? { 'X-Webhook-Secret': process.env.N8N_WEBHOOK_SECRET }
-            : {}),
-        },
-        body: JSON.stringify(webhookPayload),
-      }).catch((err) => console.error('Error enviando webhook a n8n:', err))
-    }
-
-    return NextResponse.json({ report_id: reporte.id, status: reporte.status }, { status: 201 })
-  } catch (err) {
-    console.error('Error en /api/reports/generate:', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({
+      report_id: report.id,
+      status: "processing",
+    });
+  } catch (error) {
+    console.error("Error generando reporte:", error);
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }

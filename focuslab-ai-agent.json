@@ -1,0 +1,201 @@
+{
+  "name": "FocusLab AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "focuslab-report",
+        "options": {
+          "rawBody": false
+        },
+        "authentication": "headerAuth",
+        "headerAuth": {
+          "name": "X-Webhook-Secret",
+          "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook FocusLab",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "focuslab-report"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Construir prompt para el LLM ===\nconst body = $input.item.json.body;\n\nconst systemPrompt = `Eres un psicólogo cognitivo especializado en atención y productividad académica.\nAnalizas datos de comportamiento de estudiantes universitarios y generas\ninformes claros, empáticos y accionables. Tu audiencia son jóvenes de 18-25 años.\nEscribe en español. Sé directo, usa lenguaje cercano (no clínico), y basa\ntus conclusiones únicamente en los datos recibidos. No inventes métricas.\nSi una métrica es null, no la menciones ni la asumas.\nResponde ÚNICAMENTE con un objeto JSON válido, sin markdown, sin texto extra.`;\n\n// Construir sección de métricas de atención (solo las que no son null)\nconst attentionLines = [];\nconst am = body.attention_metrics || {};\nif (am.avg_reaction_time_ms != null) {\n  attentionLines.push(`- Tiempo de reacción promedio: ${am.avg_reaction_time_ms}ms`);\n}\nif (am.sustained_attention_score != null) {\n  attentionLines.push(`- Atención sostenida (accuracy): ${am.sustained_attention_score}%`);\n}\nif (am.working_memory_span != null) {\n  attentionLines.push(`- Memoria de trabajo (span): ${am.working_memory_span} ítems`);\n}\nif (am.focus_consistency != null) {\n  attentionLines.push(`- Consistencia de enfoque: ${(am.focus_consistency * 100).toFixed(1)}%`);\n}\n\n// Construir sección de productividad\nconst pm = body.productivity_metrics || {};\nconst productivityLines = [];\nproductivityLines.push(`- Pomodoros completados: ${pm.pomodoros_completed}`);\nproductivityLines.push(`- Pomodoros interrumpidos: ${pm.pomodoros_interrupted}`);\nproductivityLines.push(`- Tasa de completación: ${(pm.completion_rate * 100).toFixed(1)}%`);\nif (pm.avg_focus_rating != null) {\n  productivityLines.push(`- Rating de enfoque promedio: ${pm.avg_focus_rating}/5`);\n}\nproductivityLines.push(`- Tareas completadas: ${pm.tasks_completed}`);\nproductivityLines.push(`- Tareas vencidas: ${pm.tasks_overdue}`);\nproductivityLines.push(`- Consistencia de hábitos: ${(pm.habit_consistency * 100).toFixed(1)}%`);\n\n// Historial de actividades\nconst history = body.activity_history || [];\nconst activityText = history.length > 0\n  ? history.map(a => `- ${a.activity}: score ${a.score}/${a.max_score}`).join('\\n')\n  : '- Ninguna en este período';\n\nconst up = body.user_profile || {};\nconst s = body.summary || {};\nconst p = body.patterns || {};\n\nconst userMessage = `Analiza el siguiente perfil de atención y productividad del estudiante:\n\nPERFIL:\n- Universidad: ${up.university || 'No especificada'}\n- Carrera: ${up.career || 'No especificada'}\n- Semestre: ${up.semester || 'No especificado'}\n\nPERÍODO ANALIZADO: ${body.period.start} a ${body.period.end}\n\nRESUMEN DE ACTIVIDAD:\n- Días activos: ${s.active_days}\n- Sesiones totales: ${s.total_sessions}\n- Tiempo total de enfoque: ${s.total_focus_time_minutes} minutos\n- Duración promedio de sesión: ${s.avg_session_duration_minutes} minutos\n\nMÉTRICAS DE ATENCIÓN:\n${attentionLines.join('\\n')}\n\nPRODUCTIVIDAD:\n${productivityLines.join('\\n')}\n\nPATRONES HORARIOS:\n- Horas pico de actividad: ${(p.peak_focus_hours || []).join(', ')}h\n- Horas de baja actividad: ${(p.low_focus_hours || []).join(', ')}h\n\nACTIVIDADES REALIZADAS:\n${activityText}\n\nGenera un análisis completo. Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura (sin markdown, sin texto extra antes o después):\n\n{\n  \"attention_profile\": \"string — nombre del perfil atencional (ej: 'Focused Sprinter', 'Deep Diver', 'Scattered Thinker', 'Steady Builder', 'Night Owl Learner')\",\n  \"summary\": \"string — párrafo de 3-4 oraciones describiendo el patrón general del estudiante\",\n  \"strengths\": [\"string\", \"string\", \"string\"],\n  \"areas_to_improve\": [\"string\", \"string\", \"string\"],\n  \"patterns_detected\": [\"string\", \"string\", \"string\"],\n  \"recommendations\": [\"string\", \"string\", \"string\", \"string\"],\n  \"risk_indicators\": {\n    \"burnout_risk\": \"low | moderate | high\",\n    \"attention_deficit_indicators\": \"none | mild | moderate | significant\",\n    \"stress_patterns\": \"string — descripción breve del patrón de estrés detectado\"\n  }\n}`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_message: userMessage,\n    report_id: body.report_id\n  }\n}];"
+      },
+      "id": "build-prompt",
+      "name": "Construir Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.3,\n  \"max_tokens\": 1024,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($json.system_prompt) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.user_message) }} }\n  ]\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "call-openai",
+      "name": "OpenAI Análisis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "OpenAI API Key"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Parsear respuesta de OpenAI ===\nconst response = $input.item.json;\n\n// Verificar si hubo error en la llamada HTTP\nif (response.error) {\n  throw new Error(`OpenAI API error: ${JSON.stringify(response.error)}`);\n}\n\nconst text = response.choices[0].message.content.trim();\n\nlet analysis;\ntry {\n  const clean = text.replace(/^```json\\s*/i, '').replace(/\\s*```$/i, '').trim();\n  analysis = JSON.parse(clean);\n} catch (e) {\n  throw new Error('El LLM no devolvió JSON válido: ' + text.substring(0, 200));\n}\n\n// Validar estructura mínima\nconst requiredKeys = ['attention_profile', 'summary', 'strengths', 'areas_to_improve', 'recommendations', 'risk_indicators'];\nconst missing = requiredKeys.filter(k => !(k in analysis));\nif (missing.length > 0) {\n  throw new Error(`Respuesta incompleta, faltan campos: ${missing.join(', ')}`);\n}\n\nreturn [{\n  json: {\n    analysis,\n    report_id: $('Construir Prompt').item.json.report_id\n  }\n}];"
+      },
+      "id": "parse-response",
+      "name": "Parsear Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://focuslab-tawny.vercel.app/api/reports/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"report_id\": {{ $json.report_id }},\n  \"status\": \"completed\",\n  \"ai_analysis\": {{ JSON.stringify($json.analysis) }}\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "callback-success",
+      "name": "Callback Éxito",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://focuslab-tawny.vercel.app/api/reports/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"report_id\": {{ $('Construir Prompt').item.json.report_id }},\n  \"status\": \"failed\"\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "callback-error",
+      "name": "Callback Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 460]
+    }
+  ],
+  "connections": {
+    "Webhook FocusLab": {
+      "main": [
+        [
+          {
+            "node": "Construir Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Análisis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Análisis": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Callback Éxito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "FocusLab"
+    }
+  ]
+}
