@@ -1,35 +1,65 @@
-import Link from 'next/link'
+import Link from "next/link";
 
-// Landing page pública de FocusLab
-export default function LandingPage() {
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ACTIVITIES, TOOLS } from "@/lib/constants/nav";
+
+export default function Home() {
   return (
-    <main className="min-h-screen bg-[#0F0F1A] flex flex-col items-center justify-center px-4">
-      <div className="text-center max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4] bg-clip-text text-transparent">
-          FocusLab
-        </h1>
-        <p className="text-xl text-slate-400 mb-4">
-          Mide y mejora tus patrones de atención
-        </p>
-        <p className="text-slate-500 mb-10">
-          Herramientas de productividad + actividades cognitivas + análisis IA.<br />
-          Diseñado para universitarios.
-        </p>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <Link
-            href="/register"
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4] text-white font-semibold hover:opacity-90 transition-opacity"
-          >
-            Comenzar gratis
-          </Link>
-          <Link
-            href="/login"
-            className="px-8 py-3 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 transition-colors"
-          >
-            Iniciar sesión
-          </Link>
+    <div className="flex flex-1 flex-col">
+      <section className="border-b bg-muted/30">
+        <div className="mx-auto flex max-w-4xl flex-col items-start gap-6 px-6 py-24">
+          <h1 className="text-4xl font-semibold tracking-tight">FocusLab</h1>
+          <p className="max-w-2xl text-lg text-muted-foreground">
+            Actividades cognitivas gamificadas y herramientas de productividad
+            para estudiar patrones de atención en jóvenes universitarios.
+            FocusLab no realiza ningún diagnóstico clínico: al terminar cada
+            sesión recibes un informe descriptivo de tu perfil atencional.
+          </p>
+          <div className="flex gap-3">
+            <Button render={<Link href="/registro">Crear cuenta</Link>} />
+            <Button
+              variant="outline"
+              render={<Link href="/login">Iniciar sesión</Link>}
+            />
+          </div>
         </div>
-      </div>
-    </main>
-  )
+      </section>
+
+      <section className="mx-auto w-full max-w-4xl px-6 py-16">
+        <h2 className="mb-6 text-xl font-medium">Actividades cognitivas</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {ACTIVITIES.map((activity) => (
+            <Card key={activity.slug}>
+              <CardHeader>
+                <CardTitle className="text-base">{activity.name}</CardTitle>
+                <CardDescription>{activity.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-4xl px-6 pb-24">
+        <h2 className="mb-6 text-xl font-medium">
+          Herramientas de productividad
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {TOOLS.map((tool) => (
+            <Card key={tool.slug}>
+              <CardHeader>
+                <CardTitle className="text-base">{tool.name}</CardTitle>
+                <CardDescription>{tool.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 }

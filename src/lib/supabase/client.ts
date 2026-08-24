@@ -1,9 +1,14 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from "@supabase/ssr";
 
-// Cliente de Supabase para uso en el browser
+import type { Database } from "@/lib/types/database";
+
+/**
+ * Cliente de Supabase para Client Components. Usa la anon key: queda sujeto
+ * a las políticas RLS del usuario autenticado (ver supabase/migrations).
+ */
 export function createClient() {
-  return createBrowserClient(
+  return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 }

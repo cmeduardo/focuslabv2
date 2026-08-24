@@ -1,24 +1,35 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'] })
+import { Toaster } from "@/components/ui/sonner";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: 'FocusLab — Analiza tu atención',
-  description: 'Mide y mejora tus patrones de atención con herramientas de productividad y actividades cognitivas.',
-}
+  title: "FocusLab",
+  description:
+    "Actividades cognitivas gamificadas y herramientas de productividad para estudiar patrones de atención.",
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className="dark">
-      <body className={`${inter.className} bg-[#0F0F1A] text-slate-50 antialiased`}>
+    <html
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">
         {children}
+        <Toaster />
       </body>
     </html>
-  )
+  );
 }

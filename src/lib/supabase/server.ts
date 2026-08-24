@@ -1,29 +1,37 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import "server-only";
 
-// Cliente de Supabase para uso en server components y API routes
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+import type { Database } from "@/lib/types/database";
+
+/**
+ * Cliente de Supabase para Server Components y Route Handlers. Usa la anon
+ * key + las cookies de sesión del request: queda sujeto a RLS igual que el
+ * cliente de navegador. Debe crearse una instancia nueva por request.
+ */
 export async function createClient() {
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
           } catch {
-            // El método setAll fue llamado desde un Server Component.
-            // Puede ignorarse si hay middleware refrescando sesiones de usuario.
+            // Se llamó desde un Server Component: se puede ignorar porque
+            // src/proxy.ts ya se encarga de refrescar la sesión.
           }
         },
       },
-    }
-  )
+    },
+  );
 }
