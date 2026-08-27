@@ -11,6 +11,22 @@ create table public.profiles (
 
 comment on table public.profiles is 'Perfil de aplicación por usuario. 1:1 con auth.users.';
 
+-- Devuelve el rol del usuario autenticado consultando public.profiles.
+-- security definer: necesario para evaluarse dentro de las políticas RLS de
+-- otras tablas sin recursión ni depender de que el llamador tenga acceso
+-- directo a profiles. Vive aquí (no en 0001) porque, al ser `language sql`,
+-- Postgres valida esta consulta contra el esquema en el momento de crear la
+-- función.
+create or replace function public.current_user_role()
+returns public.user_role
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
 create trigger set_profiles_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();

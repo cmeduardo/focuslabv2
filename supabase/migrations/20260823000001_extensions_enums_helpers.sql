@@ -36,19 +36,10 @@ create type public.kanban_task_status as enum ('pendiente', 'en_progreso', 'comp
 
 create type public.ai_report_status as enum ('pendiente', 'completado', 'fallido');
 
--- Devuelve el rol del usuario autenticado consultando public.profiles.
--- security definer: necesario para evaluarse dentro de las políticas RLS de
--- otras tablas sin recursión ni depender de que el llamador tenga acceso
--- directo a profiles.
-create or replace function public.current_user_role()
-returns public.user_role
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select role from public.profiles where id = auth.uid();
-$$;
+-- current_user_role() se crea en 20260823000002_profiles.sql: al ser una
+-- función `language sql`, Postgres valida su cuerpo (y por tanto que
+-- public.profiles exista) en el momento de CREATE FUNCTION, no en su
+-- primera ejecución.
 
 -- Trigger genérico para mantener updated_at al día.
 create or replace function public.set_updated_at()
