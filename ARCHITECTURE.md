@@ -192,25 +192,22 @@ un participante no puede leer `profiles` de otros ni las vistas `vw_*`
 agregadas, `getOrCreateActiveSession` reutiliza la sesión correctamente, y
 el `on delete cascade` limpia todo al borrar el usuario.
 
-### Configuración manual pendiente en el dashboard de Supabase
+### Configuración del dashboard de Supabase (aplicada 2026-08-26)
 
-No se puede hacer por código — pasos para quien administre el proyecto:
-
-- **Authentication → Email Templates → Confirm signup**: cambiar el enlace
-  para usar `{{ .TokenHash }}` en vez de `{{ .ConfirmationURL }}`, apuntando
-  a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
-  Sin este cambio, el correo de confirmación no pasa por
-  `src/app/auth/confirm/route.ts` y el registro no deja al participante
-  autenticado.
-- **Authentication → URL Configuration**: configurar Site URL
-  (`http://localhost:3000` en desarrollo; la URL de Vercel en producción,
-  Sprint 5) y agregarla a Redirect URLs.
-- **Authentication → Emails / SMTP**: el proveedor de correo por defecto de
-  Supabase tiene un límite muy bajo de envíos (se topó en pruebas: "email
-  rate limit exceeded" al segundo intento). Antes del taller piloto real,
-  configurar un proveedor SMTP propio (Resend, Postmark, etc.) en Auth →
-  Emails, o evaluar desactivar "Confirm email" para simplificar el registro
-  de los participantes del taller.
+- **Authentication → Emails → Confirm email**: **desactivado**. Se optó por
+  esto en vez de configurar la plantilla de confirmación con `token_hash`,
+  para simplificar el registro del taller piloto y evitar el rate limit del
+  proveedor de correo por defecto. Consecuencia: `signUpWithPassword()` deja
+  sesión inmediata (no pasa por el estado "revisa tu correo"), y la ruta
+  `GET /auth/confirm` (`src/app/auth/confirm/route.ts`) queda sin usar
+  mientras esto siga desactivado. Si se reactiva confirmación por correo más
+  adelante, ahí sí hay que configurar Auth → Email Templates → Confirm
+  signup con `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
+- **Authentication → URL Configuration**: Site URL =
+  `https://focuslabv2.vercel.app` (el proyecto ya está desplegado en Vercel,
+  antes de lo previsto para Sprint 5).
+- **Migrations**: los 12 archivos de `supabase/migrations/` ya están
+  aplicados en el proyecto de Supabase.
 
 ## 8. Variables de entorno
 

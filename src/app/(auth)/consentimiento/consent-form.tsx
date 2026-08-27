@@ -30,7 +30,12 @@ export function ConsentForm() {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Consentimiento informado</CardTitle>
+        <span className="mb-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium tracking-wide text-secondary-foreground uppercase">
+          Paso 2 de 2
+        </span>
+        <CardTitle className="font-heading text-xl">
+          Consentimiento informado
+        </CardTitle>
         <CardDescription>
           Debes aceptar este consentimiento antes de iniciar tu primera
           sesión en FocusLab (RS-05). Tu aceptación queda registrada con
@@ -39,7 +44,7 @@ export function ConsentForm() {
       </CardHeader>
       <form action={formAction}>
         <CardContent className="space-y-4">
-          <div className="max-h-48 overflow-y-auto rounded-md border p-4 text-sm text-muted-foreground">
+          <div className="max-h-48 overflow-y-auto rounded-xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
             FocusLab recopila resultados de actividades cognitivas
             gamificadas y eventos de interacción (clics, cambios de pestaña,
             periodos de inactividad) durante tus sesiones de uso, con fines
@@ -50,7 +55,7 @@ export function ConsentForm() {
             diagnóstico clínico. Puedes dejar de participar en cualquier
             momento.
           </div>
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 rounded-xl border border-border bg-secondary/40 p-3">
             <Checkbox
               id="accept"
               checked={checked}
