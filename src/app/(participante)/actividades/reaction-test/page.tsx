@@ -17,11 +17,11 @@ export default function ReactionTestPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Reaction Test"
-          description="Mide tu tiempo de reacción ante un estímulo visual (5 rondas)."
+          description="Mide tu tiempo de reacción ante un estímulo visual (20 rondas)."
           instructions={[
             "Esperá a que el recuadro cambie a “¡YA!”.",
             "Hacé clic apenas lo veas — cuanto más rápido, mejor.",
-            "Si hacés clic antes de tiempo, la ronda se repite.",
+            "Si hacés clic antes de tiempo, la ronda se repite. Son 20 rondas en total.",
           ]}
           onStart={start}
         />
@@ -36,6 +36,14 @@ export default function ReactionTestPage() {
             {
               label: "Tiempo promedio",
               value: `${Number(result.metrics.averageMs)} ms`,
+            },
+            {
+              label: "Variabilidad (DE)",
+              value: `${Number(result.metrics.rtSD)} ms`,
+            },
+            {
+              label: "Lapsos de atención",
+              value: `${Number(result.metrics.lapses)}`,
             },
             { label: "Rondas válidas", value: `${result.accuracy ?? 0}%` },
           ]}

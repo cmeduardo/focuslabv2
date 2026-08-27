@@ -17,11 +17,11 @@ export default function FocusFlowPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Focus Flow"
-          description="Atención sostenida durante 30 segundos de seguimiento visual continuo."
+          description="Atención sostenida: un flujo continuo de estímulos durante 90 segundos."
           instructions={[
-            "Va a aparecer un círculo violeta en distintas posiciones: hacé clic en él apenas lo veas.",
-            "A veces va a aparecer un círculo coral — ese no lo toqués.",
-            "La velocidad aumenta a medida que pasa el tiempo.",
+            "Va a aparecer un círculo violeta o un cuadrado coral, uno a la vez, a ritmo constante.",
+            "Hacé clic apenas veas el círculo violeta.",
+            "Cuando aparezca el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
           ]}
           onStart={start}
         />
@@ -34,9 +34,9 @@ export default function FocusFlowPage() {
           onRetry={reset}
           stats={[
             { label: "Precisión", value: `${result.accuracy ?? 0}%` },
+            { label: "Omisiones", value: `${Number(result.metrics.omissions)}` },
+            { label: "Comisiones", value: `${Number(result.metrics.commissions)}` },
             { label: "Aciertos", value: `${Number(result.metrics.hits)}` },
-            { label: "Falsas alarmas", value: `${Number(result.metrics.falseAlarms)}` },
-            { label: "Nivel alcanzado", value: `${result.levelReached ?? 1}` },
           ]}
         />
       )}

@@ -67,4 +67,31 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
       },
     ],
   },
+  {
+    title: "Metas pequeñas",
+    text: "Dividir una tarea grande en metas pequeñas y concretas facilita mantener el esfuerzo a lo largo del tiempo. En vez de proponerse “estudiar todo el capítulo”, es más manejable fijar objetivos como “leer las primeras diez páginas” o “resolver cinco ejercicios”. Cada meta cumplida ofrece una señal clara de avance, lo que ayuda a sostener la motivación durante sesiones largas. Además, tener metas específicas reduce la sensación de no saber por dónde empezar, un factor que suele hacer que las personas pospongan el inicio de una tarea.",
+    questions: [
+      {
+        question:
+          "Según el texto, ¿qué facilita dividir una tarea grande en metas pequeñas?",
+        options: [
+          "Terminar la tarea sin ningún esfuerzo",
+          "Mantener el esfuerzo a lo largo del tiempo",
+          "Evitar por completo hacer la tarea",
+          "Aumentar la sensación de no saber por dónde empezar",
+        ],
+        correctIndex: 1,
+      },
+      {
+        question: "¿Qué reduce tener metas específicas, según el texto?",
+        options: [
+          "La motivación general",
+          "El número de páginas por leer",
+          "La sensación de no saber por dónde empezar",
+          "El tiempo total de estudio",
+        ],
+        correctIndex: 2,
+      },
+    ],
+  },
 ];
