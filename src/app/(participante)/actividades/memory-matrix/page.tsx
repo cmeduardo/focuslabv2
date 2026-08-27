@@ -33,6 +33,7 @@ export default function MemoryMatrixPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
             { label: "Nivel alcanzado", value: `${result.levelReached ?? 0}` },
             { label: "Precisión de clics", value: `${result.accuracy ?? 0}%` },
           ]}

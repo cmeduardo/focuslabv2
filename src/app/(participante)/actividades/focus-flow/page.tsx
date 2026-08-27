@@ -17,11 +17,11 @@ export default function FocusFlowPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Focus Flow"
-          description="Atención sostenida: un flujo continuo de estímulos durante 90 segundos."
+          description="Atención sostenida: un flujo continuo de estímulos en una cuadrícula de 9 celdas, durante 90 segundos."
           instructions={[
-            "Va a aparecer un círculo violeta o un cuadrado coral, uno a la vez, a ritmo constante.",
-            "Hacé clic apenas veas el círculo violeta.",
-            "Cuando aparezca el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
+            "En cada instante aparece un círculo violeta o un cuadrado coral en alguna de las 9 celdas — cambia de lugar cada vez.",
+            "Ubicalo y hacé clic apenas veas el círculo violeta.",
+            "Cuando sea el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
           ]}
           onStart={start}
         />
@@ -33,6 +33,11 @@ export default function FocusFlowPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
+            {
+              label: "Racha máxima",
+              value: `${Number(result.metrics.bestStreak)}`,
+            },
             { label: "Precisión", value: `${result.accuracy ?? 0}%` },
             { label: "Omisiones", value: `${Number(result.metrics.omissions)}` },
             { label: "Comisiones", value: `${Number(result.metrics.commissions)}` },
