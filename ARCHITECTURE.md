@@ -209,6 +209,44 @@ el `on delete cascade` limpia todo al borrar el usuario.
 - **Migrations**: los 12 archivos de `supabase/migrations/` ya están
   aplicados en el proyecto de Supabase.
 
+## 7ter. Las seis actividades cognitivas (Sprint 2)
+
+Cada actividad (`src/app/(participante)/actividades/*/page.tsx`) sigue el
+mismo patrón de tres fases sobre una infraestructura compartida:
+
+1. **`useActivityResult(activityType)`** (`src/hooks/use-activity-result.ts`)
+   orquesta el ciclo de vida: `start()` cronometra y emite
+   `logEvent("activity_start", ...)`; `finish(outcome)` cronometra el fin,
+   emite `activity_end`, y guarda la fila en `activity_results` vía
+   `saveActivityResult` (`src/lib/services/activity-results.ts`, insert
+   directo desde el cliente — política RLS `activity_results_insert_own`,
+   igual que ya hace `interaction_events`).
+2. **UI compartida** en `src/components/activities/`: `ActivityLayout`
+   (header), `ActivityIntro` (instrucciones + botón "Comenzar"),
+   `ActivityResult` (estadísticas de cierre genéricas `{label, value}[]`).
+3. **El juego** (`*-game.tsx`) es un componente "tonto": solo recibe
+   `onFinish(outcome)` y no conoce Supabase ni la sesión.
+
+Ninguna actividad cambia `sessions.status` — el participante puede hacer
+varias actividades dentro de la misma sesión `en_progreso` (Sprint 4 marca
+`completada` vía `/api/sessions/[sessionId]/complete`).
+
+Qué mide cada una (`accuracy`, `level_reached`, `metrics` en
+`activity_results`):
+
+| Actividad | Mecánica | `accuracy` | `level_reached` |
+|---|---|---|---|
+| Reaction Test | 5 rondas, clic ante estímulo tras espera aleatoria | % rondas sin falso inicio | — |
+| Focus Flow | 30s, clic en objetivo (no en distractor), cadencia creciente | aciertos / (aciertos+fallos+falsas alarmas) | tramo de dificultad (1–3) |
+| Memory Matrix | secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon) | clics correctos / clics totales | último nivel completo (máx. 10) |
+| Word Sprint | 16 rondas, decisión léxica (real vs. pseudopalabra), 2.5s/ronda | % respuestas correctas | — |
+| Pattern Hunt | 6 rondas de búsqueda visual, cuadrícula 4×4 → 6×6 | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo |
+| Deep Read | 2 párrafos + 4 preguntas de opción múltiple | % preguntas correctas | — |
+
+`metrics` (jsonb) guarda el detalle específico de cada una (tiempos de
+reacción individuales, respuestas por ronda, etc.) para el informe de IA
+del Sprint 4.
+
 ## 8. Variables de entorno
 
 Ver `.env.local.example`. Resumen:
@@ -228,9 +266,9 @@ Ver `.env.local.example`. Resumen:
 - **Sprint 1 (hecho)** — autenticación funcional (registro, confirmación de
   correo, login, consentimiento) con Server Actions, ciclo de vida de
   `sessions` (RF-02), motor de captura de eventos `useEventTracker` (RF-03).
-  Validado contra el proyecto real de Supabase. Pendiente configuración
-  manual en el dashboard, ver §7bis.
-- **Sprint 2** — las seis actividades cognitivas.
+  Validado contra el proyecto real de Supabase. Configuración del dashboard
+  aplicada y proyecto desplegado en Vercel, ver §7bis.
+- **Sprint 2 (hecho)** — las seis actividades cognitivas, ver §7ter.
 - **Sprint 3** — las cuatro herramientas de productividad.
 - **Sprint 4** — flujo de informe con IA (`generateAttentionReport`,
   endpoints de `/api`) + panel administrativo.
