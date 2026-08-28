@@ -155,6 +155,63 @@ pegar cada archivo en el SQL Editor de Supabase en orden, o usar
    de `ai_reports` a `status = 'completado'` con el contenido del informe.
 5. El participante consulta el resultado en `/informes/[sessionId]`.
 
+## 7bis. Autenticación y motor de captura (Sprint 1)
+
+Flujo implementado con Server Actions (`app/(auth)/*/actions.ts`), la capa
+`lib/services/{auth,consents,sessions}.ts` y el cliente de servidor de
+Supabase (`lib/supabase/server.ts`):
+
+1. `/registro` → `signUpWithPassword()`. Si el proyecto de Supabase exige
+   confirmación de correo (por defecto), no hay sesión inmediata: se
+   muestra "revisa tu correo" en vez de redirigir.
+2. El enlace del correo de confirmación debe apuntar a
+   `GET /auth/confirm?token_hash=...&type=signup`, que llama a
+   `supabase.auth.verifyOtp()` y redirige a `/consentimiento`.
+3. `/login` → `signInWithPassword()` → redirige a `?redirect=` o `/dashboard`.
+4. `src/app/(participante)/layout.tsx` exige sesión, exige haber aceptado el
+   consentimiento (si no, redirige a `/consentimiento`), y llama a
+   `getOrCreateActiveSession()` (RF-02): reutiliza la sesión `en_progreso`
+   más reciente del usuario en vez de crear una por cada visita.
+5. Ese `session.id` se pasa a `EventTrackerProvider`
+   (`components/tracking/event-tracker-provider.tsx`), que monta
+   `useEventTracker` (`hooks/use-event-tracker.ts`): captura clics,
+   `visibilitychange` e inactividad (60s sin clic/tecla/mouse) en todo el
+   área de participante, los agrupa en memoria y los inserta en lote en
+   `interaction_events` cada 5s o al desmontar. Expone `logEvent()` vía
+   `useEventLogger()` para que las actividades y herramientas (Sprint 2/3)
+   reporten `activity_start/end` y `tool_start/end/interrupt`.
+6. Al cerrar sesión (`components/layout/logout-action.ts`, Server Action)
+   se marca la sesión `en_progreso` como `abandonada` antes de hacer
+   `auth.signOut()`.
+
+**Validado directamente contra el proyecto real de Supabase** (usuario de
+prueba creado y borrado vía API admin, ver historial de sesión): el trigger
+`handle_new_user` crea `profiles` automáticamente, las políticas RLS de
+`consents`/`sessions`/`interaction_events` permiten insertar solo lo propio,
+un participante no puede leer `profiles` de otros ni las vistas `vw_*`
+agregadas, `getOrCreateActiveSession` reutiliza la sesión correctamente, y
+el `on delete cascade` limpia todo al borrar el usuario.
+
+### Configuración manual pendiente en el dashboard de Supabase
+
+No se puede hacer por código — pasos para quien administre el proyecto:
+
+- **Authentication → Email Templates → Confirm signup**: cambiar el enlace
+  para usar `{{ .TokenHash }}` en vez de `{{ .ConfirmationURL }}`, apuntando
+  a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
+  Sin este cambio, el correo de confirmación no pasa por
+  `src/app/auth/confirm/route.ts` y el registro no deja al participante
+  autenticado.
+- **Authentication → URL Configuration**: configurar Site URL
+  (`http://localhost:3000` en desarrollo; la URL de Vercel en producción,
+  Sprint 5) y agregarla a Redirect URLs.
+- **Authentication → Emails / SMTP**: el proveedor de correo por defecto de
+  Supabase tiene un límite muy bajo de envíos (se topó en pruebas: "email
+  rate limit exceeded" al segundo intento). Antes del taller piloto real,
+  configurar un proveedor SMTP propio (Resend, Postmark, etc.) en Auth →
+  Emails, o evaluar desactivar "Confirm email" para simplificar el registro
+  de los participantes del taller.
+
 ## 8. Variables de entorno
 
 Ver `.env.local.example`. Resumen:
@@ -171,8 +228,11 @@ Ver `.env.local.example`. Resumen:
   v4 + shadcn/ui), esquema completo de Supabase con RLS, clientes de
   Supabase (browser/server/admin) y `proxy.ts`, navegación completa con
   páginas wireframe, este documento.
-- **Sprint 1** — formularios de autenticación y consentimiento funcionales,
-  `useEventTracker`.
+- **Sprint 1 (hecho)** — autenticación funcional (registro, confirmación de
+  correo, login, consentimiento) con Server Actions, ciclo de vida de
+  `sessions` (RF-02), motor de captura de eventos `useEventTracker` (RF-03).
+  Validado contra el proyecto real de Supabase. Pendiente configuración
+  manual en el dashboard, ver §7bis.
 - **Sprint 2** — las seis actividades cognitivas.
 - **Sprint 3** — las cuatro herramientas de productividad.
 - **Sprint 4** — flujo de informe con IA (`generateAttentionReport`,

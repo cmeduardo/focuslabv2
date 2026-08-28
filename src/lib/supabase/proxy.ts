@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/registro", "/consentimiento"];
+// "/consentimiento" y "/auth" (enlace de confirmación de correo) son
+// públicos a nivel de red: cada uno valida por su cuenta que haya sesión.
+const PUBLIC_PATHS = ["/", "/login", "/registro", "/consentimiento", "/auth"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
