@@ -17,11 +17,12 @@ export default function ReactionTestPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Reaction Test"
-          description="Tiempo de reacción y puntería: el objetivo aparece en un punto al azar y se achica con la racha (20 rondas)."
+          description="Tiempo de reacción y puntería, en una grilla de 9 celdas, durante 90 segundos."
           instructions={[
-            "Esperá a que aparezca el círculo violeta en algún punto del recuadro.",
-            "Hacé clic justo sobre él, lo más rápido posible — si fallás el punto o tardás de más, perdés la racha.",
-            "Con cada acierto seguido el círculo se hace más chico y vale más puntos.",
+            "En cada instante aparece un círculo violeta o un cuadrado coral en alguna de las 9 celdas — cambia de lugar y de ritmo cada vez.",
+            "Hacé clic justo sobre el círculo violeta apenas lo veas — con cada acierto seguido se achica y vale más puntos.",
+            "Si es el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
+            "Un clic en la celda equivocada, o sin que haya nada para responder, corta tu racha.",
           ]}
           onStart={start}
         />
@@ -38,19 +39,23 @@ export default function ReactionTestPage() {
               label: "Racha máxima",
               value: `${Number(result.metrics.bestStreak)}`,
             },
+            { label: "Precisión", value: `${result.accuracy ?? 0}%` },
             {
               label: "Tiempo promedio",
-              value: `${Number(result.metrics.averageMs)} ms`,
+              value: `${Number(result.metrics.avgReactionMs)} ms`,
             },
             {
               label: "Variabilidad (DE)",
-              value: `${Number(result.metrics.rtSD)} ms`,
+              value: `${Number(result.metrics.reactionRtSD)} ms`,
             },
             {
-              label: "Lapsos de atención",
-              value: `${Number(result.metrics.lapses)}`,
+              label: "Arranques en falso",
+              value: `${Number(result.metrics.falseStarts)}`,
             },
-            { label: "Rondas válidas", value: `${result.accuracy ?? 0}%` },
+            {
+              label: "Comisiones",
+              value: `${Number(result.metrics.commissions)}`,
+            },
           ]}
         />
       )}

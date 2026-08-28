@@ -4,11 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StreakBadge } from "@/components/activities/streak-badge";
 import type { ActivityOutcome } from "@/hooks/use-activity-result";
-import { playHit, playMiss } from "@/lib/audio/beep";
+import { playCombo, playHit, playMiss } from "@/lib/audio/beep";
 import { pickRandomPassages } from "@/lib/constants/deep-read-passages";
 import { cn } from "@/lib/utils";
 
 const PASSAGE_COUNT = 3;
+// Comprensión lectora "bajo tiempo limitado" (constructo original de la
+// tesis, sin implementar hasta ahora): tope de lectura por párrafo y de
+// respuesta por pregunta — si se acaba, avanza solo y cuenta como no
+// respondida.
+const READING_TIME_MS = 45_000;
+const QUESTION_TIME_MS = 20_000;
 
 type Stage = "reading" | "question";
 
@@ -27,11 +33,15 @@ export function DeepReadGame({
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [readingBarActive, setReadingBarActive] = useState(false);
+  const [questionBarActive, setQuestionBarActive] = useState(false);
   const scoreRef = useRef(0);
   const streakRef = useRef(0);
   const bestStreakRef = useRef(0);
   const readingStartRef = useRef(0);
   const readingTimesRef = useRef<number[]>([]);
+  const readingTimeoutsRef = useRef(0);
+  const questionTimeoutsRef = useRef(0);
   const questionShownAtRef = useRef(0);
   const questionTimesRef = useRef<number[]>([]);
   const changesThisQuestionRef = useRef(0);
@@ -80,6 +90,38 @@ export function DeepReadGame({
       notificationTimersRef.current = [];
     };
   }, [stage, passageIndex]);
+
+  // Tope de tiempo de lectura: si se acaba, avanza solo a las preguntas
+  // (el tiempo real ya quedó en readingTimesMs, esto solo pone un techo).
+  useEffect(() => {
+    if (stage !== "reading") return;
+    const raf = requestAnimationFrame(() => setReadingBarActive(true));
+    const timer = setTimeout(() => {
+      readingTimeoutsRef.current += 1;
+      handleContinueToQuestions();
+    }, READING_TIME_MS);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
+  }, [stage, passageIndex]);
+
+  // Tope de tiempo por pregunta: corre durante toda la pregunta (incluso
+  // si el participante vuelve a leer el párrafo, eso también gasta el
+  // tiempo) y se cancela apenas confirma una respuesta.
+  useEffect(() => {
+    if (stage !== "question" || confirmed) return;
+    const raf = requestAnimationFrame(() => setQuestionBarActive(true));
+    const timer = setTimeout(() => {
+      questionTimeoutsRef.current += 1;
+      handleTimeout();
+    }, QUESTION_TIME_MS);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, questionIndex, passageIndex, confirmed]);
 
   function handleNotificationClick() {
     if (!notificationActiveRef.current) return;
@@ -130,11 +172,30 @@ export function DeepReadGame({
         rereadTimeMs: Math.round(rereadTimeRef.current),
         distractionsShown: distractionsShownRef.current,
         distractionsClicked: distractionsClickedRef.current,
+        readingTimeouts: readingTimeoutsRef.current,
+        questionTimeouts: questionTimeoutsRef.current,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
       },
     });
   }, [onFinish, passages]);
+
+  function goToNext() {
+    if (questionIndex + 1 < passage.questions.length) {
+      questionShownAtRef.current = performance.now();
+      setQuestionIndex((q) => q + 1);
+      setSelected(null);
+      setConfirmed(false);
+      setQuestionBarActive(false);
+    } else if (passageIndex + 1 < passages.length) {
+      readingStartRef.current = performance.now();
+      setPassageIndex((p) => p + 1);
+      setStage("reading");
+      setReadingBarActive(false);
+    } else {
+      finishGame();
+    }
+  }
 
   function handleContinueToQuestions() {
     readingTimesRef.current.push(
@@ -145,6 +206,7 @@ export function DeepReadGame({
     setQuestionIndex(0);
     setSelected(null);
     setConfirmed(false);
+    setQuestionBarActive(false);
   }
 
   function handleToggleReread() {
@@ -178,18 +240,19 @@ export function DeepReadGame({
       inferenceTotalRef.current += 1;
       if (isCorrect) inferenceCorrectRef.current += 1;
     }
-    questionTimesRef.current.push(
-      Math.round(performance.now() - questionShownAtRef.current),
-    );
+    const elapsed = Math.round(performance.now() - questionShownAtRef.current);
+    questionTimesRef.current.push(elapsed);
     answerChangesRef.current.push(changesThisQuestionRef.current);
     changesThisQuestionRef.current = 0;
 
     if (isCorrect) {
       streakRef.current += 1;
       bestStreakRef.current = Math.max(bestStreakRef.current, streakRef.current);
-      scoreRef.current += 100 + streakRef.current * 15;
+      const speedBonus = elapsed < QUESTION_TIME_MS / 2 ? 30 : 0;
+      scoreRef.current += 100 + streakRef.current * 15 + speedBonus;
       setScore(scoreRef.current);
       setStreak(streakRef.current);
+      if (streakRef.current > 0 && streakRef.current % 3 === 0) playCombo();
       playHit();
     } else {
       streakRef.current = 0;
@@ -197,20 +260,29 @@ export function DeepReadGame({
       playMiss();
     }
 
-    setTimeout(() => {
-      if (questionIndex + 1 < passage.questions.length) {
-        questionShownAtRef.current = performance.now();
-        setQuestionIndex((q) => q + 1);
-        setSelected(null);
-        setConfirmed(false);
-      } else if (passageIndex + 1 < passages.length) {
-        readingStartRef.current = performance.now();
-        setPassageIndex((p) => p + 1);
-        setStage("reading");
-      } else {
-        finishGame();
-      }
-    }, 700);
+    setTimeout(goToNext, 700);
+  }
+
+  // Se acabó el tiempo de la pregunta: cuenta como no respondida y avanza
+  // sola, igual que un fallo (corta la racha, no suma puntaje).
+  function handleTimeout() {
+    if (confirmed || finishedRef.current) return;
+    setConfirmed(true);
+    answersCorrectRef.current.push(false);
+    if (question.type === "literal") {
+      literalTotalRef.current += 1;
+    } else {
+      inferenceTotalRef.current += 1;
+    }
+    questionTimesRef.current.push(
+      Math.round(performance.now() - questionShownAtRef.current),
+    );
+    answerChangesRef.current.push(changesThisQuestionRef.current);
+    changesThisQuestionRef.current = 0;
+    streakRef.current = 0;
+    setStreak(0);
+    playMiss();
+    setTimeout(goToNext, 700);
   }
 
   if (stage === "reading") {
@@ -234,6 +306,17 @@ export function DeepReadGame({
             {score} pts
             <StreakBadge streak={streak} />
           </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{
+              width: readingBarActive ? "0%" : "100%",
+              transition: readingBarActive
+                ? `width ${READING_TIME_MS}ms linear`
+                : "none",
+            }}
+          />
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
           <h3 className="mb-2 font-heading font-semibold">{passage.title}</h3>
@@ -286,6 +369,19 @@ export function DeepReadGame({
           <StreakBadge streak={streak} />
         </span>
       </div>
+      {!confirmed && (
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-pulse"
+            style={{
+              width: questionBarActive ? "0%" : "100%",
+              transition: questionBarActive
+                ? `width ${QUESTION_TIME_MS}ms linear`
+                : "none",
+            }}
+          />
+        </div>
+      )}
       {!confirmed && (
         <button
           type="button"

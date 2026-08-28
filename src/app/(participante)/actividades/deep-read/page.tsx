@@ -17,11 +17,11 @@ export default function DeepReadPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Deep Read"
-          description="Comprensión lectora: 3 párrafos al azar (de un banco de 6) y nueve preguntas — algunas literales, otras de inferencia."
+          description="Comprensión lectora bajo tiempo limitado: 3 párrafos al azar (de un banco de 8) y nueve preguntas — algunas literales, otras de inferencia."
           instructions={[
-            "Leé cada párrafo con atención y avanzá cuando estés listo — los párrafos cambian en cada partida.",
-            "Vas a responder 3 preguntas por párrafo. Podés elegir una opción, cambiarla, y recién confirmarla cuando estés seguro.",
-            "Si necesitás repasar el texto, podés volver a leerlo antes de confirmar — se registra cuántas veces lo hacés.",
+            "Leé cada párrafo con atención — tenés un tiempo límite para pasar a las preguntas, se acaba solo si no avanzás antes.",
+            "Vas a responder 3 preguntas por párrafo, también con tiempo límite cada una. Podés elegir una opción, cambiarla, y confirmarla cuando estés seguro.",
+            "Si necesitás repasar el texto, podés volver a leerlo antes de confirmar — pero el tiempo de la pregunta sigue corriendo.",
             "Puede aparecer una notificación en la esquina mientras leés — ignorala, no hace falta cerrarla.",
           ]}
           onStart={start}
@@ -55,6 +55,10 @@ export default function DeepReadPage() {
             {
               label: "Distracciones ignoradas",
               value: `${Number(result.metrics.distractionsShown) - Number(result.metrics.distractionsClicked)}/${Number(result.metrics.distractionsShown)}`,
+            },
+            {
+              label: "Preguntas sin responder",
+              value: `${Number(result.metrics.questionTimeouts)}`,
             },
           ]}
         />

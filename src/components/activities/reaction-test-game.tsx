@@ -4,31 +4,30 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StreakBadge } from "@/components/activities/streak-badge";
 import type { ActivityOutcome } from "@/hooks/use-activity-result";
-import { playHit, playMiss } from "@/lib/audio/beep";
+import { playCombo, playHit, playMiss } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
-// Estilo Psychomotor Vigilance Task (PVT) + puntería: el objetivo aparece
-// en una posición aleatoria dentro del campo y se achica con la racha —
-// mide tiempo de reacción Y precisión bajo presión, no solo "clic en
-// cualquier lugar de una caja fija".
-const TOTAL_TRIALS = 20;
-const MAX_RETRIES = 2;
-const MIN_DELAY_MS = 1200;
-const MAX_DELAY_MS = 3000;
-const LAPSE_THRESHOLD_MS = 500;
-const TARGET_WINDOW_MS = 1200;
+// Mecánica fusionada (2026-08-27): SART (Robertson et al., 1997) con
+// incertidumbre espacial como columna vertebral — el estímulo aparece a
+// cadencia VARIABLE (900–2000ms, rompe el ritmo predecible que tenía la
+// versión de solo-cadencia-fija) en 1 de 9 celdas al azar — más la capa de
+// tiempo de reacción y puntería de un PVT: el círculo-objetivo se achica
+// con la racha y se mide la distancia del clic a su centro. Cualquier clic
+// fuera de la celda activa (incluso sin ningún estímulo visible) cuenta
+// como arranque en falso / respuesta impulsiva. Responder al frecuente
+// (círculo), inhibir el infrecuente (cuadrado).
+const TOTAL_DURATION_MS = 90_000;
+const SOA_MIN_MS = 900;
+const SOA_MAX_MS = 2000;
+const VISIBLE_MS = 700;
+const NOGO_CHANCE = 0.2;
+const MAX_METER_STREAK = 15;
+const GRID_SLOTS = 9;
 const BASE_SIZE = 72;
 const MIN_SIZE = 32;
 const SIZE_STEP = 4;
 
-type Phase = "waiting" | "go" | "tooSoon";
-type Target = { top: number; left: number; size: number };
-
-function pointsFor(rt: number, streak: number) {
-  const base = Math.max(50, 700 - rt);
-  const multiplier = 1 + Math.min(streak, 10) * 0.1;
-  return Math.round(base * multiplier);
-}
+type StimulusKind = "go" | "noGo";
 
 function sizeForStreak(streak: number) {
   return Math.max(MIN_SIZE, BASE_SIZE - streak * SIZE_STEP);
@@ -40,246 +39,266 @@ export function ReactionTestGame({
   onFinish: (outcome: ActivityOutcome) => void;
 }) {
   const [trialIndex, setTrialIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>("waiting");
-  const [target, setTarget] = useState<Target | null>(null);
+  const [stimulus, setStimulus] = useState<StimulusKind | null>(null);
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  const [targetSize, setTargetSize] = useState(BASE_SIZE);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [fxKey, setFxKey] = useState(0);
   const [fx, setFx] = useState<"pop" | "shake" | null>(null);
+  const [fxKey, setFxKey] = useState(0);
 
-  const timesRef = useRef<number[]>([]);
+  const gameStartRef = useRef<number | null>(null);
+  const hitsRef = useRef(0);
+  const omissionsRef = useRef(0);
+  const commissionsRef = useRef(0);
   const falseStartsRef = useRef(0);
-  const aimMissesRef = useRef(0);
-  const aimMissDistancesRef = useRef<number[]>([]);
+  const reactionTimesRef = useRef<number[]>([]);
+  const commissionTimesRef = useRef<number[]>([]);
+  const aimDistancesPxRef = useRef<number[]>([]);
   const targetSizesRef = useRef<number[]>([]);
-  const timeoutsRef = useRef(0);
-  const goAtRef = useRef<number | null>(null);
-  const appearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const windowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retriesRef = useRef(0);
+  const trialOutcomesRef = useRef<("hit" | "omission" | "commission" | "inhibit")[]>([]);
+  const stimulusAtRef = useRef<number | null>(null);
+  const currentKindRef = useRef<StimulusKind | null>(null);
+  const currentSlotRef = useRef<number | null>(null);
+  const currentTargetSizeRef = useRef(BASE_SIZE);
+  const respondedRef = useRef(false);
   const streakRef = useRef(0);
   const scoreRef = useRef(0);
   const bestStreakRef = useRef(0);
-  const resolvedRef = useRef(false);
   const finishedRef = useRef(false);
-  const fieldRef = useRef<HTMLDivElement>(null);
+
+  function applyOutcome(kind: "hit" | "inhibit" | "miss", points = 0) {
+    if (kind === "miss") {
+      streakRef.current = 0;
+    } else {
+      streakRef.current += 1;
+      scoreRef.current += points;
+      bestStreakRef.current = Math.max(bestStreakRef.current, streakRef.current);
+      if (streakRef.current > 0 && streakRef.current % 5 === 0) {
+        playCombo();
+      }
+    }
+    setStreak(streakRef.current);
+    setScore(scoreRef.current);
+    if (kind !== "inhibit") {
+      setFx(kind === "hit" ? "pop" : "shake");
+      setFxKey((k) => k + 1);
+    }
+  }
 
   const finishGame = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    const times = timesRef.current;
-    const accuracy = Math.round((times.length / TOTAL_TRIALS) * 100);
-    const averageMs = times.length
-      ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
+    const hits = hitsRef.current;
+    const omissions = omissionsRef.current;
+    const commissions = commissionsRef.current;
+    const accuracy =
+      hits + omissions ? Math.round((hits / (hits + omissions)) * 100) : 0;
+    const rt = reactionTimesRef.current;
+    const avgMs = rt.length
+      ? Math.round(rt.reduce((a, b) => a + b, 0) / rt.length)
       : 0;
-    const rtSD = times.length
+    const rtSD = rt.length
       ? Math.round(
-          Math.sqrt(
-            times.reduce((sum, t) => sum + (t - averageMs) ** 2, 0) /
-              times.length,
-          ),
+          Math.sqrt(rt.reduce((sum, t) => sum + (t - avgMs) ** 2, 0) / rt.length),
         )
       : 0;
-    const rtCV = averageMs ? Math.round((rtSD / averageMs) * 100) : 0;
-    const lapses = times.filter((t) => t > LAPSE_THRESHOLD_MS).length;
-    // Decaimiento de vigilancia: ¿empeora la reacción a medida que avanza
-    // la prueba? Es la señal clásica de fatiga atencional en un PVT.
-    const half = Math.floor(times.length / 2);
+    const rtCV = avgMs ? Math.round((rtSD / avgMs) * 100) : 0;
+    const half = Math.floor(rt.length / 2);
     const avg = (arr: number[]) =>
       arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
-    const earlyAvgMs = avg(times.slice(0, half));
-    const lateAvgMs = avg(times.slice(half));
+    const earlyAvgMs = avg(rt.slice(0, half));
+    const lateAvgMs = avg(rt.slice(half));
+    // Decaimiento de vigilancia: tasa de omisión en cada tercio de la
+    // prueba — la señal clásica de que la atención sostenida decae con el
+    // tiempo (o no).
+    const outcomes = trialOutcomesRef.current;
+    const thirdSize = Math.ceil(outcomes.length / 3) || 1;
+    const omissionRateFor = (slice: typeof outcomes) => {
+      const goTrials = slice.filter((o) => o === "hit" || o === "omission");
+      return goTrials.length
+        ? Math.round(
+            (slice.filter((o) => o === "omission").length / goTrials.length) * 100,
+          )
+        : 0;
+    };
+    const omissionsByThird = [
+      omissionRateFor(outcomes.slice(0, thirdSize)),
+      omissionRateFor(outcomes.slice(thirdSize, thirdSize * 2)),
+      omissionRateFor(outcomes.slice(thirdSize * 2)),
+    ];
     onFinish({
       accuracy,
       levelReached: null,
       metrics: {
-        trials: times,
+        hits,
+        omissions,
+        commissions,
         falseStarts: falseStartsRef.current,
-        aimMisses: aimMissesRef.current,
-        aimMissDistancesPx: aimMissDistancesRef.current,
-        targetSizesPx: targetSizesRef.current,
-        timeouts: timeoutsRef.current,
-        averageMs,
-        rtSD,
+        reactionTimesMs: rt,
+        avgReactionMs: avgMs,
+        reactionRtSD: rtSD,
         rtCV,
-        lapses,
         earlyAvgMs,
         lateAvgMs,
+        commissionTimesMs: commissionTimesRef.current,
+        aimDistancesPx: aimDistancesPxRef.current,
+        targetSizesPx: targetSizesRef.current,
+        omissionsByThirdPct: omissionsByThird,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
       },
     });
   }, [onFinish]);
 
-  const goNextTrial = useCallback(() => {
-    retriesRef.current = 0;
-    setTarget(null);
-    if (trialIndex + 1 >= TOTAL_TRIALS) {
-      finishGame();
-    } else {
-      setPhase("waiting");
-      setTrialIndex((i) => i + 1);
+  // Cada ensayo decide go/no-go, una celda al azar y una cadencia (SOA)
+  // aleatoria hasta el próximo ensayo — el setState real ocurre dentro de
+  // los setTimeout, nunca de forma síncrona en el efecto.
+  useEffect(() => {
+    if (finishedRef.current) return;
+    if (gameStartRef.current === null) gameStartRef.current = performance.now();
+    if (performance.now() - gameStartRef.current >= TOTAL_DURATION_MS) {
+      const endTimer = setTimeout(finishGame, 0);
+      return () => clearTimeout(endTimer);
     }
+
+    const kind: StimulusKind = Math.random() < NOGO_CHANCE ? "noGo" : "go";
+    const slot = Math.floor(Math.random() * GRID_SLOTS);
+    const soa = SOA_MIN_MS + Math.random() * (SOA_MAX_MS - SOA_MIN_MS);
+
+    const showTimer = setTimeout(() => {
+      const size = sizeForStreak(streakRef.current);
+      currentKindRef.current = kind;
+      currentSlotRef.current = slot;
+      currentTargetSizeRef.current = size;
+      respondedRef.current = false;
+      stimulusAtRef.current = performance.now();
+      if (kind === "go") {
+        targetSizesRef.current.push(size);
+      }
+      setStimulus(kind);
+      setActiveSlot(slot);
+      setTargetSize(size);
+    }, 0);
+
+    const hideTimer = setTimeout(() => {
+      setStimulus(null);
+      setActiveSlot(null);
+      if (!respondedRef.current) {
+        if (kind === "go") {
+          omissionsRef.current += 1;
+          trialOutcomesRef.current.push("omission");
+          applyOutcome("miss");
+        } else {
+          trialOutcomesRef.current.push("inhibit");
+          applyOutcome("inhibit", 25);
+        }
+      }
+      currentKindRef.current = null;
+      currentSlotRef.current = null;
+    }, VISIBLE_MS);
+
+    const nextTimer = setTimeout(() => {
+      setTrialIndex((i) => i + 1);
+    }, soa);
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(nextTimer);
+    };
   }, [trialIndex, finishGame]);
 
-  // Arma el ensayo: espera aleatoria y luego el objetivo aparece en una
-  // posición al azar. El setState real va dentro de los setTimeout.
-  const armTrial = useCallback(() => {
-    resolvedRef.current = false;
-    goAtRef.current = null;
-    const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
-    appearTimerRef.current = setTimeout(() => {
-      const size = sizeForStreak(streakRef.current);
-      targetSizesRef.current.push(size);
-      goAtRef.current = performance.now();
-      setTarget({
-        top: 15 + Math.random() * 70,
-        left: 15 + Math.random() * 70,
-        size,
-      });
-      setPhase("go");
-      windowTimerRef.current = setTimeout(() => {
-        if (resolvedRef.current) return;
-        resolvedRef.current = true;
-        timeoutsRef.current += 1;
-        streakRef.current = 0;
-        setStreak(0);
-        setFx("shake");
-        setFxKey((k) => k + 1);
+  const handleSlotClick = useCallback(
+    (slot: number, event: React.MouseEvent<HTMLButtonElement>) => {
+      if (finishedRef.current) return;
+      const isActiveSlot =
+        currentKindRef.current !== null && currentSlotRef.current === slot;
+
+      if (!isActiveSlot) {
+        falseStartsRef.current += 1;
         playMiss();
-        window.setTimeout(goNextTrial, 400);
-      }, TARGET_WINDOW_MS);
-    }, delay);
-  }, [goNextTrial]);
-
-  useEffect(() => {
-    armTrial();
-    return () => {
-      if (appearTimerRef.current) clearTimeout(appearTimerRef.current);
-      if (windowTimerRef.current) clearTimeout(windowTimerRef.current);
-    };
-  }, [trialIndex, armTrial]);
-
-  function handleFalseStart() {
-    if (appearTimerRef.current) clearTimeout(appearTimerRef.current);
-    falseStartsRef.current += 1;
-    retriesRef.current += 1;
-    streakRef.current = 0;
-    setStreak(0);
-    setPhase("tooSoon");
-    setFx("shake");
-    setFxKey((k) => k + 1);
-    playMiss();
-    window.setTimeout(() => {
-      if (retriesRef.current > MAX_RETRIES) {
-        goNextTrial();
-      } else {
-        setPhase("waiting");
-        armTrial();
+        applyOutcome("miss");
+        return;
       }
-    }, 900);
-  }
+      if (respondedRef.current) return;
+      respondedRef.current = true;
 
-  function handleFieldClick(event: React.MouseEvent<HTMLDivElement>) {
-    if (phase === "waiting") {
-      handleFalseStart();
-      return;
-    }
-    if (phase === "go" && !resolvedRef.current) {
-      resolvedRef.current = true;
-      if (windowTimerRef.current) clearTimeout(windowTimerRef.current);
-      aimMissesRef.current += 1;
-      if (target && fieldRef.current) {
-        const rect = fieldRef.current.getBoundingClientRect();
-        const targetCx = rect.width * (target.left / 100);
-        const targetCy = rect.height * (target.top / 100);
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
-        aimMissDistancesRef.current.push(
-          Math.round(Math.hypot(clickX - targetCx, clickY - targetCy)),
+      let rt = 0;
+      if (stimulusAtRef.current !== null) {
+        rt = Math.round(performance.now() - stimulusAtRef.current);
+      }
+
+      if (currentKindRef.current === "go") {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const distance = Math.round(
+          Math.hypot(
+            event.clientX - (rect.left + rect.width / 2),
+            event.clientY - (rect.top + rect.height / 2),
+          ),
         );
+        aimDistancesPxRef.current.push(distance);
+        hitsRef.current += 1;
+        reactionTimesRef.current.push(rt);
+        trialOutcomesRef.current.push("hit");
+        playHit();
+        applyOutcome("hit", Math.max(20, 320 - rt));
+      } else {
+        commissionsRef.current += 1;
+        commissionTimesRef.current.push(rt);
+        trialOutcomesRef.current.push("commission");
+        playMiss();
+        applyOutcome("miss");
       }
-      streakRef.current = 0;
-      setStreak(0);
-      setFx("shake");
-      setFxKey((k) => k + 1);
-      playMiss();
-      window.setTimeout(goNextTrial, 400);
-    }
-  }
+    },
+    [],
+  );
 
-  function handleTargetClick(event: React.MouseEvent) {
-    event.stopPropagation();
-    if (phase !== "go" || resolvedRef.current || goAtRef.current === null) return;
-    resolvedRef.current = true;
-    if (windowTimerRef.current) clearTimeout(windowTimerRef.current);
-    const rt = Math.round(performance.now() - goAtRef.current);
-    timesRef.current.push(rt);
-    const nextStreak = streakRef.current + 1;
-    streakRef.current = nextStreak;
-    bestStreakRef.current = Math.max(bestStreakRef.current, nextStreak);
-    scoreRef.current += pointsFor(rt, nextStreak - 1);
-    setStreak(nextStreak);
-    setScore(scoreRef.current);
-    setFx("pop");
-    setFxKey((k) => k + 1);
-    playHit();
-    window.setTimeout(goNextTrial, 150);
-  }
+  const meterPct = Math.min(100, (streak / MAX_METER_STREAK) * 100);
 
   return (
-    <div className="space-y-3 text-center">
+    <div className="space-y-3">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
-          Ronda {trialIndex + 1} de {TOTAL_TRIALS}
+          Hacé clic apenas veas un <span className="text-primary">círculo violeta</span>. Si es un <span className="text-pulse">cuadrado coral</span>, no hagas nada.
         </span>
         <span className="flex items-center gap-2 font-heading font-semibold text-foreground">
           {score}
           <StreakBadge streak={streak} />
         </span>
       </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-200"
+          style={{ width: `${meterPct}%` }}
+        />
+      </div>
       <div
         key={fxKey}
-        ref={fieldRef}
-        onClick={handleFieldClick}
         className={cn(
-          "relative flex h-72 w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-2xl border-2 transition-colors",
-          phase === "tooSoon"
-            ? "border-destructive bg-destructive/10"
-            : "border-dashed border-border bg-muted/30",
+          "mx-auto grid w-fit grid-cols-3 gap-3 rounded-2xl border border-dashed border-border bg-muted/20 p-4",
           fx === "shake" && "animate-shake",
         )}
       >
-        {phase === "waiting" && (
-          <p className="text-sm text-muted-foreground">Prepárate…</p>
-        )}
-        {phase === "tooSoon" && (
-          <p className="text-sm font-medium text-destructive">
-            Muy pronto — esperá la señal
-          </p>
-        )}
-        {phase === "go" && target && (
+        {Array.from({ length: GRID_SLOTS }).map((_, i) => (
           <button
+            key={i}
             type="button"
-            onClick={handleTargetClick}
-            style={{
-              top: `${target.top}%`,
-              left: `${target.left}%`,
-              width: target.size,
-              height: target.size,
-            }}
-            className={cn(
-              "absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-lg shadow-primary/30",
-              fx === "pop" && "animate-pop",
+            onClick={(e) => handleSlotClick(i, e)}
+            className="flex size-24 items-center justify-center rounded-xl border border-border bg-background/60"
+          >
+            {activeSlot === i && stimulus === "go" && (
+              <span
+                style={{ width: targetSize, height: targetSize }}
+                className={cn("rounded-full bg-primary", fx === "pop" && "animate-pop")}
+              />
             )}
-            aria-label="Objetivo"
-          />
-        )}
+            {activeSlot === i && stimulus === "noGo" && (
+              <span className="size-14 rounded-lg bg-pulse" />
+            )}
+          </button>
+        ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Hacé clic en el círculo violeta apenas aparezca — cuanto más rápido y
-        más larga la racha, más chico se pone.
-      </p>
     </div>
   );
 }

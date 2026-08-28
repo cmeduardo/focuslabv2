@@ -17,11 +17,12 @@ export default function FocusFlowPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Focus Flow"
-          description="Atención sostenida: un flujo continuo de estímulos en una cuadrícula de 9 celdas, durante 90 segundos."
+          description="Seguimiento visual continuo: memorizá unos puntos, seguilos con la mirada mientras se mueven, y marcalos al final (8 rondas)."
           instructions={[
-            "En cada instante aparece un círculo violeta o un cuadrado coral en alguna de las 9 celdas — cambia de lugar cada vez.",
-            "Ubicalo y hacé clic apenas veas el círculo violeta.",
-            "Cuando sea el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
+            "Al empezar cada ronda, algunos puntos se resaltan por un instante — esos son los blancos, memorizalos.",
+            "Todos los puntos se vuelven idénticos y empiezan a moverse — seguí a los blancos con la mirada sin perderlos.",
+            "Cuando se detienen, hacé clic sobre los puntos que creés que eran los blancos originales.",
+            "Con cada ronda hay más puntos, se mueven más rápido y por más tiempo.",
           ]}
           onStart={start}
         />
@@ -39,9 +40,15 @@ export default function FocusFlowPage() {
               value: `${Number(result.metrics.bestStreak)}`,
             },
             { label: "Precisión", value: `${result.accuracy ?? 0}%` },
-            { label: "Omisiones", value: `${Number(result.metrics.omissions)}` },
-            { label: "Comisiones", value: `${Number(result.metrics.commissions)}` },
-            { label: "Aciertos", value: `${Number(result.metrics.hits)}` },
+            {
+              label: "Blancos perdidos",
+              value: `${(result.metrics.missedPerRound as number[] | undefined)?.reduce((a, b) => a + b, 0) ?? 0}`,
+            },
+            {
+              label: "Falsos positivos",
+              value: `${(result.metrics.falsePositivesPerRound as number[] | undefined)?.reduce((a, b) => a + b, 0) ?? 0}`,
+            },
+            { label: "Ronda más difícil", value: `${result.levelReached ?? 0} puntos` },
           ]}
         />
       )}
