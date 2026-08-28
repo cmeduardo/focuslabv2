@@ -26,6 +26,10 @@ const GRID_SLOTS = 9;
 const BASE_SIZE = 72;
 const MIN_SIZE = 32;
 const SIZE_STEP = 4;
+// Cuenta regresiva antes del primer ensayo — evita que el primer tiempo
+// de reacción quede contaminado por la sorpresa de arrancar sin aviso
+// (pedido directo, 2026-08-28).
+const COUNTDOWN_SECONDS = 3;
 
 type StimulusKind = "go" | "noGo";
 
@@ -46,6 +50,7 @@ export function ReactionTestGame({
   const [streak, setStreak] = useState(0);
   const [fx, setFx] = useState<"pop" | "shake" | null>(null);
   const [fxKey, setFxKey] = useState(0);
+  const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
 
   const gameStartRef = useRef<number | null>(null);
   const hitsRef = useRef(0);
@@ -57,9 +62,21 @@ export function ReactionTestGame({
   const aimDistancesPxRef = useRef<number[]>([]);
   const targetSizesRef = useRef<number[]>([]);
   const trialOutcomesRef = useRef<("hit" | "omission" | "commission" | "inhibit")[]>([]);
+  const trialLogRef = useRef<
+    {
+      trialIndex: number;
+      kind: StimulusKind;
+      slot: number;
+      outcome: "hit" | "omission" | "commission" | "inhibit";
+      rt: number | null;
+    }[]
+  >([]);
+  const hitsBySlotRef = useRef<number[]>(new Array(GRID_SLOTS).fill(0));
+  const omissionsBySlotRef = useRef<number[]>(new Array(GRID_SLOTS).fill(0));
   const stimulusAtRef = useRef<number | null>(null);
   const currentKindRef = useRef<StimulusKind | null>(null);
   const currentSlotRef = useRef<number | null>(null);
+  const currentTrialIndexRef = useRef<number | null>(null);
   const currentTargetSizeRef = useRef(BASE_SIZE);
   const respondedRef = useRef(false);
   const streakRef = useRef(0);
@@ -145,17 +162,28 @@ export function ReactionTestGame({
         aimDistancesPx: aimDistancesPxRef.current,
         targetSizesPx: targetSizesRef.current,
         omissionsByThirdPct: omissionsByThird,
+        trialLog: trialLogRef.current,
+        hitsBySlot: hitsBySlotRef.current,
+        omissionsBySlot: omissionsBySlotRef.current,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
       },
     });
   }, [onFinish]);
 
+  // Cuenta regresiva antes de arrancar — el efecto de ensayos de abajo
+  // espera a que llegue a 0.
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
   // Cada ensayo decide go/no-go, una celda al azar y una cadencia (SOA)
   // aleatoria hasta el próximo ensayo — el setState real ocurre dentro de
   // los setTimeout, nunca de forma síncrona en el efecto.
   useEffect(() => {
-    if (finishedRef.current) return;
+    if (finishedRef.current || countdown > 0) return;
     if (gameStartRef.current === null) gameStartRef.current = performance.now();
     if (performance.now() - gameStartRef.current >= TOTAL_DURATION_MS) {
       const endTimer = setTimeout(finishGame, 0);
@@ -165,11 +193,20 @@ export function ReactionTestGame({
     const kind: StimulusKind = Math.random() < NOGO_CHANCE ? "noGo" : "go";
     const slot = Math.floor(Math.random() * GRID_SLOTS);
     const soa = SOA_MIN_MS + Math.random() * (SOA_MAX_MS - SOA_MIN_MS);
+    // El primer ensayo no tiene el "colchón" natural que le da a los demás
+    // el SOA del ensayo anterior — sin este preDelay, el estímulo aparecía
+    // igual de tarde pero se ocultaba en el mismo VISIBLE_MS de siempre,
+    // dejándolo visible una fracción del tiempo real (bug encontrado
+    // 2026-08-28: se agregó demora solo al show, no al hide). Con
+    // preDelay, show/hide/next se corren todos juntos — la ventana visible
+    // sigue siendo VISIBLE_MS completos.
+    const preDelay = trialIndex === 0 ? SOA_MIN_MS : 0;
 
     const showTimer = setTimeout(() => {
       const size = sizeForStreak(streakRef.current);
       currentKindRef.current = kind;
       currentSlotRef.current = slot;
+      currentTrialIndexRef.current = trialIndex;
       currentTargetSizeRef.current = size;
       respondedRef.current = false;
       stimulusAtRef.current = performance.now();
@@ -179,7 +216,7 @@ export function ReactionTestGame({
       setStimulus(kind);
       setActiveSlot(slot);
       setTargetSize(size);
-    }, 0);
+    }, preDelay);
 
     const hideTimer = setTimeout(() => {
       setStimulus(null);
@@ -187,27 +224,30 @@ export function ReactionTestGame({
       if (!respondedRef.current) {
         if (kind === "go") {
           omissionsRef.current += 1;
+          omissionsBySlotRef.current[slot] += 1;
           trialOutcomesRef.current.push("omission");
+          trialLogRef.current.push({ trialIndex, kind, slot, outcome: "omission", rt: null });
           applyOutcome("miss");
         } else {
           trialOutcomesRef.current.push("inhibit");
+          trialLogRef.current.push({ trialIndex, kind, slot, outcome: "inhibit", rt: null });
           applyOutcome("inhibit", 25);
         }
       }
       currentKindRef.current = null;
       currentSlotRef.current = null;
-    }, VISIBLE_MS);
+    }, preDelay + VISIBLE_MS);
 
     const nextTimer = setTimeout(() => {
       setTrialIndex((i) => i + 1);
-    }, soa);
+    }, preDelay + soa);
 
     return () => {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
       clearTimeout(nextTimer);
     };
-  }, [trialIndex, finishGame]);
+  }, [trialIndex, finishGame, countdown]);
 
   const handleSlotClick = useCallback(
     (slot: number, event: React.MouseEvent<HTMLButtonElement>) => {
@@ -229,6 +269,8 @@ export function ReactionTestGame({
         rt = Math.round(performance.now() - stimulusAtRef.current);
       }
 
+      const trialIndex = currentTrialIndexRef.current ?? -1;
+
       if (currentKindRef.current === "go") {
         const rect = event.currentTarget.getBoundingClientRect();
         const distance = Math.round(
@@ -239,14 +281,17 @@ export function ReactionTestGame({
         );
         aimDistancesPxRef.current.push(distance);
         hitsRef.current += 1;
+        hitsBySlotRef.current[slot] += 1;
         reactionTimesRef.current.push(rt);
         trialOutcomesRef.current.push("hit");
+        trialLogRef.current.push({ trialIndex, kind: "go", slot, outcome: "hit", rt });
         playHit();
         applyOutcome("hit", Math.max(20, 320 - rt));
       } else {
         commissionsRef.current += 1;
         commissionTimesRef.current.push(rt);
         trialOutcomesRef.current.push("commission");
+        trialLogRef.current.push({ trialIndex, kind: "noGo", slot, outcome: "commission", rt });
         playMiss();
         applyOutcome("miss");
       }
@@ -273,31 +318,45 @@ export function ReactionTestGame({
           style={{ width: `${meterPct}%` }}
         />
       </div>
-      <div
-        key={fxKey}
-        className={cn(
-          "mx-auto grid w-fit grid-cols-3 gap-3 rounded-2xl border border-dashed border-border bg-muted/20 p-4",
-          fx === "shake" && "animate-shake",
+      <div className="relative mx-auto w-fit">
+        {countdown > 0 && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 rounded-2xl bg-background/95">
+            <p className="text-sm text-muted-foreground">Preparate…</p>
+            <p
+              key={countdown}
+              className="animate-pop font-heading text-6xl font-bold text-primary"
+            >
+              {countdown}
+            </p>
+          </div>
         )}
-      >
-        {Array.from({ length: GRID_SLOTS }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => handleSlotClick(i, e)}
-            className="flex size-24 items-center justify-center rounded-xl border border-border bg-background/60"
-          >
-            {activeSlot === i && stimulus === "go" && (
-              <span
-                style={{ width: targetSize, height: targetSize }}
-                className={cn("rounded-full bg-primary", fx === "pop" && "animate-pop")}
-              />
-            )}
-            {activeSlot === i && stimulus === "noGo" && (
-              <span className="size-14 rounded-lg bg-pulse" />
-            )}
-          </button>
-        ))}
+        <div
+          key={fxKey}
+          className={cn(
+            "grid w-fit grid-cols-3 gap-3 rounded-2xl border border-dashed border-border bg-muted/20 p-4",
+            fx === "shake" && "animate-shake",
+          )}
+        >
+          {Array.from({ length: GRID_SLOTS }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={(e) => handleSlotClick(i, e)}
+              disabled={countdown > 0}
+              className="flex size-24 items-center justify-center rounded-xl border border-border bg-background/60"
+            >
+              {activeSlot === i && stimulus === "go" && (
+                <span
+                  style={{ width: targetSize, height: targetSize }}
+                  className={cn("rounded-full bg-primary", fx === "pop" && "animate-pop")}
+                />
+              )}
+              {activeSlot === i && stimulus === "noGo" && (
+                <span className="size-14 rounded-lg bg-pulse" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,13 +1,16 @@
-import { ComingSoon } from "@/components/layout/coming-soon";
+"use client";
+
+import { Timer } from "lucide-react";
+
+import { PomodoroTimer } from "@/components/tools/pomodoro-timer";
+import { ToolLayout } from "@/components/tools/tool-layout";
+import { useToolSession } from "@/hooks/use-tool-session";
 
 export default function PomodoroPage() {
+  useToolSession("pomodoro");
   return (
-    <ComingSoon
-      title="Pomodoro"
-      description="Temporizador configurable de bloques de trabajo y descanso (RF-06). Se implementa en el Sprint 3."
-      sprint="Sprint 3"
-      backHref="/herramientas"
-      backLabel="Herramientas"
-    />
+    <ToolLayout title="Pomodoro" icon={Timer} backHref="/herramientas">
+      <PomodoroTimer />
+    </ToolLayout>
   );
 }

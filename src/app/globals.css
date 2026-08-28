@@ -172,11 +172,54 @@
   }
 }
 
+/* Variantes para elementos que además se posicionan con transform:
+   translate(...) inline (p. ej. los puntos de Focus Flow/MOT) — pop-in/
+   shake-x de arriba pisan cualquier translate porque transform no es
+   aditivo entre la cascada de animación y el estilo inline. Estas
+   retienen la posición (--dot-x/--dot-y, ver focus-flow-game.tsx) en
+   cada frame de la animación. */
+@keyframes dot-pop-in {
+  0% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) scale(0.82);
+  }
+  55% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) scale(1.1);
+  }
+  100% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) scale(1);
+  }
+}
+
+@keyframes dot-shake-x {
+  0%,
+  100% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) translateX(0);
+  }
+  20% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) translateX(-6px);
+  }
+  40% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) translateX(6px);
+  }
+  60% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) translateX(-4px);
+  }
+  80% {
+    transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) translateX(4px);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .animate-pop {
     animation: pop-in 220ms ease-out;
   }
   .animate-shake {
     animation: shake-x 300ms ease-in-out;
+  }
+  .animate-dot-pop {
+    animation: dot-pop-in 220ms ease-out;
+  }
+  .animate-dot-shake {
+    animation: dot-shake-x 300ms ease-in-out;
   }
 }

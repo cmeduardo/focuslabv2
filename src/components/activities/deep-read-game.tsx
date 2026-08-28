@@ -44,6 +44,10 @@ export function DeepReadGame({
   const questionTimeoutsRef = useRef(0);
   const questionShownAtRef = useRef(0);
   const questionTimesRef = useRef<number[]>([]);
+  const firstSelectedAtRef = useRef<number | null>(null);
+  const firstPickLatencyMsRef = useRef<(number | null)[]>([]);
+  const wasCorrectSelectedRef = useRef(false);
+  const movedAwayFromCorrectRef = useRef<boolean[]>([]);
   const changesThisQuestionRef = useRef(0);
   const answerChangesRef = useRef<number[]>([]);
   const answersCorrectRef = useRef<boolean[]>([]);
@@ -155,6 +159,27 @@ export function DeepReadGame({
       const minutes = ms / 60000;
       return minutes > 0 ? Math.round(words / minutes) : 0;
     });
+    // Tiempo de lectura vs. efectividad, por párrafo: leer rápido no vale
+    // nada si después no se responde bien — cruza readingTimesMs/wpm
+    // contra la precisión de las 3 preguntas de ESE párrafo específico.
+    const questionsPerPassage = passages[0]?.questions.length ?? 3;
+    const readingTimeVsAccuracy = readingTimesRef.current.map((ms, i) => {
+      const passageAnswers = answersCorrectRef.current.slice(
+        i * questionsPerPassage,
+        i * questionsPerPassage + questionsPerPassage,
+      );
+      const passageCorrect = passageAnswers.filter(Boolean).length;
+      return {
+        passageIndex: i,
+        readingTimeMs: ms,
+        wpm: readingWpm[i] ?? 0,
+        correctCount: passageCorrect,
+        totalQuestions: passageAnswers.length,
+        accuracyPct: passageAnswers.length
+          ? Math.round((passageCorrect / passageAnswers.length) * 100)
+          : 0,
+      };
+    });
     onFinish({
       accuracy,
       levelReached: null,
@@ -163,7 +188,10 @@ export function DeepReadGame({
         totalQuestions,
         readingTimesMs: readingTimesRef.current,
         readingWpm,
+        readingTimeVsAccuracy,
         questionTimesMs: questionTimesRef.current,
+        firstPickLatencyMs: firstPickLatencyMsRef.current,
+        movedAwayFromCorrect: movedAwayFromCorrectRef.current,
         answerChanges: answerChangesRef.current,
         answersCorrect: answersCorrectRef.current,
         literalAccuracy,
@@ -183,6 +211,8 @@ export function DeepReadGame({
   function goToNext() {
     if (questionIndex + 1 < passage.questions.length) {
       questionShownAtRef.current = performance.now();
+      firstSelectedAtRef.current = null;
+      wasCorrectSelectedRef.current = false;
       setQuestionIndex((q) => q + 1);
       setSelected(null);
       setConfirmed(false);
@@ -202,6 +232,8 @@ export function DeepReadGame({
       Math.round(performance.now() - readingStartRef.current),
     );
     questionShownAtRef.current = performance.now();
+    firstSelectedAtRef.current = null;
+    wasCorrectSelectedRef.current = false;
     setStage("question");
     setQuestionIndex(0);
     setSelected(null);
@@ -222,6 +254,12 @@ export function DeepReadGame({
 
   function handleSelectOption(optionIndex: number) {
     if (confirmed || finishedRef.current) return;
+    if (firstSelectedAtRef.current === null) {
+      firstSelectedAtRef.current = performance.now();
+    }
+    if (optionIndex === question.correctIndex) {
+      wasCorrectSelectedRef.current = true;
+    }
     if (selected !== null && selected !== optionIndex) {
       changesThisQuestionRef.current += 1;
     }
@@ -242,6 +280,14 @@ export function DeepReadGame({
     }
     const elapsed = Math.round(performance.now() - questionShownAtRef.current);
     questionTimesRef.current.push(elapsed);
+    firstPickLatencyMsRef.current.push(
+      firstSelectedAtRef.current !== null
+        ? Math.round(firstSelectedAtRef.current - questionShownAtRef.current)
+        : null,
+    );
+    movedAwayFromCorrectRef.current.push(
+      wasCorrectSelectedRef.current && selected !== question.correctIndex,
+    );
     answerChangesRef.current.push(changesThisQuestionRef.current);
     changesThisQuestionRef.current = 0;
 
@@ -276,6 +322,14 @@ export function DeepReadGame({
     }
     questionTimesRef.current.push(
       Math.round(performance.now() - questionShownAtRef.current),
+    );
+    firstPickLatencyMsRef.current.push(
+      firstSelectedAtRef.current !== null
+        ? Math.round(firstSelectedAtRef.current - questionShownAtRef.current)
+        : null,
+    );
+    movedAwayFromCorrectRef.current.push(
+      wasCorrectSelectedRef.current && selected !== question.correctIndex,
     );
     answerChangesRef.current.push(changesThisQuestionRef.current);
     changesThisQuestionRef.current = 0;

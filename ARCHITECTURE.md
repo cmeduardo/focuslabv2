@@ -116,7 +116,7 @@ auth.users (Supabase Auth)
                  │           ├─ 1:N ─ interaction_events (session_id, user_id, event_type, payload, occurred_at)
                  │           ├─ 1:N ─ activity_results (session_id, user_id, activity_type, duration_ms, accuracy, level_reached, metrics)
                  │           └─ 1:1 ─ ai_reports (session_id, status, attentional_profile, strengths, areas_for_improvement, recommendations, raw_response)
-                 ├─ 1:N ─ pomodoro_sessions (user_id, session_id?, work_duration_minutes, break_duration_minutes, completed_cycles, interrupted)
+                 ├─ 1:N ─ pomodoro_sessions (user_id, session_id?, work_duration_minutes, break_duration_minutes, completed_cycles, interrupted, pause_count, paused_ms)
                  ├─ 1:N ─ kanban_tasks (user_id, title, status, position)
                  ├─ 1:N ─ habits (user_id, name, archived)
                  │           └─ 1:N ─ habit_logs (habit_id, user_id, log_date, completed)
@@ -265,12 +265,12 @@ el perfil atencional.
 
 | Actividad | Paradigma / mecánica | `accuracy` | `level_reached` |
 |---|---|---|---|
-| Reaction Test | Mecánica fusionada (2026-08-27): SART (Robertson et al. 1997) con incertidumbre espacial como columna vertebral —cadencia VARIABLE (900–2000ms, rompe el ritmo predecible), 90s, el estímulo aparece en 1 de 9 celdas al azar— más tiempo de reacción y puntería tipo PVT: el círculo-objetivo se achica con la racha (72px → 32px) y se mide la distancia del clic a su centro (`aimDistancesPx`). Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). Cualquier clic fuera de la celda activa —incluso sin estímulo visible— cuenta como arranque en falso (`falseStarts`). | aciertos / (aciertos + omisiones) | — |
-| Focus Flow | Multiple Object Tracking (Pylyshyn & Storm, 1988): 8 rondas, cada una resalta 2–3 puntos ("blancos") entre 6–13 durante ~1.8s; luego todos quedan idénticos y se mueven al azar (rebotando en los bordes) durante 4.2–7.5s, cada vez más rápido y con más puntos; al detenerse, hay que marcar cuáles eran los blancos. Posiciones y velocidades viven en refs, se escriben al DOM vía `requestAnimationFrame` (nunca por `setState`, para no tirar el framerate). Paradigma real detrás de "seguimiento visual continuo" (el one-liner original de la tesis para esta actividad), y mecánica distinta de todo el resto del sprint. | blancos identificados / blancos totales, sumado en las 8 rondas | cantidad de puntos de la ronda final (13, proxy de dificultad máxima) |
-| Memory Matrix | secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon) | clics correctos / clics totales | último nivel completo (máx. 10) |
+| Reaction Test | Mecánica fusionada (2026-08-27): SART (Robertson et al. 1997) con incertidumbre espacial como columna vertebral —cadencia VARIABLE (900–2000ms, rompe el ritmo predecible), 90s, el estímulo aparece en 1 de 9 celdas al azar— más tiempo de reacción y puntería tipo PVT: el círculo-objetivo se achica con la racha (72px → 32px) y se mide la distancia del clic a su centro (`aimDistancesPx`). Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). Cualquier clic fuera de la celda activa —incluso sin estímulo visible— cuenta como arranque en falso (`falseStarts`). Cuenta regresiva de 3s ("Preparate…") antes del primer ensayo (2026-08-28, evita que el primer RT quede contaminado por el arranque sorpresivo) — se muestra como overlay sobre la misma grilla, no como una pantalla aparte (el cambio de layout no dejaba acertar el primer círculo). Segundo bug encontrado en la misma función: al agregar demora antes de MOSTRAR el primer estímulo, el timer que lo OCULTA seguía disparando a los `VISIBLE_MS` fijos de siempre — el círculo quedaba visible una fracción del tiempo real (300ms en vez de 700ms), prácticamente imposible de acertar. Arreglado con un único `preDelay` (= `SOA_MIN_MS`, el mismo colchón natural que ya separa a los demás ensayos) aplicado a los tres timers del primer ensayo (mostrar/ocultar/siguiente) a la vez, no solo al de mostrar. | aciertos / (aciertos + omisiones) | — |
+| Focus Flow | Multiple Object Tracking (Pylyshyn & Storm, 1988): 8 rondas, cada una resalta 2–3 puntos ("blancos") entre 6–13 durante ~1.8s; luego todos quedan idénticos y se mueven al azar (rebotando en los bordes) durante 4.2–7.5s, cada vez más rápido y con más puntos; al detenerse, hay que marcar cuáles eran los blancos. Posiciones y velocidades viven en refs, se escriben al DOM vía `requestAnimationFrame` (nunca por `setState`, para no tirar el framerate) usando `--dot-x`/`--dot-y` (variables CSS) además del `transform` inline — bug real encontrado y arreglado 2026-08-28: `.animate-pop`/`.animate-shake` (compartidas con el resto de las actividades) definen su propio `transform: scale(...)`/`translateX(...)`, que pisaba por completo el `translate()` inline usado para posicionar cada punto — al marcar un punto correcto/incorrecto en el recall, saltaba a la esquina superior izquierda. Los puntos ahora usan `.animate-dot-pop`/`.animate-dot-shake` (mismos keyframes, pero leyendo `--dot-x`/`--dot-y` en cada frame de la animación en vez de un `transform` fijo) — ver `globals.css`. Paradigma real detrás de "seguimiento visual continuo" (el one-liner original de la tesis para esta actividad), y mecánica distinta de todo el resto del sprint. | blancos identificados / blancos totales, sumado en las 8 rondas | cantidad de puntos de la ronda final (13, proxy de dificultad máxima) |
+| Memory Matrix | Secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon). Hasta 3 intentos (2026-08-28, antes terminaba en el primer error — con eso, alguien que fallaba en nivel 1-2 dejaba apenas unos pocos clics, muy poca señal para que el agente de IA opine con algo de certeza): un error reinicia desde el nivel 1, pero solo si ese intento se quedó corto (menos de nivel 5) — si llega lejos o lo completa perfecto, esa señal ya alcanza y no repite. `level_reached` final es el mejor intento. | clics correctos / clics totales | mejor nivel completo entre los intentos (máx. 10) |
 | Word Sprint | Efecto Stroop (Stroop, 1935): nombre de un color renderizado con tinta de otro color (~30% congruente / 70% incongruente), responder al color de la tinta ignorando la palabra. 24 rondas, 1.6s/ronda. La interferencia (RT incongruente − RT congruente, `metrics.incongruentAvgMs`/`congruentAvgMs`) es la señal diagnóstica — mucho más intuitiva para el usuario que una decisión léxica abstracta. | % respuestas correctas | — |
 | Pattern Hunt | Búsqueda por *conjunción* (Treisman & Gelade, 1980) con distractor "casi-objetivo": el objetivo combina forma+color+tamaño (estrella violeta grande) entre 3 tipos de distractor (estrellas grises, círculos violeta, estrellas violeta chicas) — no hay pop-out, exige revisión serial. 10 rondas, cuadrícula 5×5 → 9×9, con límite de 7s por ronda. | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo (9) |
-| Deep Read | Cada partida elige 3 párrafos al azar (sin repetir, orden aleatorio) de un banco de 8, 3 preguntas por párrafo (2 literales + 1 de inferencia, 9 en total). Tiempo límite real por párrafo (45s) y por pregunta (20s, corre incluso durante una relectura) — si se acaba, avanza solo y cuenta como no respondida (`readingTimeouts`/`questionTimeouts`). Los distractores de las 24 preguntas están escritos para ser creíbles dentro del tema del párrafo (misma dirección que la opción correcta, algunos combinan dos datos del texto) — no se pueden adivinar por sentido común sin leer. El participante puede releer el párrafo antes de confirmar (`rereadCount`/`rereadTimeMs`) y cambiar de opción antes de confirmar (`answerChanges`) — analiza no solo cuánto entendió sino *cómo* llegó a la respuesta (relectura, dudas, tiempo por pregunta `questionTimesMs`, precisión literal vs. inferencia por separado). También mide resistencia a la distracción (`distractionsShown`/`distractionsClicked`, notificación a ignorar durante la lectura). | % preguntas correctas | — |
+| Deep Read | Cada partida elige 3 párrafos al azar (sin repetir, orden aleatorio) de un banco de 8, 3 preguntas por párrafo (2 literales + 1 de inferencia, 9 en total). Los párrafos se reescribieron una segunda vez (2026-08-28): la primera versión, sobre hábitos de estudio genéricos, seguía siendo adivinable sin leer aunque los distractores fueran plausibles — son afirmaciones que cualquier adulto ya intuye. La versión actual usa fenómenos concretos de ciencia cognitiva (efecto de posición serial, interferencia proactiva/retroactiva, curva del olvido, consolidación durante el sueño, carga de la memoria de trabajo, efecto Zeigarnik, etc.) con mecanismos y condiciones específicas que solo se sacan leyendo el párrafo exacto. Tiempo límite real por párrafo (45s) y por pregunta (20s, corre incluso durante una relectura) — si se acaba, avanza solo y cuenta como no respondida (`readingTimeouts`/`questionTimeouts`). El participante puede releer el párrafo antes de confirmar (`rereadCount`/`rereadTimeMs`) y cambiar de opción antes de confirmar (`answerChanges`) — analiza no solo cuánto entendió sino *cómo* llegó a la respuesta (relectura, dudas, tiempo por pregunta `questionTimesMs`, precisión literal vs. inferencia por separado). También mide resistencia a la distracción (`distractionsShown`/`distractionsClicked`, notificación a ignorar durante la lectura). | % preguntas correctas | — |
 
 `metrics` (jsonb) guarda el detalle específico de cada una (tiempos de
 reacción individuales, respuestas por ronda, etc.) para el informe de IA
@@ -294,29 +294,148 @@ descrito en la tabla, cada actividad guarda:
   prueba), `aimDistancesPx`/`targetSizesPx` (qué tan lejos del centro cae
   cada clic válido — distingue error motriz de error atencional),
   `falseStarts` (clics fuera de la celda activa, incluso sin estímulo
-  visible — impulsividad).
+  visible — impulsividad); `trialLog` (cada ensayo: índice, tipo, celda,
+  resultado, RT — reconstruible ensayo a ensayo, 2026-08-28) y
+  `hitsBySlot`/`omissionsBySlot` (distribución espacial del error entre
+  las 9 celdas — ¿se concentra en los bordes?).
 - **Focus Flow** (MOT): por ronda, `targetsPerRound`, `correctPerRound`,
   `falsePositivesPerRound` (blanco confundido con distractor),
   `missedPerRound` (blanco nunca marcado), `speedPxPerSec`,
   `dotsPerRound`, `trackingDurationMsPerRound`, `recallLatencyMs` (tiempo
   entre que los puntos se detienen y el primer clic — duda vs. respuesta
-  fluida).
+  fluida); `pickLatenciesMsPerRound` (2026-08-28, tiempo entre cada clic
+  sucesivo del recall, no solo el primero) y
+  `falsePositiveDistancesPxPerRound` (distancia de cada clic errado al
+  blanco real más cercano — confundir con un distractor cercano vs.
+  adivinar al azar).
 - **Memory Matrix**: `clickLatenciesMs` (tiempo entre cada clic durante el
-  recuerdo — hesitación vs. respuesta fluida), `mistakeAtStep` (en qué
-  punto de la secuencia falló: olvido temprano vs. tardío).
+  recuerdo — hesitación vs. respuesta fluida); `levelOfEachClick` y
+  `attemptOfEachClick` (2026-08-28, arrays paralelos a `clickLatenciesMs`
+  para poder agrupar la latencia por nivel y por intento) y
+  `attemptOfEachSequence` (idem para `sequenceLengths`); `attempts`
+  (2026-08-28, reemplaza los antiguos `mistakeAtLevel`/`mistakeAtStep`
+  sueltos — un array con un objeto por intento: `attempt, levelReached,
+  mistakeAtStep, mistakeCellDistance` — `mistakeCellDistance` es la
+  distancia en la grilla entre la celda tocada por error y la esperada,
+  resbalón motor vs. fallo real de memoria).
 - **Word Sprint (Stroop)**: `congruentAccuracy`/`incongruentAccuracy`
   (no solo el RT sino también si la interferencia genera errores),
   `postErrorAvgMs`/`postCorrectAvgMs` (enlentecimiento post-error: ¿se
-  frena y se cuida después de fallar, o sigue igual de impulsivo?).
+  frena y se cuida después de fallar, o sigue igual de impulsivo?);
+  `trialLog` (2026-08-28, cada ronda: palabra, tinta, elegido, correcto,
+  RT — permite ver qué pares de colores confunde más) y
+  `interferenceByHalf` (costo de interferencia en la primera vs. segunda
+  mitad de las 24 rondas — ¿el control cognitivo se degrada con la
+  fatiga?).
 - **Pattern Hunt**: `searchSlopeMsPerCell` (regresión simple tiempo vs.
   tamaño de cuadrícula — la firma real de búsqueda serial vs. paralela),
   `wrongClicksByType` (a qué distractor confunde más: el "casi-objetivo"
-  chico, el de igual color, o el de igual forma).
+  chico, el de igual color, o el de igual forma); `clickSequencePerRound`
+  (2026-08-28, cada clic —correcto o no— con su celda y tiempo desde el
+  inicio de la ronda, permite reconstruir si la búsqueda fue sistemática
+  o al azar, no solo el tiempo total).
 - **Deep Read**: `readingWpm` por párrafo (velocidad de lectura), que
   cruzado con `rereadCount` distingue leer rápido-y-bien de leer
   rápido-pero-inseguro; `readingTimeouts`/`questionTimeouts` (cuántas
   veces se acabó el tiempo límite, agregado 2026-08-27 junto con el resto
-  del tiempo límite real).
+  del tiempo límite real); `firstPickLatencyMs` (2026-08-28, tiempo hasta
+  la primera opción elegida, separado del tiempo hasta confirmar) y
+  `movedAwayFromCorrect` (booleano por pregunta: en algún momento
+  seleccionó la correcta y después la cambió — "se la creyó y dudó",
+  distinto de corregirse hacia la correcta, antes indistinguibles porque
+  `answerChanges` solo contaba, no decía la dirección); `readingTimeVsAccuracy`
+  (pedido directo, 2026-08-28: cruza `readingTimesMs`/`readingWpm` contra
+  la precisión de las 3 preguntas de ESE párrafo específico — leer rápido
+  no vale nada si después no se responde bien).
+
+### Pulso de sesión (2026-08-28, reemplaza al autorreporte por-actividad)
+
+Primer intento: una pantalla de autorreporte obligatoria
+(`PostActivityRating`) entre que terminaba cada juego y se guardaba el
+resultado, integrada en `useActivityResult`. Feedback directo tras
+probarlo: se sentía repetitivo y nada agradable — 6 actividades, 6
+pantallas iguales seguidas. Se sacó por completo de
+`useActivityResult`/`ActivityPhase` (volvió a las tres fases originales,
+`finish()` guarda directo otra vez) y se reemplazó por un **pulso a nivel
+de sesión**: `SessionPulseCheck`
+(`src/components/activities/session-pulse.tsx`), montado en
+`/actividades` (el listado, el momento "entre actividades" — nunca
+interrumpe mientras se está jugando). Cada vez que se visita esa página,
+cuenta cuántas filas de `activity_results` tiene la sesión actual; cada
+3 actividades completadas (`Math.floor(count / 3)` como número de hito)
+dispara un `toast.custom` de `sonner` con emojis tocables — sin pantalla
+aparte, sin botón "Saltar" explícito: tocás una carita o lo ignorás y se
+cierra solo a los 15s. Qué hito ya se mostró queda en `sessionStorage`
+(por `session_id`, no se repite si volvés a la página). La respuesta (o
+`null` si se cerró solo sin tocar nada) se registra vía
+`logEvent("session_pulse", { rating, completedCount, milestone })` sobre
+`interaction_events` — nuevo valor de enum, no una columna nueva. Con 6
+actividades por sesión son como mucho 2 pulsos, y al ser por sesión (no
+por actividad) encaja mejor con el criterio de validación de H2 que ya
+compara el informe de *sesión completa*, no informes por actividad —
+bonus: comparar el pulso temprano (hito 1) contra el tardío (hito 2) da
+un espejo subjetivo del decaimiento de vigilancia que ya miden
+objetivamente Reaction Test/Word Sprint.
+
+## 7quater. Las cuatro herramientas de productividad (Sprint 3)
+
+Mismo patrón de capas que las actividades (§7ter), pero para datos
+persistentes en vez de un resultado de una sola vez: un servicio plano en
+`src/lib/services/{pomodoro,kanban,habits,calendar-events}.ts` (funciones
+`async (supabase, params) => …`, sin `server-only` — se llaman desde
+Client Components con el cliente de browser, sujeto a RLS `*_all_own`,
+igual que `activity-results.ts`) + un componente en
+`src/components/tools/*.tsx` que la `page.tsx` monta dentro de
+`ToolLayout` (`src/components/tools/tool-layout.tsx`, calco de
+`ActivityLayout`). Cada herramienta usa `useToolSession(tool)`
+(`src/hooks/use-tool-session.ts`) para emitir `tool_start`/`tool_end` al
+motor de captura al montar/desmontar la página (RF-06 a RF-09). El
+esquema ya existía desde Sprint 0 (`supabase/migrations/…0007`–`…0010`) —
+esta ronda fue solo UI + CRUD, sin migraciones nuevas.
+
+| Herramienta | Mecánica | Datos que guarda |
+|---|---|---|
+| Pomodoro | Bloques de trabajo/descanso configurables (25/5 min por defecto, cantidad de ciclos programable), alternan con cuenta regresiva de 1s. Al terminar un descanso (salvo el último ciclo) **no arranca solo el siguiente bloque**: pasa a una fase `"ready"` que espera a que el participante toque "Empezar ciclo" — mide la latencia de reanudación tras el descanso (`tool_progress` "cycle_resume"), mismo constructo que `recallLatencyMs` en Focus Flow o `questionTimesMs` en Deep Read (2026-08-28, a pedido explícito: "más interactivo" + más señal de comportamiento). Al completar todos los ciclos cierra solo con una pantalla de resumen. Al pasar de trabajo a descanso suma un ciclo (`completed_cycles`, persistido en cada transición). "Detener" en cualquier fase (incluida `"ready"`) marca `interrupted: true` + `logEvent("tool_interrupt")`; si el participante navega fuera con la sesión abierta, un cleanup best-effort también la marca interrumpida. Pausar congela el conteo (no resta del tiempo del bloque) pero **sí queda registrado** (`pause_count`/`paused_ms`, agregado 2026-08-28 tras notar que `ended_at - started_at` por sí solo no distingue tiempo enfocado real de tiempo con la sesión abierta pero pausada). | Una fila en `pomodoro_sessions` por sesión de Pomodoro iniciada (duración configurada, ciclos completados, si terminó interrumpida, cuántas veces pausó y cuánto tiempo total). |
+| Kanban | 3 columnas (pendiente/en progreso/completado). Mover una tarjeta funciona con drag-and-drop nativo (sin librería — el proyecto no tiene `dnd-kit` ni similar) o con un `<Select>` de respaldo por tarjeta (accesibilidad/touch). `position` usa `Date.now()` al crear o mover, alcanza para ordenar sin una consulta de conteo extra. | Filas en `kanban_tasks` (título, descripción opcional, estado, posición). |
+| Hábitos | Ventana rodante de los últimos 7 días terminando hoy, por hábito. Decisión de diseño (2026-08-27, feedback directo de Eduardo): **solo se puede marcar/desmarcar el día de hoy** — los otros 6 son historial de solo lectura (sin `onClick`), para que sea un check-in del momento real y no una bitácora editable en retrospectiva (esto también cuida la validez del dato para la tesis: no se puede "completar" un hábito hacia atrás). El toggle de hoy es un `upsert` sobre `habit_logs` (`unique(habit_id, log_date)`); rachas de 3/5/7 días disparan `playCombo()` + un toast en vez del `playHit()` normal. Archivar es soft-delete (`archived`), conserva el historial. | Filas en `habits` + `habit_logs` (una por hábito×día marcado). |
+| Calendario | Semana actual por defecto (lunes a domingo), navegación semana anterior/siguiente. Grid de 7 columnas (colapsa a 1 en mobile), cada día lista sus eventos ordenados por hora con un botón "+" para crear uno (hora de inicio/fin vía `<input type="time">`, combinada con la fecha de esa columna). Señal de seguimiento real vs. planeado (2026-08-28): cuando un evento ya pasó (`end_at < ahora`) y todavía no tiene respuesta (`completed` es `null`), la tarjeta muestra "¿Lo hiciste?" con Sí/No en vez de la hora — una vez respondido queda fijo (no se puede cambiar) y se ve como una pill con check o tachado. Es autorreporte de función ejecutiva/planificación, dato relevante para el perfil atencional más allá de cuántos eventos agendó. | Filas en `calendar_events` (título, rango `start_at`/`end_at`, `completed`). |
+
+### Instrumentación granular: `tool_progress` (2026-08-28)
+
+Pedido explícito (mismo espíritu que "Profundidad de `metrics`" en
+§7ter, aplicado a herramientas): escarbar la mayor cantidad de
+información posible del comportamiento, no solo el resultado final de
+cada acción. En vez de agregar columnas nuevas a cada tabla de
+herramienta cada vez que se quiere capturar una señal más (cada
+migración hay que pegarla a mano en el dashboard de Supabase — no hay
+CLI enlazado, ver §8 más abajo), esta capa vive en `interaction_events`
+(ya existente, `payload` jsonb libre) bajo un nuevo valor de enum,
+`tool_progress` — hitos granulares dentro de una herramienta, análogo a
+`activity_start`/`activity_end` pero para eventos intermedios. Las
+tablas de resumen (`pomodoro_sessions`, etc.) se quedan solo con
+agregados finales de la sesión.
+
+Eventos actuales (`logEvent("tool_progress", { tool, type, ... })`):
+
+- **Pomodoro**: `work_complete`/`break_complete` (`cycleIndex, wallMs` —
+  tiempo real de esa fase, incluye cualquier pausa dentro de ese bloque
+  específico), `cycle_resume` (`cycleIndex, latencyMs` — ver checkpoint
+  `"ready"` en la tabla de arriba). Con esto se puede reconstruir el
+  timeline completo de una sesión y ver si la latencia de reanudación
+  crece en los últimos ciclos (mismo análisis que
+  `omissionsByThirdPct`/`earlyAvgMs`/`lateAvgMs` en las actividades).
+- **Kanban**: `task_created`; `status_change` (`taskId, from, to,
+  msSinceCreated`); `task_deleted` (`taskId, status, msSinceCreated`) —
+  permite reconstruir cuánto vive una tarea en cada columna sin una
+  tabla de historial.
+- **Hábitos**: `checkin` (`habitId, streak, latencyMs`), solo al marcar
+  como cumplido — `latencyMs` es el tiempo desde que se abrió la
+  herramienta hasta el check-in, qué tan rápido se compromete con el
+  hábito de hoy; `habit_created`.
+- **Calendario**: `event_created` (`leadTimeMs` = con cuánta
+  anticipación agenda, `start_at - ahora`); `week_navigated`
+  (`direction, weeksFromToday`) en los botones anterior/siguiente/Hoy;
+  `reflection` (`eventId, completed`) al responder "¿Lo hiciste?".
 
 ## 8. Variables de entorno
 
@@ -340,7 +459,8 @@ Ver `.env.local.example`. Resumen:
   Validado contra el proyecto real de Supabase. Configuración del dashboard
   aplicada y proyecto desplegado en Vercel, ver §7bis.
 - **Sprint 2 (hecho)** — las seis actividades cognitivas, ver §7ter.
-- **Sprint 3** — las cuatro herramientas de productividad.
+- **Sprint 3 (hecho)** — las cuatro herramientas de productividad, ver
+  §7quater.
 - **Sprint 4** — flujo de informe con IA (`generateAttentionReport`,
   endpoints de `/api`) + panel administrativo.
 - **Sprint 5** — integración, pruebas, pulido de UI, despliegue en Vercel.

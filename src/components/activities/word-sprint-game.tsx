@@ -45,6 +45,17 @@ export function WordSprintGame({
   const incongruentTotalRef = useRef(0);
   const postErrorTimesRef = useRef<number[]>([]);
   const postCorrectTimesRef = useRef<number[]>([]);
+  const trialLogRef = useRef<
+    {
+      round: number;
+      congruent: boolean;
+      wordIndex: number;
+      inkIndex: number;
+      chosenIndex: number | null;
+      correct: boolean;
+      rt: number | null;
+    }[]
+  >([]);
   const wasLastErrorRef = useRef(false);
   const correctRef = useRef(0);
   const incorrectRef = useRef(0);
@@ -63,6 +74,25 @@ export function WordSprintGame({
       arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
     const pct = (n: number, total: number) =>
       total ? Math.round((n / total) * 100) : 0;
+    // Costo de interferencia (incongruente − congruente) en la primera vs.
+    // segunda mitad de la sesión — ¿el control cognitivo se degrada con la
+    // fatiga, o se mantiene estable? Se calcula del propio trialLog en vez
+    // de sumar otro ref paralelo.
+    const half = Math.ceil(TOTAL_ROUNDS / 2);
+    const interferenceFor = (trials: typeof trialLogRef.current) => {
+      const withRt = trials.filter((t) => t.rt !== null);
+      const congruentAvg = avg(
+        withRt.filter((t) => t.congruent).map((t) => t.rt as number),
+      );
+      const incongruentAvg = avg(
+        withRt.filter((t) => !t.congruent).map((t) => t.rt as number),
+      );
+      return incongruentAvg - congruentAvg;
+    };
+    const interferenceByHalf = [
+      interferenceFor(trialLogRef.current.filter((t) => t.round < half)),
+      interferenceFor(trialLogRef.current.filter((t) => t.round >= half)),
+    ];
     onFinish({
       accuracy,
       levelReached: null,
@@ -81,6 +111,8 @@ export function WordSprintGame({
         ),
         postErrorAvgMs: avg(postErrorTimesRef.current),
         postCorrectAvgMs: avg(postCorrectTimesRef.current),
+        interferenceByHalf,
+        trialLog: trialLogRef.current,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
       },
@@ -103,6 +135,15 @@ export function WordSprintGame({
     const raf = requestAnimationFrame(() => setBarActive(true));
     timerRef.current = setTimeout(() => {
       timeoutsRef.current += 1;
+      trialLogRef.current.push({
+        round,
+        congruent: trial.congruent,
+        wordIndex: trial.wordIndex,
+        inkIndex: trial.inkIndex,
+        chosenIndex: null,
+        correct: false,
+        rt: null,
+      });
       wasLastErrorRef.current = true;
       streakRef.current = 0;
       setStreak(0);
@@ -134,6 +175,15 @@ export function WordSprintGame({
         incongruentTotalRef.current += 1;
         if (isCorrect) incongruentCorrectRef.current += 1;
       }
+      trialLogRef.current.push({
+        round,
+        congruent: trial.congruent,
+        wordIndex: trial.wordIndex,
+        inkIndex: trial.inkIndex,
+        chosenIndex: colorIndex,
+        correct: isCorrect,
+        rt,
+      });
       wasLastErrorRef.current = !isCorrect;
       if (isCorrect) {
         correctRef.current += 1;
@@ -153,7 +203,7 @@ export function WordSprintGame({
       }
       setTimeout(nextRound, 450);
     },
-    [feedback, trial, nextRound],
+    [feedback, trial, round, nextRound],
   );
 
   const word = STROOP_COLORS[trial.wordIndex];
