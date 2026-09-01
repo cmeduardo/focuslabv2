@@ -25,15 +25,17 @@ export function ComingSoon({
     <div className="space-y-4">
       <Link
         href={backHref}
-        className="text-sm text-muted-foreground underline underline-offset-4"
+        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         ← {backLabel}
       </Link>
-      <Card>
+      <Card className="border-dashed">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{title}</CardTitle>
-            <Badge variant="outline">{sprint}</Badge>
+            <CardTitle className="font-heading text-xl">{title}</CardTitle>
+            <Badge className="bg-secondary text-secondary-foreground">
+              {sprint}
+            </Badge>
           </div>
           <CardDescription>{description}</CardDescription>
         </CardHeader>

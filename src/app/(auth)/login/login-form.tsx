@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Lock, Mail } from "lucide-react";
 import { useActionState } from "react";
 
 import { login, type LoginState } from "@/app/(auth)/login/actions";
@@ -24,7 +25,9 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Iniciar sesión</CardTitle>
+        <CardTitle className="font-heading text-xl">
+          Bienvenido de nuevo
+        </CardTitle>
         <CardDescription>
           Autenticación con correo y contraseña vía Supabase Auth (RF-01).
         </CardDescription>
@@ -33,7 +36,10 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
         <input type="hidden" name="redirect" value={redirectTo} />
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
+            <Label htmlFor="email" className="gap-1.5">
+              <Mail className="size-3.5 text-muted-foreground" />
+              Correo electrónico
+            </Label>
             <Input
               id="email"
               name="email"
@@ -44,7 +50,10 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password" className="gap-1.5">
+              <Lock className="size-3.5 text-muted-foreground" />
+              Contraseña
+            </Label>
             <Input
               id="password"
               name="password"
@@ -63,10 +72,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           </Button>
           <p className="text-sm text-muted-foreground">
             ¿No tienes cuenta?{" "}
-            <Link
-              href="/registro"
-              className="font-medium text-foreground underline"
-            >
+            <Link href="/registro" className="font-medium text-primary hover:underline">
               Regístrate
             </Link>
           </p>

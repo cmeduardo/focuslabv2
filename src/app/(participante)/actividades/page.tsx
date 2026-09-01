@@ -1,11 +1,4 @@
-import Link from "next/link";
-
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ActionTile } from "@/components/dashboard/action-tile";
 import { ACTIVITIES } from "@/lib/constants/nav";
 
 const SLUG_TO_ROUTE: Record<string, string> = {
@@ -21,25 +14,24 @@ export default function ActividadesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Actividades</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Actividades
+        </h1>
         <p className="text-muted-foreground">
           Actividades cognitivas gamificadas (RF-04). Cada resultado se
           guarda vinculado a tu sesión actual.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {ACTIVITIES.map((activity) => (
-          <Link
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ACTIVITIES.map((activity, i) => (
+          <ActionTile
             key={activity.slug}
             href={`/actividades/${SLUG_TO_ROUTE[activity.slug]}`}
-          >
-            <Card className="h-full transition-colors hover:bg-muted/50">
-              <CardHeader>
-                <CardTitle className="text-base">{activity.name}</CardTitle>
-                <CardDescription>{activity.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+            name={activity.name}
+            description={activity.description}
+            icon={activity.icon}
+            accent={i % 2 === 0 ? "signal" : "pulse"}
+          />
         ))}
       </div>
     </div>

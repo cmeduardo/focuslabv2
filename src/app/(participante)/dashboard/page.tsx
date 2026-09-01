@@ -1,55 +1,83 @@
-import Link from "next/link";
+import { FileText } from "lucide-react";
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FocusAperture } from "@/components/brand/focus-aperture";
+import { ActionTile } from "@/components/dashboard/action-tile";
+import { ACTIVITIES, TOOLS } from "@/lib/constants/nav";
+
+const ACTIVITY_ROUTE: Record<string, string> = {
+  reaction_test: "reaction-test",
+  focus_flow: "focus-flow",
+  memory_matrix: "memory-matrix",
+  word_sprint: "word-sprint",
+  pattern_hunt: "pattern-hunt",
+  deep_read: "deep-read",
+};
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Inicio</h1>
-        <p className="text-muted-foreground">
-          Bienvenido a FocusLab. Desde aquí puedes iniciar una sesión, hacer
-          las actividades cognitivas y usar tus herramientas de
-          productividad.
-        </p>
+    <div className="space-y-10">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-secondary/70 via-card to-card px-6 py-8 sm:px-8">
+        <FocusAperture
+          className="pointer-events-none absolute -top-10 -right-10 size-56 text-primary/10 sm:size-64"
+          animated
+        />
+        <div className="relative">
+          <span className="inline-flex items-center gap-2 rounded-full bg-background/70 px-3 py-1 text-xs font-medium tracking-wide text-primary uppercase">
+            <FocusAperture className="size-3.5" />
+            Tu sesión de hoy
+          </span>
+          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
+            ¿En qué querés enfocarte?
+          </h1>
+          <p className="mt-1 max-w-xl text-muted-foreground">
+            Elegí una actividad cognitiva o una herramienta de productividad.
+            Cada interacción se registra en tu sesión actual.
+          </p>
+        </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Link href="/actividades">
-          <Card className="transition-colors hover:bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base">Actividades</CardTitle>
-              <CardDescription>
-                Seis actividades cognitivas gamificadas.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/herramientas">
-          <Card className="transition-colors hover:bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base">Herramientas</CardTitle>
-              <CardDescription>
-                Pomodoro, Kanban, hábitos y calendario.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/informes">
-          <Card className="transition-colors hover:bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base">Mis informes</CardTitle>
-              <CardDescription>
-                Historial de sesiones e informes de perfil atencional.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-      </div>
+
+      <section>
+        <h2 className="mb-4 font-heading text-lg font-semibold">
+          Actividades cognitivas
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {ACTIVITIES.map((activity, i) => (
+            <ActionTile
+              key={activity.slug}
+              href={`/actividades/${ACTIVITY_ROUTE[activity.slug]}`}
+              name={activity.name}
+              description={activity.description}
+              icon={activity.icon}
+              accent={i % 2 === 0 ? "signal" : "pulse"}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-4 font-heading text-lg font-semibold">
+          Herramientas de productividad
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.map((tool, i) => (
+            <ActionTile
+              key={tool.slug}
+              href={`/herramientas/${tool.slug}`}
+              name={tool.name}
+              description={tool.description}
+              icon={tool.icon}
+              accent={i % 2 === 0 ? "pulse" : "signal"}
+            />
+          ))}
+          <ActionTile
+            href="/informes"
+            name="Mis informes"
+            description="Historial de sesiones y tu perfil atencional."
+            icon={FileText}
+            accent="signal"
+          />
+        </div>
+      </section>
     </div>
   );
 }
