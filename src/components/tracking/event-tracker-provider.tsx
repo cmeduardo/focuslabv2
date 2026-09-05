@@ -7,6 +7,7 @@ import type { InteractionEventType } from "@/lib/types/database";
 
 type EventTrackerContextValue = {
   sessionId: string;
+  userId: string;
   logEvent: (
     eventType: InteractionEventType,
     payload?: Record<string, unknown>,
@@ -27,7 +28,7 @@ export function EventTrackerProvider({
   const { logEvent } = useEventTracker({ sessionId, userId });
 
   return (
-    <EventTrackerContext.Provider value={{ sessionId, logEvent }}>
+    <EventTrackerContext.Provider value={{ sessionId, userId, logEvent }}>
       {children}
     </EventTrackerContext.Provider>
   );
