@@ -3,165 +3,128 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ActivityOutcome } from "@/hooks/use-activity-result";
-import { cn } from "@/lib/utils";
 
-const GAME_DURATION_MS = 30_000;
-const DISTRACTOR_CHANCE = 0.25;
+// Sustained Attention to Response Task (SART, Robertson et al., 1997):
+// flujo central de estímulos a cadencia fija — responder a cada uno
+// excepto al infrecuente, que hay que inhibir. La monotonía es
+// intencional: es lo que hace que la tarea exija atención sostenida real.
+const TOTAL_DURATION_MS = 90_000;
+const SOA_MS = 900;
+const VISIBLE_MS = 350;
+const NOGO_CHANCE = 0.2;
+const TOTAL_TRIALS = Math.floor(TOTAL_DURATION_MS / SOA_MS);
 
-type Tier = { spawnMin: number; spawnMax: number; windowMs: number };
-const TIERS: Tier[] = [
-  { spawnMin: 1600, spawnMax: 2000, windowMs: 800 },
-  { spawnMin: 1300, spawnMax: 1700, windowMs: 650 },
-  { spawnMin: 1000, spawnMax: 1400, windowMs: 550 },
-];
-
-type Spawn = {
-  id: number;
-  kind: "target" | "distractor";
-  top: number;
-  left: number;
-};
+type StimulusKind = "go" | "noGo";
 
 export function FocusFlowGame({
   onFinish,
 }: {
   onFinish: (outcome: ActivityOutcome) => void;
 }) {
-  const [timeLeft, setTimeLeft] = useState(GAME_DURATION_MS);
-  const [spawn, setSpawn] = useState<Spawn | null>(null);
-  const startRef = useRef(0);
+  const [trialIndex, setTrialIndex] = useState(0);
+  const [stimulus, setStimulus] = useState<StimulusKind | null>(null);
   const hitsRef = useRef(0);
-  const missesRef = useRef(0);
-  const falseAlarmsRef = useRef(0);
+  const omissionsRef = useRef(0);
+  const commissionsRef = useRef(0);
   const reactionTimesRef = useRef<number[]>([]);
-  const spawnAtRef = useRef<number | null>(null);
-  const spawnIdRef = useRef(0);
+  const stimulusAtRef = useRef<number | null>(null);
+  const currentKindRef = useRef<StimulusKind | null>(null);
+  const respondedRef = useRef(false);
   const finishedRef = useRef(false);
-  const tierReachedRef = useRef(1);
-
-  const currentTier = useCallback(() => {
-    const elapsed = performance.now() - startRef.current;
-    const tierIndex = Math.min(
-      TIERS.length - 1,
-      Math.floor(elapsed / (GAME_DURATION_MS / TIERS.length)),
-    );
-    tierReachedRef.current = tierIndex + 1;
-    return TIERS[tierIndex];
-  }, []);
 
   const finishGame = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     const hits = hitsRef.current;
-    const misses = missesRef.current;
-    const falseAlarms = falseAlarmsRef.current;
-    const total = hits + misses + falseAlarms;
-    const accuracy = total ? Math.round((hits / total) * 100) : 0;
+    const omissions = omissionsRef.current;
+    const commissions = commissionsRef.current;
+    const accuracy =
+      hits + omissions ? Math.round((hits / (hits + omissions)) * 100) : 0;
     onFinish({
       accuracy,
-      levelReached: tierReachedRef.current,
+      levelReached: null,
       metrics: {
         hits,
-        misses,
-        falseAlarms,
+        omissions,
+        commissions,
         reactionTimesMs: reactionTimesRef.current,
       },
     });
   }, [onFinish]);
 
-  // Marca el inicio real del juego (ref, no estado) al montar.
+  // Cada ensayo decide go/no-go y lo muestra un instante fijo. El setState
+  // real ocurre dentro de los setTimeout, nunca de forma síncrona acá.
   useEffect(() => {
-    startRef.current = performance.now();
-  }, []);
+    if (finishedRef.current) return;
+    if (trialIndex >= TOTAL_TRIALS) {
+      const endTimer = setTimeout(finishGame, 0);
+      return () => clearTimeout(endTimer);
+    }
 
-  // Corte a los 30s y contador visible — independiente del ciclo de spawns.
-  useEffect(() => {
-    const endTimer = setTimeout(finishGame, GAME_DURATION_MS);
-    const tick = setInterval(() => {
-      setTimeLeft(
-        Math.max(0, GAME_DURATION_MS - (performance.now() - startRef.current)),
-      );
-    }, 200);
+    const kind: StimulusKind = Math.random() < NOGO_CHANCE ? "noGo" : "go";
+
+    const showTimer = setTimeout(() => {
+      currentKindRef.current = kind;
+      respondedRef.current = false;
+      stimulusAtRef.current = performance.now();
+      setStimulus(kind);
+    }, 0);
+
+    const hideTimer = setTimeout(() => {
+      setStimulus(null);
+      if (kind === "go" && !respondedRef.current) {
+        omissionsRef.current += 1;
+      }
+      currentKindRef.current = null;
+    }, VISIBLE_MS);
+
+    const nextTimer = setTimeout(() => {
+      setTrialIndex((i) => i + 1);
+    }, SOA_MS);
+
     return () => {
-      clearTimeout(endTimer);
-      clearInterval(tick);
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(nextTimer);
     };
-  }, [finishGame]);
+  }, [trialIndex, finishGame]);
 
-  // Cuando no hay objetivo/distractor visible, programa el siguiente. El
-  // setState real ocurre dentro del setTimeout, nunca de forma síncrona acá.
-  useEffect(() => {
-    if (finishedRef.current || spawn !== null) return;
-    const tier = currentTier();
-    const delay =
-      tier.spawnMin + Math.random() * (tier.spawnMax - tier.spawnMin);
-    const id = setTimeout(() => {
-      const isDistractor = Math.random() < DISTRACTOR_CHANCE;
-      spawnAtRef.current = performance.now();
-      setSpawn({
-        id: ++spawnIdRef.current,
-        kind: isDistractor ? "distractor" : "target",
-        top: 10 + Math.random() * 70,
-        left: 10 + Math.random() * 70,
-      });
-    }, delay);
-    return () => clearTimeout(id);
-  }, [spawn, currentTier]);
-
-  // Mientras haya un objetivo/distractor visible, lo hace expirar si nadie
-  // hace clic dentro de la ventana de la dificultad actual.
-  useEffect(() => {
-    if (!spawn) return;
-    const tier = currentTier();
-    const id = setTimeout(() => {
-      setSpawn((current) => {
-        if (current?.id !== spawn.id) return current;
-        if (current.kind === "target") missesRef.current += 1;
-        return null;
-      });
-    }, tier.windowMs);
-    return () => clearTimeout(id);
-  }, [spawn, currentTier]);
-
-  function handleSpawnClick() {
-    if (!spawn || finishedRef.current) return;
-    if (spawn.kind === "target") {
+  function handleStimulusClick() {
+    if (respondedRef.current || finishedRef.current || !currentKindRef.current) {
+      return;
+    }
+    respondedRef.current = true;
+    if (currentKindRef.current === "go") {
       hitsRef.current += 1;
-      if (spawnAtRef.current !== null) {
+      if (stimulusAtRef.current !== null) {
         reactionTimesRef.current.push(
-          Math.round(performance.now() - spawnAtRef.current),
+          Math.round(performance.now() - stimulusAtRef.current),
         );
       }
     } else {
-      falseAlarmsRef.current += 1;
+      commissionsRef.current += 1;
     }
-    setSpawn(null);
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
-          Hacé clic solo en el círculo <span className="text-primary">violeta</span>. Ignorá el <span className="text-pulse">coral</span>.
+          Hacé clic en cada <span className="text-primary">círculo violeta</span>. Cuando aparezca un <span className="text-pulse">cuadrado coral</span>, no hagas nada.
         </span>
         <span className="font-heading font-semibold text-foreground">
-          {Math.ceil(timeLeft / 1000)}s
+          {Math.min(trialIndex + 1, TOTAL_TRIALS)}/{TOTAL_TRIALS}
         </span>
       </div>
-      <div className="relative h-72 w-full overflow-hidden rounded-2xl border border-dashed border-border bg-muted/30">
-        {spawn && (
-          <button
-            type="button"
-            onClick={handleSpawnClick}
-            style={{ top: `${spawn.top}%`, left: `${spawn.left}%` }}
-            className={cn(
-              "absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform active:scale-90",
-              spawn.kind === "target" ? "bg-primary" : "bg-pulse",
-            )}
-            aria-label={spawn.kind === "target" ? "Objetivo" : "Distractor"}
-          />
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={handleStimulusClick}
+        disabled={!stimulus}
+        className="flex h-72 w-full items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 disabled:cursor-default"
+      >
+        {stimulus === "go" && <span className="size-16 rounded-full bg-primary" />}
+        {stimulus === "noGo" && <span className="size-16 rounded-lg bg-pulse" />}
+      </button>
     </div>
   );
 }

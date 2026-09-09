@@ -6,7 +6,7 @@ import type { ActivityOutcome } from "@/hooks/use-activity-result";
 import { WORD_SPRINT_ITEMS } from "@/lib/constants/word-sprint-words";
 import { cn } from "@/lib/utils";
 
-const RESPONSE_WINDOW_MS = 2500;
+const RESPONSE_WINDOW_MS = 1800;
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];

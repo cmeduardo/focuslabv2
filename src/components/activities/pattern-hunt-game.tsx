@@ -6,17 +6,33 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActivityOutcome } from "@/hooks/use-activity-result";
 import { cn } from "@/lib/utils";
 
-const TOTAL_ROUNDS = 6;
+// Búsqueda por conjunción (Treisman & Gelade, 1980): el objetivo es una
+// combinación específica de forma + color (estrella violeta). Los
+// distractores comparten UNA de las dos dimensiones (estrellas grises,
+// círculos violeta) — ninguna "salta a la vista" sola, así que exige
+// revisar celda por celda en vez de una detección preatentiva.
+const TOTAL_ROUNDS = 8;
+
+type CellType = "target" | "distractorStar" | "distractorCircle";
 
 function gridSizeForRound(round: number): number {
-  if (round < 2) return 4;
-  if (round < 4) return 5;
-  return 6;
+  if (round < 2) return 5;
+  if (round < 4) return 6;
+  if (round < 6) return 7;
+  return 8;
 }
 
-function randomTargetIndex(round: number): number {
+function generateRound(round: number): CellType[] {
   const size = gridSizeForRound(round);
-  return Math.floor(Math.random() * size * size);
+  const count = size * size;
+  const targetIndex = Math.floor(Math.random() * count);
+  return Array.from({ length: count }, (_, i) =>
+    i === targetIndex
+      ? "target"
+      : Math.random() < 0.5
+        ? "distractorStar"
+        : "distractorCircle",
+  );
 }
 
 export function PatternHuntGame({
@@ -25,16 +41,17 @@ export function PatternHuntGame({
   onFinish: (outcome: ActivityOutcome) => void;
 }) {
   const [round, setRound] = useState(0);
-  const [targetIndex, setTargetIndex] = useState(() => randomTargetIndex(0));
+  const [cells, setCells] = useState<CellType[]>(() => generateRound(0));
   const [found, setFound] = useState(false);
   const roundStartRef = useRef(0);
   const searchTimesRef = useRef<number[]>([]);
   const wrongClicksRef = useRef<number[]>([]);
+  const gridSizesRef = useRef<number[]>([]);
   const wrongThisRoundRef = useRef(0);
   const finishedRef = useRef(false);
 
   const size = gridSizeForRound(round);
-  const cellCount = size * size;
+  const targetIndex = cells.indexOf("target");
 
   // Marca el inicio de la primera ronda (ref, no estado) al montar.
   useEffect(() => {
@@ -52,6 +69,7 @@ export function PatternHuntGame({
       metrics: {
         searchTimesMs: searchTimesRef.current,
         wrongClicksPerRound: wrongClicksRef.current,
+        gridSizes: gridSizesRef.current,
       },
     });
   }, [onFinish]);
@@ -59,13 +77,14 @@ export function PatternHuntGame({
   const handleCellClick = useCallback(
     (i: number) => {
       if (found || finishedRef.current) return;
-      if (i !== targetIndex) {
+      if (cells[i] !== "target") {
         wrongThisRoundRef.current += 1;
         return;
       }
       const elapsed = Math.round(performance.now() - roundStartRef.current);
       searchTimesRef.current.push(elapsed);
       wrongClicksRef.current.push(wrongThisRoundRef.current);
+      gridSizesRef.current.push(size);
       setFound(true);
       setTimeout(() => {
         if (round + 1 >= TOTAL_ROUNDS) {
@@ -74,13 +93,13 @@ export function PatternHuntGame({
           const nextRound = round + 1;
           wrongThisRoundRef.current = 0;
           roundStartRef.current = performance.now();
-          setTargetIndex(randomTargetIndex(nextRound));
+          setCells(generateRound(nextRound));
           setFound(false);
           setRound(nextRound);
         }
       }, 500);
     },
-    [found, targetIndex, round, finishGame],
+    [found, cells, round, size, finishGame],
   );
 
   return (
@@ -90,7 +109,7 @@ export function PatternHuntGame({
           Ronda {round + 1} de {TOTAL_ROUNDS}
         </span>
         <span className="flex items-center gap-1.5">
-          <Star className="size-3.5 text-primary" /> Encontrá la estrella
+          <Star className="size-3.5 text-primary" /> Encontrá la única estrella violeta
         </span>
       </div>
       <div
@@ -100,22 +119,24 @@ export function PatternHuntGame({
           maxWidth: `${size * 3.2}rem`,
         }}
       >
-        {Array.from({ length: cellCount }).map((_, i) => (
+        {cells.map((type, i) => (
           <button
             key={i}
             type="button"
             onClick={() => handleCellClick(i)}
             className={cn(
-              "flex aspect-square items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground transition-colors hover:bg-muted",
-              found && i === targetIndex && "border-primary bg-primary/10 text-primary",
+              "flex aspect-square items-center justify-center rounded-lg border border-border bg-muted/40 transition-colors hover:bg-muted",
+              found && i === targetIndex && "border-primary bg-primary/10",
             )}
-            aria-label={i === targetIndex ? "Objetivo" : "Distractor"}
+            aria-label={type === "target" ? "Objetivo" : "Distractor"}
           >
-            {i === targetIndex ? (
-              <Star className="size-4" />
-            ) : (
-              <Circle className="size-4" />
+            {type === "distractorStar" && (
+              <Star className="size-4 text-muted-foreground" />
             )}
+            {type === "distractorCircle" && (
+              <Circle className="size-4 text-primary" />
+            )}
+            {type === "target" && <Star className="size-4 text-primary" />}
           </button>
         ))}
       </div>

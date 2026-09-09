@@ -17,11 +17,11 @@ export default function DeepReadPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Deep Read"
-          description="Comprensión lectora bajo tiempo limitado: dos párrafos breves y cuatro preguntas."
+          description="Comprensión lectora: tres párrafos breves y seis preguntas."
           instructions={[
             "Leé cada párrafo con atención y avanzá cuando estés listo.",
             "Después vas a responder dos preguntas de opción múltiple por párrafo.",
-            "No hay límite estricto de tiempo, pero se registra cuánto tardás en leer.",
+            "Puede aparecer una notificación en la esquina mientras leés — ignorala, no hace falta cerrarla.",
           ]}
           onStart={start}
         />
@@ -36,7 +36,11 @@ export default function DeepReadPage() {
             { label: "Comprensión", value: `${result.accuracy ?? 0}%` },
             {
               label: "Preguntas correctas",
-              value: `${Math.round(((result.accuracy ?? 0) / 100) * 4)}/4`,
+              value: `${Math.round(((result.accuracy ?? 0) / 100) * 6)}/6`,
+            },
+            {
+              label: "Distracciones ignoradas",
+              value: `${Number(result.metrics.distractionsShown) - Number(result.metrics.distractionsClicked)}/${Number(result.metrics.distractionsShown)}`,
             },
           ]}
         />

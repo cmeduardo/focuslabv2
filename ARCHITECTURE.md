@@ -231,17 +231,20 @@ Ninguna actividad cambia `sessions.status` — el participante puede hacer
 varias actividades dentro de la misma sesión `en_progreso` (Sprint 4 marca
 `completada` vía `/api/sessions/[sessionId]/complete`).
 
-Qué mide cada una (`accuracy`, `level_reached`, `metrics` en
-`activity_results`):
+Las mecánicas se revisaron una vez (2026-08-27) porque las primeras
+versiones —pocos ensayos, objetivos fáciles de anticipar— no generaban
+carga atencional real. Las versiones actuales están basadas en paradigmas
+establecidos de psicología cognitiva, citables en el capítulo de
+metodología:
 
-| Actividad | Mecánica | `accuracy` | `level_reached` |
+| Actividad | Paradigma / mecánica | `accuracy` | `level_reached` |
 |---|---|---|---|
-| Reaction Test | 5 rondas, clic ante estímulo tras espera aleatoria | % rondas sin falso inicio | — |
-| Focus Flow | 30s, clic en objetivo (no en distractor), cadencia creciente | aciertos / (aciertos+fallos+falsas alarmas) | tramo de dificultad (1–3) |
+| Reaction Test | Estilo *Psychomotor Vigilance Task* (PVT): 20 ensayos, ISI variable 1.5–3.5s. La variabilidad del RT (`rtSD`) y los lapsos (RT > 500ms) importan más que el promedio. | % ensayos sin falso inicio | — |
+| Focus Flow | *Sustained Attention to Response Task* (SART, Robertson et al. 1997): flujo central de estímulos a cadencia fija (900ms), 90s (~100 ensayos). Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). | aciertos / (aciertos + omisiones) | — |
 | Memory Matrix | secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon) | clics correctos / clics totales | último nivel completo (máx. 10) |
-| Word Sprint | 16 rondas, decisión léxica (real vs. pseudopalabra), 2.5s/ronda | % respuestas correctas | — |
-| Pattern Hunt | 6 rondas de búsqueda visual, cuadrícula 4×4 → 6×6 | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo |
-| Deep Read | 2 párrafos + 4 preguntas de opción múltiple | % preguntas correctas | — |
+| Word Sprint | 30 ítems, decisión léxica (real vs. pseudopalabra), 1.8s/ítem | % respuestas correctas | — |
+| Pattern Hunt | Búsqueda por *conjunción* (Treisman & Gelade, 1980): el objetivo combina forma+color (estrella violeta) entre distractores que comparten una sola dimensión (estrellas grises, círculos violeta) — no hay pop-out, exige revisión serial. 8 rondas, cuadrícula 5×5 → 8×8. | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo (8) |
+| Deep Read | 3 párrafos + 6 preguntas de opción múltiple; durante la lectura aparece una notificación a ignorar (mide resistencia a la distracción, `distractionsShown`/`distractionsClicked`) | % preguntas correctas | — |
 
 `metrics` (jsonb) guarda el detalle específico de cada una (tiempos de
 reacción individuales, respuestas por ronda, etc.) para el informe de IA

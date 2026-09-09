@@ -5,10 +5,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActivityOutcome } from "@/hooks/use-activity-result";
 import { cn } from "@/lib/utils";
 
-const TOTAL_TRIALS = 5;
+// Estilo Psychomotor Vigilance Task (PVT): muchos ensayos con intervalo
+// variable — la variabilidad del tiempo de reacción y los lapsos (RT por
+// encima del umbral) son marcadores de atención más fuertes que el
+// promedio.
+const TOTAL_TRIALS = 20;
 const MAX_RETRIES = 2;
 const MIN_DELAY_MS = 1500;
 const MAX_DELAY_MS = 3500;
+const LAPSE_THRESHOLD_MS = 500;
 
 type TrialPhase = "waiting" | "go" | "tooSoon";
 
@@ -52,6 +57,15 @@ export function ReactionTestGame({
     const averageMs = times.length
       ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
       : 0;
+    const rtSD = times.length
+      ? Math.round(
+          Math.sqrt(
+            times.reduce((sum, t) => sum + (t - averageMs) ** 2, 0) /
+              times.length,
+          ),
+        )
+      : 0;
+    const lapses = times.filter((t) => t > LAPSE_THRESHOLD_MS).length;
     onFinish({
       accuracy,
       levelReached: null,
@@ -59,6 +73,8 @@ export function ReactionTestGame({
         trials: times,
         falseStarts: falseStartsRef.current,
         averageMs,
+        rtSD,
+        lapses,
       },
     });
   }, [onFinish]);

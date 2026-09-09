@@ -17,9 +17,14 @@ export function DeepReadGame({
   const [stage, setStage] = useState<Stage>("reading");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
+  const [notificationVisible, setNotificationVisible] = useState(false);
   const readingStartRef = useRef(0);
   const readingTimesRef = useRef<number[]>([]);
   const answersCorrectRef = useRef<boolean[]>([]);
+  const distractionsShownRef = useRef(0);
+  const distractionsClickedRef = useRef(0);
+  const notificationActiveRef = useRef(false);
+  const notificationTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const finishedRef = useRef(false);
 
   const passage = DEEP_READ_PASSAGES[passageIndex];
@@ -29,6 +34,36 @@ export function DeepReadGame({
   useEffect(() => {
     readingStartRef.current = performance.now();
   }, []);
+
+  // Durante la lectura (no durante las preguntas), muestra una notificación
+  // que hay que ignorar — mide resistencia a la distracción. El setState
+  // real ocurre dentro de los setTimeout, nunca de forma síncrona acá.
+  useEffect(() => {
+    if (stage !== "reading") return;
+    const showDelay = 2000 + Math.random() * 4000;
+    const showTimer = setTimeout(() => {
+      distractionsShownRef.current += 1;
+      notificationActiveRef.current = true;
+      setNotificationVisible(true);
+      const hideTimer = setTimeout(() => {
+        notificationActiveRef.current = false;
+        setNotificationVisible(false);
+      }, 2200);
+      notificationTimersRef.current.push(hideTimer);
+    }, showDelay);
+    notificationTimersRef.current.push(showTimer);
+    return () => {
+      notificationTimersRef.current.forEach(clearTimeout);
+      notificationTimersRef.current = [];
+    };
+  }, [stage, passageIndex]);
+
+  function handleNotificationClick() {
+    if (!notificationActiveRef.current) return;
+    notificationActiveRef.current = false;
+    distractionsClickedRef.current += 1;
+    setNotificationVisible(false);
+  }
 
   const finishGame = useCallback(() => {
     if (finishedRef.current) return;
@@ -44,6 +79,8 @@ export function DeepReadGame({
       metrics: {
         readingTimesMs: readingTimesRef.current,
         answersCorrect: answersCorrectRef.current,
+        distractionsShown: distractionsShownRef.current,
+        distractionsClicked: distractionsClickedRef.current,
       },
     });
   }, [onFinish]);
@@ -77,7 +114,17 @@ export function DeepReadGame({
 
   if (stage === "reading") {
     return (
-      <div className="space-y-4">
+      <div className="relative space-y-4">
+        {notificationVisible && (
+          <button
+            type="button"
+            onClick={handleNotificationClick}
+            className="absolute -top-2 right-0 z-10 flex items-center gap-2 rounded-full border border-pulse/40 bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-lg"
+          >
+            <span className="size-2 rounded-full bg-pulse" />
+            Nuevo mensaje
+          </button>
+        )}
         <p className="text-sm text-muted-foreground">
           Párrafo {passageIndex + 1} de {DEEP_READ_PASSAGES.length}
         </p>

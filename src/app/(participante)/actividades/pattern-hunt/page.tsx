@@ -17,11 +17,11 @@ export default function PatternHuntPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Pattern Hunt"
-          description="Atención selectiva: encontrá la estrella escondida entre los círculos."
+          description="Atención selectiva: encontrá la única estrella violeta entre estrellas grises y círculos violeta."
           instructions={[
-            "Cada ronda muestra una cuadrícula con una sola estrella entre varios círculos.",
-            "Hacé clic en la estrella lo más rápido posible.",
-            "La cuadrícula crece cada dos rondas — son 6 rondas en total.",
+            "Cada ronda mezcla estrellas grises y círculos violeta — ninguna combinación por sí sola es el objetivo.",
+            "Buscá la única celda que combina estrella Y color violeta.",
+            "La cuadrícula crece cada dos rondas — son 8 rondas en total.",
           ]}
           onStart={start}
         />

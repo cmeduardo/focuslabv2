@@ -21,7 +21,7 @@ export default function WordSprintPage() {
           instructions={[
             "Va a aparecer una palabra a la vez.",
             "Elegí “Es real” o “Inventada” lo más rápido posible.",
-            "Tenés 2.5 segundos por palabra — si no respondés, pasa a la siguiente.",
+            "Tenés 1.8 segundos por palabra — si no respondés, pasa a la siguiente. Son 30 palabras.",
           ]}
           onStart={start}
         />
