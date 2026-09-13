@@ -17,11 +17,11 @@ export default function ReactionTestPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Reaction Test"
-          description="Mide tu tiempo de reacción ante un estímulo visual (20 rondas)."
+          description="Tiempo de reacción y puntería: el objetivo aparece en un punto al azar y se achica con la racha (20 rondas)."
           instructions={[
-            "Esperá a que el recuadro cambie a “¡YA!”.",
-            "Hacé clic apenas lo veas — cuanto más rápido, mejor.",
-            "Si hacés clic antes de tiempo, la ronda se repite. Son 20 rondas en total.",
+            "Esperá a que aparezca el círculo violeta en algún punto del recuadro.",
+            "Hacé clic justo sobre él, lo más rápido posible — si fallás el punto o tardás de más, perdés la racha.",
+            "Con cada acierto seguido el círculo se hace más chico y vale más puntos.",
           ]}
           onStart={start}
         />
@@ -33,6 +33,11 @@ export default function ReactionTestPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
+            {
+              label: "Racha máxima",
+              value: `${Number(result.metrics.bestStreak)}`,
+            },
             {
               label: "Tiempo promedio",
               value: `${Number(result.metrics.averageMs)} ms`,

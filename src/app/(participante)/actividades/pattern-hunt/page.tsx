@@ -17,11 +17,11 @@ export default function PatternHuntPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Pattern Hunt"
-          description="Atención selectiva: encontrá la única estrella violeta entre estrellas grises y círculos violeta."
+          description="Atención selectiva: encontrá la única estrella violeta grande contra el reloj."
           instructions={[
-            "Cada ronda mezcla estrellas grises y círculos violeta — ninguna combinación por sí sola es el objetivo.",
-            "Buscá la única celda que combina estrella Y color violeta.",
-            "La cuadrícula crece cada dos rondas — son 8 rondas en total.",
+            "Cada ronda mezcla estrellas grises, círculos violeta y estrellas violeta chicas — ninguna por sí sola es el objetivo.",
+            "Buscá la única celda que combina estrella grande Y color violeta, antes de que se acabe el tiempo.",
+            "La cuadrícula crece cada dos rondas, hasta 9×9 — son 10 rondas en total.",
           ]}
           onStart={start}
         />
@@ -33,6 +33,11 @@ export default function PatternHuntPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
+            {
+              label: "Racha máxima",
+              value: `${Number(result.metrics.bestStreak)}`,
+            },
             { label: "Precisión", value: `${result.accuracy ?? 0}%` },
             { label: "Cuadrícula máxima", value: `${result.levelReached ?? 0}×${result.levelReached ?? 0}` },
           ]}

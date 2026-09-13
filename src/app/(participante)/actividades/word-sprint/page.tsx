@@ -17,11 +17,11 @@ export default function WordSprintPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Word Sprint"
-          description="Velocidad de procesamiento léxico: decidí si cada palabra es real o inventada."
+          description="Efecto Stroop: tu cerebro va a querer leer la palabra — tenés que ignorarla."
           instructions={[
-            "Va a aparecer una palabra a la vez.",
-            "Elegí “Es real” o “Inventada” lo más rápido posible.",
-            "Tenés 1.8 segundos por palabra — si no respondés, pasa a la siguiente. Son 30 palabras.",
+            "Va a aparecer el nombre de un color, escrito con la tinta de otro color.",
+            "Hacé clic en el color de la TINTA, no en lo que dice la palabra — a veces van a coincidir, a veces no.",
+            "Tenés 1.6 segundos por ronda. Son 24 rondas — las que no coinciden son las que de verdad ponen a prueba tu atención.",
           ]}
           onStart={start}
         />
@@ -33,10 +33,15 @@ export default function WordSprintPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
+            {
+              label: "Racha máxima",
+              value: `${Number(result.metrics.bestStreak)}`,
+            },
             { label: "Precisión", value: `${result.accuracy ?? 0}%` },
             {
-              label: "Respuestas a tiempo",
-              value: `${Number(result.metrics.total) - Number(result.metrics.timeouts)}/${Number(result.metrics.total)}`,
+              label: "Interferencia",
+              value: `+${Math.max(0, Number(result.metrics.incongruentAvgMs) - Number(result.metrics.congruentAvgMs))} ms`,
             },
           ]}
         />

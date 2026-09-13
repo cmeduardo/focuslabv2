@@ -17,10 +17,11 @@ export default function DeepReadPage() {
       {phase === "intro" && (
         <ActivityIntro
           title="Deep Read"
-          description="Comprensión lectora: tres párrafos breves y seis preguntas."
+          description="Comprensión lectora: 3 párrafos al azar (de un banco de 6) y nueve preguntas — algunas literales, otras de inferencia."
           instructions={[
-            "Leé cada párrafo con atención y avanzá cuando estés listo.",
-            "Después vas a responder dos preguntas de opción múltiple por párrafo.",
+            "Leé cada párrafo con atención y avanzá cuando estés listo — los párrafos cambian en cada partida.",
+            "Vas a responder 3 preguntas por párrafo. Podés elegir una opción, cambiarla, y recién confirmarla cuando estés seguro.",
+            "Si necesitás repasar el texto, podés volver a leerlo antes de confirmar — se registra cuántas veces lo hacés.",
             "Puede aparecer una notificación en la esquina mientras leés — ignorala, no hace falta cerrarla.",
           ]}
           onStart={start}
@@ -33,10 +34,23 @@ export default function DeepReadPage() {
           backHref="/actividades"
           onRetry={reset}
           stats={[
+            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
+            {
+              label: "Racha máxima",
+              value: `${Number(result.metrics.bestStreak)}`,
+            },
             { label: "Comprensión", value: `${result.accuracy ?? 0}%` },
             {
               label: "Preguntas correctas",
-              value: `${Math.round(((result.accuracy ?? 0) / 100) * 6)}/6`,
+              value: `${Number(result.metrics.correctCount)}/${Number(result.metrics.totalQuestions)}`,
+            },
+            {
+              label: "Literal vs. inferencia",
+              value: `${Number(result.metrics.literalAccuracy)}% / ${Number(result.metrics.inferenceAccuracy)}%`,
+            },
+            {
+              label: "Veces que releyó",
+              value: `${Number(result.metrics.rereadCount)}`,
             },
             {
               label: "Distracciones ignoradas",

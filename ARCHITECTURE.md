@@ -231,24 +231,74 @@ Ninguna actividad cambia `sessions.status` — el participante puede hacer
 varias actividades dentro de la misma sesión `en_progreso` (Sprint 4 marca
 `completada` vía `/api/sessions/[sessionId]/complete`).
 
-Las mecánicas se revisaron una vez (2026-08-27) porque las primeras
-versiones —pocos ensayos, objetivos fáciles de anticipar— no generaban
-carga atencional real. Las versiones actuales están basadas en paradigmas
-establecidos de psicología cognitiva, citables en el capítulo de
-metodología:
+Las mecánicas se revisaron tres veces (2026-08-27) tras feedback directo:
+primero porque las versiones iniciales —pocos ensayos, objetivos fáciles
+de anticipar— no generaban carga atencional real; después porque, ya con
+paradigmas válidos, la interacción se sentía demasiado plana para el
+Objetivo específico 2 de la tesis ("percibidas como juegos o desafíos, no
+como evaluaciones clínicas"); y una tercera vez para subirle la dificultad
+puntual a Reaction Test, Focus Flow y Pattern Hunt, y para reemplazar Word
+Sprint (decisión léxica: real vs. pseudopalabra) por una tarea Stroop —el
+prompt original solo pedía "velocidad de procesamiento/precisión léxica"
+como constructo, no la mecánica exacta, y Stroop es un paradigma de
+atención mucho más reconocible para un usuario sin formación en
+psicología, además de igual de válido para procesamiento/interferencia.
+Las versiones actuales combinan ambas cosas: la mecánica de fondo sigue
+paradigmas establecidos de psicología cognitiva (citables en el capítulo
+de metodología), y encima cada una tiene una capa de "juego" — puntaje en
+vivo, racha con multiplicador (`StreakBadge`,
+`src/components/activities/streak-badge.tsx`), feedback sonoro vía Web
+Audio sin assets (`src/lib/audio/beep.ts`) y animaciones de acierto/error
+(`.animate-pop` / `.animate-shake` en `globals.css`). El puntaje vive en
+`metrics.score` (jsonb) — no es parte del constructo medido, es la
+envoltura gamificada sobre `accuracy`/`level_reached`, que son los valores
+que importan para el perfil atencional.
 
 | Actividad | Paradigma / mecánica | `accuracy` | `level_reached` |
 |---|---|---|---|
-| Reaction Test | Estilo *Psychomotor Vigilance Task* (PVT): 20 ensayos, ISI variable 1.5–3.5s. La variabilidad del RT (`rtSD`) y los lapsos (RT > 500ms) importan más que el promedio. | % ensayos sin falso inicio | — |
-| Focus Flow | *Sustained Attention to Response Task* (SART, Robertson et al. 1997): flujo central de estímulos a cadencia fija (900ms), 90s (~100 ensayos). Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). | aciertos / (aciertos + omisiones) | — |
+| Reaction Test | PVT + puntería: 20 ensayos, ISI variable 1.2–3.0s. El objetivo aparece en un punto al azar del campo y se achica con la racha (72px → 32px) — mide tiempo de reacción Y precisión bajo presión, no solo "clic en cualquier lugar". Ventana de respuesta 1.2s; `rtSD` y lapsos (RT > 500ms) importan más que el promedio. | ensayos resueltos a tiempo y en el punto correcto / total | — |
+| Focus Flow | SART (Robertson et al. 1997) con incertidumbre espacial: cadencia fija (1.4s, estímulo visible 800ms), 90s (~64 ensayos), el estímulo aparece en 1 de 9 celdas al azar — hay que ubicarlo cada vez. Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). Cadencia aflojada tras feedback ("muy corto el tiempo para hacer clicks"): de 900ms/400ms visible a 1.4s/800ms visible, celdas y estímulos más grandes. | aciertos / (aciertos + omisiones) | — |
 | Memory Matrix | secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon) | clics correctos / clics totales | último nivel completo (máx. 10) |
-| Word Sprint | 30 ítems, decisión léxica (real vs. pseudopalabra), 1.8s/ítem | % respuestas correctas | — |
-| Pattern Hunt | Búsqueda por *conjunción* (Treisman & Gelade, 1980): el objetivo combina forma+color (estrella violeta) entre distractores que comparten una sola dimensión (estrellas grises, círculos violeta) — no hay pop-out, exige revisión serial. 8 rondas, cuadrícula 5×5 → 8×8. | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo (8) |
-| Deep Read | 3 párrafos + 6 preguntas de opción múltiple; durante la lectura aparece una notificación a ignorar (mide resistencia a la distracción, `distractionsShown`/`distractionsClicked`) | % preguntas correctas | — |
+| Word Sprint | Efecto Stroop (Stroop, 1935): nombre de un color renderizado con tinta de otro color (~30% congruente / 70% incongruente), responder al color de la tinta ignorando la palabra. 24 rondas, 1.6s/ronda. La interferencia (RT incongruente − RT congruente, `metrics.incongruentAvgMs`/`congruentAvgMs`) es la señal diagnóstica — mucho más intuitiva para el usuario que una decisión léxica abstracta. | % respuestas correctas | — |
+| Pattern Hunt | Búsqueda por *conjunción* (Treisman & Gelade, 1980) con distractor "casi-objetivo": el objetivo combina forma+color+tamaño (estrella violeta grande) entre 3 tipos de distractor (estrellas grises, círculos violeta, estrellas violeta chicas) — no hay pop-out, exige revisión serial. 10 rondas, cuadrícula 5×5 → 9×9, con límite de 7s por ronda. | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo (9) |
+| Deep Read | Cada partida elige 3 párrafos al azar (sin repetir, orden aleatorio) de un banco de 6, 3 preguntas por párrafo (2 literales + 1 de inferencia, 9 en total). El participante puede releer el párrafo antes de confirmar cada respuesta (`rereadCount`/`rereadTimeMs`) y cambiar de opción antes de confirmar (`answerChanges`) — analiza no solo cuánto entendió sino *cómo* llegó a la respuesta (relectura, dudas, tiempo por pregunta `questionTimesMs`, precisión literal vs. inferencia por separado). También mide resistencia a la distracción (`distractionsShown`/`distractionsClicked`, notificación a ignorar durante la lectura). | % preguntas correctas | — |
 
 `metrics` (jsonb) guarda el detalle específico de cada una (tiempos de
 reacción individuales, respuestas por ronda, etc.) para el informe de IA
 del Sprint 4.
+
+### Profundidad de `metrics` por actividad (2026-08-27)
+
+Pedido explícito: extraer la mayor cantidad de información posible del
+comportamiento de cada usuario, no solo el resultado final — son las
+variables que el agente de IA (Sprint 4) va a tener disponibles para
+construir el perfil atencional y que sustentan la Hipótesis 1 (patrones
+diferenciados) y la Hipótesis 2 (los datos pasivos/de comportamiento
+enriquecen la precisión del perfil, más allá del puntaje). Además de lo ya
+descrito en la tabla, cada actividad guarda:
+
+- **Reaction Test**: `rtCV` (variabilidad normalizada), `earlyAvgMs`/
+  `lateAvgMs` (decaimiento de vigilancia: ¿empeora la reacción con el
+  tiempo?), `aimMissDistancesPx` (qué tan lejos del objetivo cae cada
+  fallo — distingue error motriz de error atencional), `targetSizesPx`.
+- **Focus Flow**: `reactionRtSD`, `commissionTimesMs` (un commission
+  rápido es la firma clásica de impulsividad/lapso, más diagnóstico que
+  solo contarlos), `omissionsByThirdPct` (tasa de omisión en cada tercio
+  de la prueba — decaimiento de atención sostenida en el tiempo).
+- **Memory Matrix**: `clickLatenciesMs` (tiempo entre cada clic durante el
+  recuerdo — hesitación vs. respuesta fluida), `mistakeAtStep` (en qué
+  punto de la secuencia falló: olvido temprano vs. tardío).
+- **Word Sprint (Stroop)**: `congruentAccuracy`/`incongruentAccuracy`
+  (no solo el RT sino también si la interferencia genera errores),
+  `postErrorAvgMs`/`postCorrectAvgMs` (enlentecimiento post-error: ¿se
+  frena y se cuida después de fallar, o sigue igual de impulsivo?).
+- **Pattern Hunt**: `searchSlopeMsPerCell` (regresión simple tiempo vs.
+  tamaño de cuadrícula — la firma real de búsqueda serial vs. paralela),
+  `wrongClicksByType` (a qué distractor confunde más: el "casi-objetivo"
+  chico, el de igual color, o el de igual forma).
+- **Deep Read**: `readingWpm` por párrafo (velocidad de lectura), que
+  cruzado con `rereadCount` distingue leer rápido-y-bien de leer
+  rápido-pero-inseguro.
 
 ## 8. Variables de entorno
 
