@@ -3,6 +3,14 @@
 // 2 preguntas literales (dato dicho explícitamente) + 1 de inferencia
 // (hay que combinar varias oraciones del texto para resolverla) — permite
 // analizar no solo cuánto entendió, sino qué TIPO de comprensión falla.
+//
+// Los distractores están escritos para ser creíbles dentro del tema del
+// párrafo (mismo dominio, misma dirección que la opción correcta) — a
+// propósito, para que la pregunta no se pueda adivinar por sentido común
+// sin haber leído el texto: hace falta el dato específico que dice el
+// párrafo para descartarlos. Las de inferencia combinan dos elementos del
+// texto (p. ej. "bloques cortos" + "pocas interrupciones") de forma que
+// solo una opción los tenga ambos correctos.
 export type DeepReadQuestion = {
   question: string;
   options: string[];
@@ -25,10 +33,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según el texto, ¿qué ocurre con la atención sostenida después de 20 a 30 minutos de trabajo continuo?",
         options: [
-          "Aumenta progresivamente",
-          "Se mantiene igual todo el día",
+          "Disminuye, pero solo si hay ruido de fondo",
+          "Se mantiene estable durante los primeros 45 minutos",
           "Tiende a disminuir",
-          "Desaparece por completo",
+          "Baja al principio y luego se recupera sola",
         ],
         correctIndex: 2,
         type: "literal",
@@ -37,10 +45,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "¿Qué estrategia menciona el texto para mantener la concentración más estable?",
         options: [
-          "Trabajar sin pausas hasta terminar",
+          "Extender los bloques de trabajo sin interrupciones",
           "Dividir el trabajo en bloques con pausas breves",
-          "Estudiar siempre de noche",
-          "Evitar por completo los descansos",
+          "Reducir las pausas a medida que avanza la sesión",
+          "Tomar una única pausa larga al final de la sesión",
         ],
         correctIndex: 1,
         type: "literal",
@@ -49,12 +57,12 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según lo que explica el texto, ¿qué tendría más sentido hacer para minimizar la disminución de atención en una sesión larga?",
         options: [
-          "Estudiar 3 horas seguidas sin pausas, en un lugar con muchas distracciones",
+          "Dividir la sesión en bloques cortos, pero en un espacio con muchos estímulos visibles",
+          "Trabajar en bloques largos, en un espacio con pocas interrupciones",
           "Dividir la sesión en bloques cortos, en un espacio con pocas interrupciones",
-          "Estudiar solo de noche sin importar el entorno",
-          "Aumentar la cantidad de estímulos visibles alrededor",
+          "Trabajar sin pausas, pero eliminando las notificaciones del teléfono",
         ],
-        correctIndex: 1,
+        correctIndex: 2,
         type: "inference",
       },
     ],
@@ -66,10 +74,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
       {
         question: "Durante el bloque de trabajo enfocado, ¿qué se recomienda hacer?",
         options: [
-          "Cambiar de tarea cada pocos minutos",
+          "Alternar entre dos tareas relacionadas",
           "Comprometerse a una sola tarea",
-          "Tomar el descanso largo primero",
-          "Trabajar sin ningún objetivo definido",
+          "Revisar el progreso cada pocos minutos",
+          "Posponer la tarea principal hasta el descanso",
         ],
         correctIndex: 1,
         type: "literal",
@@ -77,22 +85,22 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
       {
         question: "Según el texto, ¿qué pasa cada cierto número de bloques?",
         options: [
-          "Se repite el mismo descanso corto",
           "Se toma un descanso más largo",
-          "Se termina la sesión de estudio",
-          "Se elimina el descanso",
+          "Se acorta la duración de los bloques siguientes",
+          "Se elimina el descanso de ese ciclo",
+          "Se repite el mismo bloque de trabajo",
         ],
-        correctIndex: 1,
+        correctIndex: 0,
         type: "literal",
       },
       {
         question:
           "Si alguien cambia de tarea cada pocos minutos durante sus bloques de estudio, según los principios del texto, ¿qué es más probable que ocurra?",
         options: [
-          "Va a sostener mejor su energía mental",
-          "Está aplicando la técnica tal como se describe",
+          "Va a sostener mejor su energía mental, porque varía el estímulo",
+          "Está aplicando la técnica tal como se describe, solo que más rápido",
           "Está rompiendo el principio central de comprometerse a una sola tarea por bloque",
-          "El descanso largo se vuelve innecesario",
+          "El descanso largo se vuelve más necesario, pero el resto no cambia",
         ],
         correctIndex: 2,
         type: "inference",
@@ -107,10 +115,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según el texto, ¿qué facilita dividir una tarea grande en metas pequeñas?",
         options: [
-          "Terminar la tarea sin ningún esfuerzo",
+          "Reducir el número de metas necesarias en total",
           "Mantener el esfuerzo a lo largo del tiempo",
-          "Evitar por completo hacer la tarea",
-          "Aumentar la sensación de no saber por dónde empezar",
+          "Aumentar la dificultad percibida de la tarea",
+          "Acelerar el tiempo real que toma cada tarea",
         ],
         correctIndex: 1,
         type: "literal",
@@ -118,22 +126,22 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
       {
         question: "¿Qué reduce tener metas específicas, según el texto?",
         options: [
-          "La motivación general",
-          "El número de páginas por leer",
+          "El número de señales de avance que se reciben",
           "La sensación de no saber por dónde empezar",
-          "El tiempo total de estudio",
+          "La cantidad de tiempo dedicado a planificar",
+          "El interés inicial por la tarea",
         ],
-        correctIndex: 2,
+        correctIndex: 1,
         type: "literal",
       },
       {
         question:
           "Alguien se propone como única meta “terminar la tesis”, sin dividirla en pasos más chicos. Según el texto, ¿qué es más probable que le pase?",
         options: [
-          "Va a sentir más claridad sobre por dónde empezar",
+          "Va a sentir más claridad sobre por dónde empezar, aunque tarde más",
           "Es más probable que posponga el inicio de la tarea",
-          "Su motivación se va a mantener igual de estable que dividiéndola",
-          "Va a necesitar menos señales de avance",
+          "Su motivación se va a mantener igual de estable que dividiéndola en pasos",
+          "Va a necesitar las mismas señales de avance que si la dividiera",
         ],
         correctIndex: 1,
         type: "inference",
@@ -148,10 +156,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según el texto, ¿qué ocurre realmente cuando alguien “hace multitarea”?",
         options: [
-          "El cerebro procesa dos tareas complejas a la vez sin costo",
+          "El cerebro procesa ambas tareas en paralelo, sin costo adicional",
           "El cerebro cambia rápidamente de una tarea a otra",
-          "El cerebro apaga por completo una de las tareas",
-          "No hay ningún cambio en el procesamiento",
+          "El cerebro prioriza automáticamente la tarea más simple",
+          "El cerebro reduce su actividad general para ahorrar energía",
         ],
         correctIndex: 1,
         type: "literal",
@@ -160,22 +168,22 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "¿Qué efecto tiene, según el texto, terminar una tarea antes de empezar otra?",
         options: [
-          "Aumenta el tiempo total invertido",
-          "No tiene ningún efecto",
           "Suele resultar en menos tiempo total invertido",
-          "Hace que el cambio de tarea sea instantáneo",
+          "Aumenta el tiempo total, porque retomar cuesta más que cambiar",
+          "No cambia el tiempo total, solo el orden de las tareas",
+          "Depende únicamente de qué tan familiar sea cada tarea",
         ],
-        correctIndex: 2,
+        correctIndex: 0,
         type: "literal",
       },
       {
         question:
           "Según el texto, si una persona estudia mientras responde mensajes constantemente, ¿qué es lo más probable que ocurra con el tiempo total que le toma terminar?",
         options: [
-          "Va a terminar más rápido que si hiciera una cosa a la vez",
-          "El tiempo no cambia porque el cerebro procesa ambas tareas en paralelo",
+          "Va a terminar más rápido, porque alterna entre estímulos distintos",
+          "El tiempo no cambia, porque el costo de cambio es insignificante",
           "Va a tardar más, por el costo acumulado de cada cambio de tarea",
-          "El costo de cambiar de tarea desaparece con la práctica",
+          "El costo de cambiar de tarea solo aplica a materias distintas, no a mensajes",
         ],
         correctIndex: 2,
         type: "inference",
@@ -191,9 +199,9 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
           "Según el texto, ¿qué reduce un espacio con buena iluminación y pocos objetos visibles?",
         options: [
           "La cantidad de estímulos que compiten por la atención",
-          "El tiempo disponible para estudiar",
-          "La temperatura del ambiente",
-          "La necesidad de tomar descansos",
+          "El tiempo mínimo necesario para adaptarse al espacio",
+          "La temperatura ideal para concentrarse",
+          "La necesidad de tomar descansos frecuentes",
         ],
         correctIndex: 0,
         type: "literal",
@@ -202,10 +210,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "¿Qué efecto tiene tener el teléfono a la vista, aunque esté apagado, según el texto?",
         options: [
-          "Ninguno, si está apagado no afecta",
+          "Ninguno, si está apagado no genera notificaciones",
           "Tiende a fragmentar la concentración",
-          "Mejora la iluminación del espacio",
-          "Elimina el ruido variable",
+          "Mejora la capacidad de ignorar otros estímulos",
+          "Solo afecta si además está encendido y visible",
         ],
         correctIndex: 1,
         type: "literal",
@@ -214,10 +222,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según el texto, ¿por qué tener el teléfono a la vista afecta la concentración incluso si está apagado?",
         options: [
-          "Porque el teléfono cambia la temperatura del ambiente",
+          "Porque el teléfono, aunque apagado, sigue generando notificaciones",
           "Porque una parte de la atención queda disponible para notarlo, aunque no suene",
-          "Porque el teléfono ilumina el espacio de estudio",
-          "Porque reemplaza al espacio consistente de estudio",
+          "Porque el brillo de la pantalla distrae incluso apagada",
+          "Porque el espacio consistente de estudio deja de funcionar con el teléfono presente",
         ],
         correctIndex: 1,
         type: "inference",
@@ -232,10 +240,10 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "Según el texto, ¿qué hace el cerebro durante el sueño con la información aprendida?",
         options: [
-          "La elimina por completo",
+          "La almacena sin ningún cambio hasta el día siguiente",
           "La reorganiza y refuerza",
-          "La ignora hasta el día siguiente",
-          "La convierte en un recuerdo distinto",
+          "La reduce a los datos más generales, descartando el resto",
+          "La convierte automáticamente en un hábito",
         ],
         correctIndex: 1,
         type: "literal",
@@ -244,22 +252,104 @@ export const DEEP_READ_PASSAGES: DeepReadPassage[] = [
         question:
           "¿Qué puede pasar si se duerme poco después de estudiar, según el texto?",
         options: [
-          "Se retiene exactamente lo mismo que con buen descanso",
-          "Se retiene más información de la normal",
+          "Se retiene la misma cantidad, solo que con más esfuerzo",
           "Puede reducir cuánto se retiene",
-          "El estudio se vuelve innecesario",
+          "Aumenta la retención a corto plazo, aunque no a largo plazo",
+          "Solo afecta la retención si se estudió de noche",
         ],
-        correctIndex: 2,
+        correctIndex: 1,
         type: "literal",
       },
       {
         question:
           "Según el texto, ¿qué le convendría más a alguien que estudió toda la tarde para un examen al día siguiente?",
         options: [
-          "Quedarse despierto toda la noche repasando en vez de dormir",
+          "Repasar toda la noche en vez de dormir, para reforzar lo aprendido",
           "Dormir lo suficiente esa noche, para favorecer la consolidación de lo estudiado",
-          "Dormir no tiene relación con lo que estudió esa tarde",
-          "Estudiar exactamente la misma cantidad de horas sin dormir rinde igual",
+          "Dormir la misma cantidad de horas que cualquier otra noche, sin relación con el examen",
+          "Estudiar la misma cantidad de horas, sin dormir, porque el efecto es igual",
+        ],
+        correctIndex: 1,
+        type: "inference",
+      },
+    ],
+  },
+  {
+    title: "Repetición espaciada",
+    text: "Repasar la misma información varias veces en una sola sesión no es tan efectivo como distribuir esos repasos a lo largo de varios días. Esta técnica, conocida como repetición espaciada, aprovecha que la memoria se fortalece más cuando el cerebro tiene que hacer un pequeño esfuerzo para recordar algo que empezó a olvidar, en vez de repasarlo mientras todavía está fresco. Por eso, repasar un tema el mismo día, luego a los tres días, y luego a la semana, suele generar un recuerdo más duradero que repasarlo cinco veces seguidas en una sola tarde.",
+    questions: [
+      {
+        question: "Según el texto, ¿qué aprovecha la repetición espaciada?",
+        options: [
+          "Que repasar más veces seguidas siempre genera mejor memoria",
+          "Que la memoria se fortalece cuando el cerebro hace un esfuerzo por recordar algo que empezaba a olvidar",
+          "Que el cerebro recuerda mejor la información más reciente",
+          "Que repasar información fresca refuerza más el recuerdo",
+        ],
+        correctIndex: 1,
+        type: "literal",
+      },
+      {
+        question:
+          "Según el ejemplo del texto, ¿qué distribución de repasos se menciona?",
+        options: [
+          "El mismo día, a los tres días, y a la semana",
+          "Cada día durante una semana completa",
+          "Una vez por semana durante un mes",
+          "El mismo día y luego recién al mes siguiente",
+        ],
+        correctIndex: 0,
+        type: "literal",
+      },
+      {
+        question:
+          "Según el texto, ¿qué le convendría más a alguien que quiere recordar un tema por mucho tiempo?",
+        options: [
+          "Repasar el tema cinco veces seguidas la noche anterior al examen",
+          "Distribuir los repasos en varios días, en vez de repasar todo junto una sola tarde",
+          "Repasar solo una vez, apenas aprendido el tema, sin repetir después",
+          "Esperar a haber olvidado todo el tema antes de repasarlo por primera vez",
+        ],
+        correctIndex: 1,
+        type: "inference",
+      },
+    ],
+  },
+  {
+    title: "Ejercicio físico y concentración",
+    text: "La actividad física moderada, como caminar rápido durante 20 minutos, se asocia con una mejora temporal en la capacidad de concentrarse en tareas que exigen atención. El efecto no es inmediato en el mismo segundo en que se termina de hacer ejercicio, sino que se mantiene durante un periodo de una a dos horas después. Por eso, hacer una caminata antes de una sesión de estudio importante puede ayudar más que hacerla varias horas antes, cuando ese efecto ya se disipó.",
+    questions: [
+      {
+        question:
+          "Según el texto, ¿con qué se asocia la actividad física moderada?",
+        options: [
+          "Una mejora temporal en la capacidad de concentrarse",
+          "Una reducción permanente de la necesidad de dormir",
+          "Un aumento inmediato de energía que dura todo el día",
+          "Una mejora en la memoria a largo plazo, no en la concentración",
+        ],
+        correctIndex: 0,
+        type: "literal",
+      },
+      {
+        question: "¿Cuánto dura el efecto sobre la concentración, según el texto?",
+        options: [
+          "Solo el mismo segundo en que termina el ejercicio",
+          "Una a dos horas después del ejercicio",
+          "Todo el día, sin importar cuándo se hizo",
+          "Únicamente mientras dura el ejercicio",
+        ],
+        correctIndex: 1,
+        type: "literal",
+      },
+      {
+        question:
+          "Según el texto, ¿cuándo convendría más hacer una caminata si hay una sesión de estudio importante en la tarde?",
+        options: [
+          "A primera hora de la mañana, sin importar cuándo sea la sesión",
+          "Poco antes de la sesión de estudio, no varias horas antes",
+          "Da igual el momento, el efecto dura todo el día",
+          "Inmediatamente después de la sesión de estudio, no antes",
         ],
         correctIndex: 1,
         type: "inference",
