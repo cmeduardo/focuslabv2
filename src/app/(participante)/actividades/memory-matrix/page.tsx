@@ -21,7 +21,8 @@ export default function MemoryMatrixPage() {
           instructions={[
             "Observá qué celdas se iluminan y en qué orden.",
             "Después, hacé clic en las mismas celdas, en el mismo orden.",
-            "Cada nivel agrega una celda más a la secuencia. Un error termina la partida.",
+            "Cada nivel agrega una celda más a la secuencia.",
+            "Un error reinicia desde el nivel 1 — tenés hasta 3 intentos, o hasta que llegues bastante lejos en uno.",
           ]}
           onStart={start}
         />
@@ -34,8 +35,12 @@ export default function MemoryMatrixPage() {
           onRetry={reset}
           stats={[
             { label: "Puntaje", value: `${Number(result.metrics.score)}` },
-            { label: "Nivel alcanzado", value: `${result.levelReached ?? 0}` },
+            { label: "Mejor nivel", value: `${result.levelReached ?? 0}` },
             { label: "Precisión de clics", value: `${result.accuracy ?? 0}%` },
+            {
+              label: "Intentos",
+              value: `${(result.metrics.attempts as unknown[] | undefined)?.length ?? 1}`,
+            },
           ]}
         />
       )}

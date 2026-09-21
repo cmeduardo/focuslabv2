@@ -89,6 +89,9 @@ export function PatternHuntGame({
     distractorCircle: 0,
     distractorNear: 0,
   });
+  const clickSequenceRef = useRef<
+    { round: number; cellIndex: number; timeSinceRoundStartMs: number; wasTarget: boolean }[]
+  >([]);
   const scoreRef = useRef(0);
   const streakRef = useRef(0);
   const bestStreakRef = useRef(0);
@@ -114,6 +117,7 @@ export function PatternHuntGame({
           searchTimesRef.current,
         ),
         wrongClicksByType: wrongClicksByTypeRef.current,
+        clickSequencePerRound: clickSequenceRef.current,
         timeouts: timeoutsRef.current,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
@@ -163,16 +167,31 @@ export function PatternHuntGame({
     (i: number) => {
       if (roundResolvedRef.current || finishedRef.current) return;
       const clickedType = cells[i];
+      const timeSinceRoundStartMs = Math.round(
+        performance.now() - roundStartRef.current,
+      );
       if (clickedType !== "target") {
         wrongThisRoundRef.current += 1;
         wrongClicksByTypeRef.current[clickedType] += 1;
+        clickSequenceRef.current.push({
+          round,
+          cellIndex: i,
+          timeSinceRoundStartMs,
+          wasTarget: false,
+        });
         setWrongCell(i);
         playMiss();
         setTimeout(() => setWrongCell(null), 300);
         return;
       }
       roundResolvedRef.current = true;
-      const elapsed = Math.round(performance.now() - roundStartRef.current);
+      clickSequenceRef.current.push({
+        round,
+        cellIndex: i,
+        timeSinceRoundStartMs,
+        wasTarget: true,
+      });
+      const elapsed = timeSinceRoundStartMs;
       searchTimesRef.current.push(elapsed);
       foundGridSizesRef.current.push(size);
       wrongClicksRef.current.push(wrongThisRoundRef.current);
@@ -190,7 +209,7 @@ export function PatternHuntGame({
 
       setTimeout(advanceRound, 500);
     },
-    [cells, size, advanceRound],
+    [cells, size, round, advanceRound],
   );
 
   return (

@@ -26,7 +26,9 @@ export type InteractionEventType =
   | "activity_end"
   | "tool_start"
   | "tool_end"
-  | "tool_interrupt";
+  | "tool_interrupt"
+  | "tool_progress"
+  | "session_pulse";
 export type KanbanTaskStatus = "pendiente" | "en_progreso" | "completado";
 export type AiReportStatus = "pendiente" | "completado" | "fallido";
 
@@ -129,6 +131,8 @@ export interface Database {
           ended_at: string | null;
           completed_cycles: number;
           interrupted: boolean;
+          pause_count: number;
+          paused_ms: number;
         };
         Insert: Partial<
           Database["public"]["Tables"]["pomodoro_sessions"]["Row"]
@@ -201,6 +205,7 @@ export interface Database {
           start_at: string;
           end_at: string;
           created_at: string;
+          completed: boolean | null;
         };
         Insert: Partial<
           Database["public"]["Tables"]["calendar_events"]["Row"]

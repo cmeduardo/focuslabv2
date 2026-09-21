@@ -11,13 +11,38 @@ const START_LENGTH = 3;
 const MAX_LEVEL = 10;
 const FLASH_MS = 500;
 const GAP_MS = 250;
+// Un solo intento de "una vida" deja muy poca información si alguien
+// falla temprano (nivel 1-2) — apenas unos pocos clics para que el
+// agente de IA saque algo en limpio (pedido directo, 2026-08-28). Hasta
+// MAX_ATTEMPTS intentos, pero solo si hace falta: si un intento llega a
+// MIN_LEVEL_TO_STOP_EARLY o más (o lo completa perfecto), ya generó
+// suficiente señal y no repite.
+const MAX_ATTEMPTS = 3;
+const MIN_LEVEL_TO_STOP_EARLY = 5;
 
 type Phase = "playback" | "input";
 type Feedback = "correct" | "wrong";
+type AttemptResult = {
+  attempt: number;
+  levelReached: number;
+  mistakeAtStep: number | null;
+  mistakeCellDistance: number | null;
+};
 
 function generateSequence(level: number): number[] {
   const length = START_LENGTH + (level - 1);
   return Array.from({ length }, () => Math.floor(Math.random() * GRID_SIZE));
+}
+
+// Distancia (en celdas de la grilla 3×3) entre la celda tocada por error
+// y la esperada — un resbalón motor (celda vecina) es distinto de un
+// fallo real de memoria (celda lejana).
+function cellDistance(a: number, b: number) {
+  const ax = a % 3;
+  const ay = Math.floor(a / 3);
+  const bx = b % 3;
+  const by = Math.floor(b / 3);
+  return Math.round(Math.hypot(ax - bx, ay - by) * 10) / 10;
 }
 
 export function MemoryMatrixGame({
@@ -25,6 +50,7 @@ export function MemoryMatrixGame({
 }: {
   onFinish: (outcome: ActivityOutcome) => void;
 }) {
+  const [attempt, setAttempt] = useState(1);
   const [level, setLevel] = useState(1);
   const [sequence, setSequence] = useState<number[]>(() => generateSequence(1));
   const [litIndex, setLitIndex] = useState<number | null>(null);
@@ -35,41 +61,93 @@ export function MemoryMatrixGame({
   const [gridFx, setGridFx] = useState<"shake" | null>(null);
   const [gridFxKey, setGridFxKey] = useState(0);
   const [levelUpBanner, setLevelUpBanner] = useState<number | null>(null);
+  const [attemptBanner, setAttemptBanner] = useState<number | null>(null);
   const correctClicksRef = useRef(0);
   const totalClicksRef = useRef(0);
   const scoreRef = useRef(0);
+  const attemptRef = useRef(1);
+  const attemptResultsRef = useRef<AttemptResult[]>([]);
   const sequenceLengthsRef = useRef<number[]>([]);
+  const attemptOfEachSequenceRef = useRef<number[]>([]);
   const clickLatenciesRef = useRef<number[]>([]);
+  const levelOfEachClickRef = useRef<number[]>([]);
+  const attemptOfEachClickRef = useRef<number[]>([]);
   const lastActionAtRef = useRef(0);
   const finishedRef = useRef(false);
 
-  const finishGame = useCallback(
-    (mistakeLevel: number | null, mistakeStep: number | null = null) => {
+  const finishGame = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    const totalClicks = totalClicksRef.current;
+    const accuracy = totalClicks
+      ? Math.round((correctClicksRef.current / totalClicks) * 100)
+      : 0;
+    const bestLevelReached = attemptResultsRef.current.reduce(
+      (max, a) => Math.max(max, a.levelReached),
+      0,
+    );
+    onFinish({
+      accuracy,
+      levelReached: bestLevelReached,
+      metrics: {
+        attempts: attemptResultsRef.current,
+        sequenceLengths: sequenceLengthsRef.current,
+        attemptOfEachSequence: attemptOfEachSequenceRef.current,
+        clickLatenciesMs: clickLatenciesRef.current,
+        levelOfEachClick: levelOfEachClickRef.current,
+        attemptOfEachClick: attemptOfEachClickRef.current,
+        score: scoreRef.current,
+      },
+    });
+  }, [onFinish]);
+
+  // Termina un intento (por error o por completar MAX_LEVEL) y decide si
+  // hace falta uno nuevo: solo si quedó corto (menos de
+  // MIN_LEVEL_TO_STOP_EARLY) y todavía hay intentos disponibles.
+  const handleAttemptEnd = useCallback(
+    (
+      mistakeLevel: number | null,
+      mistakeStep: number | null = null,
+      mistakeCellDistance: number | null = null,
+    ) => {
       if (finishedRef.current) return;
-      finishedRef.current = true;
-      const totalClicks = totalClicksRef.current;
-      const accuracy = totalClicks
-        ? Math.round((correctClicksRef.current / totalClicks) * 100)
-        : 0;
-      onFinish({
-        accuracy,
-        levelReached: mistakeLevel !== null ? mistakeLevel - 1 : MAX_LEVEL,
-        metrics: {
-          sequenceLengths: sequenceLengthsRef.current,
-          mistakeAtLevel: mistakeLevel,
-          mistakeAtStep: mistakeStep,
-          clickLatenciesMs: clickLatenciesRef.current,
-          score: scoreRef.current,
-        },
+      const levelReachedThisAttempt =
+        mistakeLevel !== null ? mistakeLevel - 1 : MAX_LEVEL;
+      attemptResultsRef.current.push({
+        attempt: attemptRef.current,
+        levelReached: levelReachedThisAttempt,
+        mistakeAtStep: mistakeStep,
+        mistakeCellDistance,
       });
+
+      const shouldStop =
+        attemptRef.current >= MAX_ATTEMPTS ||
+        levelReachedThisAttempt >= MIN_LEVEL_TO_STOP_EARLY;
+
+      if (shouldStop) {
+        finishGame();
+        return;
+      }
+
+      const nextAttempt = attemptRef.current + 1;
+      attemptRef.current = nextAttempt;
+      setAttempt(nextAttempt);
+      setAttemptBanner(nextAttempt);
+      setTimeout(() => setAttemptBanner(null), 1200);
+      setLevel(1);
+      setUserStep(0);
+      setFeedback({});
+      setPhase("playback");
+      setSequence(generateSequence(1));
     },
-    [onFinish],
+    [finishGame],
   );
 
   // Reproduce la secuencia actual (nueva en cada nivel). El setState real
   // ocurre dentro de los setTimeout, nunca de forma síncrona en el efecto.
   useEffect(() => {
     sequenceLengthsRef.current.push(sequence.length);
+    attemptOfEachSequenceRef.current.push(attemptRef.current);
     let t = 300;
     const timers: ReturnType<typeof setTimeout>[] = [];
     sequence.forEach((cell) => {
@@ -96,6 +174,8 @@ export function MemoryMatrixGame({
       if (phase !== "input" || finishedRef.current) return;
       const now = performance.now();
       clickLatenciesRef.current.push(Math.round(now - lastActionAtRef.current));
+      levelOfEachClickRef.current.push(level);
+      attemptOfEachClickRef.current.push(attemptRef.current);
       lastActionAtRef.current = now;
       totalClicksRef.current += 1;
       const expected = sequence[userStep];
@@ -105,7 +185,8 @@ export function MemoryMatrixGame({
         setGridFx("shake");
         setGridFxKey((k) => k + 1);
         playMiss();
-        setTimeout(() => finishGame(level, userStep), 600);
+        const distance = cellDistance(cell, expected);
+        setTimeout(() => handleAttemptEnd(level, userStep, distance), 600);
         return;
       }
 
@@ -122,7 +203,7 @@ export function MemoryMatrixGame({
       }
 
       if (level >= MAX_LEVEL) {
-        setTimeout(() => finishGame(null), 500);
+        setTimeout(() => handleAttemptEnd(null), 500);
         return;
       }
 
@@ -140,7 +221,7 @@ export function MemoryMatrixGame({
         setSequence(generateSequence(nextLevel));
       }, 500);
     },
-    [phase, sequence, userStep, level, finishGame],
+    [phase, sequence, userStep, level, handleAttemptEnd],
   );
 
   return (
@@ -150,6 +231,7 @@ export function MemoryMatrixGame({
           {phase === "playback"
             ? "Memorizá la secuencia…"
             : `Repetila — nivel ${level}`}
+          {attempt > 1 && ` · intento ${attempt}/${MAX_ATTEMPTS}`}
         </span>
         <span className="font-heading font-semibold text-foreground">
           {score} pts
@@ -160,6 +242,13 @@ export function MemoryMatrixGame({
           <div className="animate-pop absolute inset-x-0 -top-2 z-10 -translate-y-full">
             <span className="rounded-full bg-primary px-4 py-1.5 text-sm font-heading font-semibold text-primary-foreground shadow-lg">
               ¡Nivel {levelUpBanner}!
+            </span>
+          </div>
+        )}
+        {attemptBanner !== null && (
+          <div className="animate-pop absolute inset-x-0 -top-2 z-10 -translate-y-full">
+            <span className="rounded-full bg-secondary px-4 py-1.5 text-sm font-heading font-semibold text-secondary-foreground shadow-lg">
+              Intento {attemptBanner} de {MAX_ATTEMPTS}
             </span>
           </div>
         )}

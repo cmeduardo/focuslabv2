@@ -1,13 +1,16 @@
-import { ComingSoon } from "@/components/layout/coming-soon";
+"use client";
+
+import { CalendarDays } from "lucide-react";
+
+import { ToolLayout } from "@/components/tools/tool-layout";
+import { WeeklyCalendar } from "@/components/tools/weekly-calendar";
+import { useToolSession } from "@/hooks/use-tool-session";
 
 export default function CalendarioPage() {
+  useToolSession("calendario");
   return (
-    <ComingSoon
-      title="Calendario"
-      description="Calendario semanal simple de actividades (RF-09). Se implementa en el Sprint 3."
-      sprint="Sprint 3"
-      backHref="/herramientas"
-      backLabel="Herramientas"
-    />
+    <ToolLayout title="Calendario" icon={CalendarDays} backHref="/herramientas" wide>
+      <WeeklyCalendar />
+    </ToolLayout>
   );
 }

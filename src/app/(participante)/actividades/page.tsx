@@ -1,4 +1,5 @@
 import { ActionTile } from "@/components/dashboard/action-tile";
+import { SessionPulseCheck } from "@/components/activities/session-pulse";
 import { ACTIVITIES } from "@/lib/constants/nav";
 
 const SLUG_TO_ROUTE: Record<string, string> = {
@@ -13,6 +14,7 @@ const SLUG_TO_ROUTE: Record<string, string> = {
 export default function ActividadesPage() {
   return (
     <div className="space-y-6">
+      <SessionPulseCheck />
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           Actividades

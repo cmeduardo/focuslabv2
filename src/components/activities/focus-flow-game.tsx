@@ -106,6 +106,9 @@ export function FocusFlowGame({
   const trackMsRef = useRef(0);
   const recallStartRef = useRef(0);
   const recallFirstClickRef = useRef<number | null>(null);
+  const lastPickAtRef = useRef(0);
+  const pickLatenciesThisRoundRef = useRef<number[]>([]);
+  const falsePositiveDistancesThisRoundRef = useRef<number[]>([]);
   const correctThisRoundRef = useRef(0);
   const falseThisRoundRef = useRef(0);
   const streakRef = useRef(0);
@@ -121,6 +124,8 @@ export function FocusFlowGame({
   const dotsPerRoundRef = useRef<number[]>([]);
   const trackingDurationMsPerRoundRef = useRef<number[]>([]);
   const recallLatencyMsRef = useRef<number[]>([]);
+  const pickLatenciesMsPerRoundRef = useRef<number[][]>([]);
+  const falsePositiveDistancesPxPerRoundRef = useRef<number[][]>([]);
 
   const finishGame = useCallback(() => {
     if (finishedRef.current) return;
@@ -142,16 +147,27 @@ export function FocusFlowGame({
         dotsPerRound: dotsPerRoundRef.current,
         trackingDurationMsPerRound: trackingDurationMsPerRoundRef.current,
         recallLatencyMs: recallLatencyMsRef.current,
+        pickLatenciesMsPerRound: pickLatenciesMsPerRoundRef.current,
+        falsePositiveDistancesPxPerRound: falsePositiveDistancesPxPerRoundRef.current,
         score: scoreRef.current,
         bestStreak: bestStreakRef.current,
       },
     });
   }, [onFinish]);
 
+  // --dot-x/--dot-y son la fuente de verdad de la posición: además de
+  // aplicarlas directo acá, las animaciones de acierto/error en recall
+  // (animate-dot-pop/animate-dot-shake, globals.css) las leen para no
+  // perder la posición — un transform de CSS (scale/translateX) pisa por
+  // completo cualquier translate inline si no se combinan explícitamente.
   const writeTransform = useCallback((i: number, d: Dot, radius: number) => {
     const node = nodeRefs.current[i];
     if (node) {
-      node.style.transform = `translate(${d.x - radius}px, ${d.y - radius}px)`;
+      const x = `${d.x - radius}px`;
+      const y = `${d.y - radius}px`;
+      node.style.setProperty("--dot-x", x);
+      node.style.setProperty("--dot-y", y);
+      node.style.transform = `translate(${x}, ${y})`;
     }
   }, []);
 
@@ -191,6 +207,7 @@ export function FocusFlowGame({
       }
       if (now - trackStartRef.current >= trackMsRef.current) {
         recallStartRef.current = performance.now();
+        lastPickAtRef.current = recallStartRef.current;
         recallFirstClickRef.current = null;
         setPhase("recall");
         return;
@@ -215,6 +232,8 @@ export function FocusFlowGame({
     trackMsRef.current = trackMsForRound(round);
     correctThisRoundRef.current = 0;
     falseThisRoundRef.current = 0;
+    pickLatenciesThisRoundRef.current = [];
+    falsePositiveDistancesThisRoundRef.current = [];
 
     const radius = diameterForRound(round) / 2;
     dots.forEach((d, i) => writeTransform(i, d, radius));
@@ -245,9 +264,12 @@ export function FocusFlowGame({
       if (selected.has(i)) return;
       const targetCount = targetsForRound(round);
       if (selected.size >= targetCount) return;
+      const now = performance.now();
       if (recallFirstClickRef.current === null) {
-        recallFirstClickRef.current = performance.now();
+        recallFirstClickRef.current = now;
       }
+      pickLatenciesThisRoundRef.current.push(Math.round(now - lastPickAtRef.current));
+      lastPickAtRef.current = now;
 
       const dot = dotsRef.current[i];
       const isCorrect = dot.isTarget;
@@ -261,6 +283,16 @@ export function FocusFlowGame({
       } else {
         falseThisRoundRef.current += 1;
         streakRef.current = 0;
+        // Distancia del clic errado al blanco real más cercano (posiciones
+        // ya congeladas al detenerse) — confundir con un distractor
+        // cercano es distinto de adivinar al azar.
+        const targets = dotsRef.current.filter((d) => d.isTarget);
+        const nearestTargetDistance = targets.length
+          ? Math.round(
+              Math.min(...targets.map((t) => Math.hypot(t.x - dot.x, t.y - dot.y))),
+            )
+          : 0;
+        falsePositiveDistancesThisRoundRef.current.push(nearestTargetDistance);
         playMiss();
       }
       setStreak(streakRef.current);
@@ -284,6 +316,10 @@ export function FocusFlowGame({
           recallFirstClickRef.current !== null
             ? Math.round(recallFirstClickRef.current - recallStartRef.current)
             : 0,
+        );
+        pickLatenciesMsPerRoundRef.current.push(pickLatenciesThisRoundRef.current);
+        falsePositiveDistancesPxPerRoundRef.current.push(
+          falsePositiveDistancesThisRoundRef.current,
         );
         setTimeout(advanceRound, RESOLVE_PAUSE_MS);
       }
@@ -349,7 +385,7 @@ export function FocusFlowGame({
               }}
               className={cn(
                 "absolute left-0 top-0 rounded-full border-2 border-transparent",
-                phase === "flash" && isTarget && "animate-pop bg-primary ring-4 ring-primary/30",
+                phase === "flash" && isTarget && "animate-dot-pop bg-primary ring-4 ring-primary/30",
                 phase === "flash" && !isTarget && "bg-muted-foreground/40",
                 phase === "tracking" && "bg-muted-foreground/70",
                 phase === "recall" &&
@@ -357,10 +393,10 @@ export function FocusFlowGame({
                   "cursor-pointer bg-muted-foreground/70 hover:bg-muted-foreground",
                 phase === "recall" &&
                   pick === true &&
-                  "animate-pop border-primary bg-primary/80",
+                  "animate-dot-pop border-primary bg-primary/80",
                 phase === "recall" &&
                   pick === false &&
-                  "animate-shake border-destructive bg-destructive/60",
+                  "animate-dot-shake border-destructive bg-destructive/60",
               )}
             />
           );

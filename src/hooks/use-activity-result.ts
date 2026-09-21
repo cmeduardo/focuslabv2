@@ -27,6 +27,12 @@ export type ActivityPhase = "intro" | "playing" | "saving" | "done";
  * partida, emite activity_start/activity_end al motor de captura (RF-03) y
  * guarda el resultado estructurado en activity_results (RF-05). Cada juego
  * (*-game.tsx) solo necesita llamar a finish() con su propio resultado.
+ *
+ * El autorreporte subjetivo (RF: ¿qué tan concentrado se sintió?) NO vive
+ * acá — se probó como paso obligatorio después de cada actividad y se
+ * sintió repetitivo (feedback directo, 2026-08-28). Ahora es un pulso a
+ * nivel de sesión, cada 3 actividades, no bloqueante — ver
+ * SessionPulseCheck en /actividades.
  */
 export function useActivityResult(activityType: ActivityType) {
   const { sessionId, userId, logEvent } = useEventLogger();
