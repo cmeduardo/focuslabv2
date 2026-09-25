@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { FocusAperture } from "@/components/brand/focus-aperture";
+import { CompleteSessionButton } from "@/components/layout/complete-session-button";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,11 +15,13 @@ export function AppShell({
   nav,
   roleLabel,
   userEmail,
+  sessionId,
   children,
 }: {
   nav: readonly NavItem[];
   roleLabel: string;
   userEmail: string;
+  sessionId?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -64,6 +67,7 @@ export function AppShell({
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {userEmail}
             </span>
+            {sessionId && <CompleteSessionButton sessionId={sessionId} />}
             <LogoutButton />
           </div>
         </div>

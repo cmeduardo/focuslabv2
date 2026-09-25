@@ -43,3 +43,28 @@ export async function markSessionAbandoned(supabase: Client, sessionId: string) 
     .eq("id", sessionId)
     .eq("status", "en_progreso");
 }
+
+// RF-10: cierra la sesión al pedido del participante (POST
+// /api/sessions/[sessionId]/complete), disparando el flujo de informe de IA.
+// El filtro por user_id + status = 'en_progreso' evita completar la sesión
+// de otro participante o completar dos veces la misma.
+export async function markSessionCompleted(
+  supabase: Client,
+  sessionId: string,
+  userId: string,
+) {
+  const { data, error } = await supabase
+    .from("sessions")
+    .update({ status: "completada", ended_at: new Date().toISOString() })
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .eq("status", "en_progreso")
+    .select("id, started_at, ended_at")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("No se pudo completar la sesión.");
+  }
+
+  return data;
+}

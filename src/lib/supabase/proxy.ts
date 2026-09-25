@@ -3,7 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // "/consentimiento" y "/auth" (enlace de confirmación de correo) son
 // públicos a nivel de red: cada uno valida por su cuenta que haya sesión.
-const PUBLIC_PATHS = ["/", "/login", "/registro", "/consentimiento", "/auth"];
+// "/api/webhooks" tampoco pasa por Supabase Auth: son llamadas
+// servidor-a-servidor (n8n) autenticadas con un secreto compartido propio,
+// ver cada Route Handler.
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/registro",
+  "/consentimiento",
+  "/auth",
+  "/api/webhooks",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(

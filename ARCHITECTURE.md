@@ -94,12 +94,12 @@ Control de acceso en dos niveles:
 | `/actividades/{reaction-test,focus-flow,memory-matrix,word-sprint,pattern-hunt,deep-read}` | participante | Wireframe | 2 |
 | `/herramientas` | participante | Listado de las 4 herramientas | 1 |
 | `/herramientas/{pomodoro,kanban,habitos,calendario}` | participante | Wireframe | 3 |
-| `/informes` | participante | Wireframe (historial, RF-12) | 4 |
-| `/informes/[sessionId]` | participante | Wireframe (detalle de informe, RF-11) | 4 |
+| `/informes` | participante | Historial de informes (RF-12) | 4 |
+| `/informes/[sessionId]` | participante | Detalle de informe (RF-11), auto-refresh mientras está `pendiente` | 4 |
 | `/admin` | investigador, autoridad | Wireframe (panel agregado, RF-13) | 4 |
 | `/admin/participantes` | investigador | Wireframe (gestión del taller) | 4 |
 
-Endpoints de API planeados (no implementados aún, ver §7):
+Endpoints de API (implementados, ver §7):
 
 | Endpoint | Método | Rol | Sprint |
 |---|---|---|---|
@@ -137,23 +137,89 @@ El esquema completo, con todas las políticas RLS, vive en
 pegar cada archivo en el SQL Editor de Supabase en orden, o usar
 `supabase db push` si más adelante se enlaza el proyecto con el CLI.
 
-## 7. Flujo de informe de IA (diseño, Sprint 4)
+## 7. Flujo de informe de IA (Sprint 4)
 
-1. El participante termina su sesión → el frontend llama a
+1. El participante termina su sesión → el botón **"Terminar sesión"** del
+   `AppShell` (`components/layout/complete-session-button.tsx`, Server
+   Action `complete-session-action.ts`) o, equivalentemente,
    `POST /api/sessions/[sessionId]/complete`.
-2. El Route Handler marca `sessions.status = 'completada'`, crea la fila en
-   `ai_reports` con `status = 'pendiente'` y llama a
-   `generateAttentionReport(sessionId)` — una función de `lib/services/`
-   fácil de mockear (para poder probar el resto del flujo sin depender de
-   que la instancia de n8n esté configurada).
-3. En producción, `generateAttentionReport` dispara el webhook hacia n8n con
-   el resumen estructurado de la sesión (resultados de actividades + eventos
-   agregados). n8n llama a GPT-4o-mini.
+2. Ambas entradas delegan en el mismo orquestador,
+   `completeSessionAndRequestReport()` (`lib/services/ai-reports.ts`), para
+   no duplicar la secuencia: marca `sessions.status = 'completada'`
+   (`markSessionCompleted`, filtra por `user_id` + `status = 'en_progreso'`
+   para no completar dos veces ni la sesión de otro), crea la fila en
+   `ai_reports` con `status = 'pendiente'` (con el cliente `admin`: no hay
+   policy de insert para participantes) y llama a
+   `generateAttentionReport(sessionId)`.
+3. `generateAttentionReport` arma el resumen estructurado de la sesión
+   (resultados de `activity_results` + conteo de `tool_start` por
+   herramienta desde `interaction_events`) y dispara el webhook hacia n8n
+   (`N8N_AI_REPORT_WEBHOOK_URL`). Sin esa variable configurada, no hace nada
+   y el informe queda `pendiente` (mock-friendly, como estaba previsto). Un
+   fallo de red hacia n8n se loguea pero no rompe el cierre de sesión del
+   participante. n8n llama a GPT-4o-mini.
 4. n8n responde al webhook de retorno `POST /api/webhooks/ai-report`
-   (autenticado con un secreto compartido, `AI_REPORT_WEBHOOK_SECRET`), que
-   usa el cliente `admin` (service role, bypassa RLS) para actualizar la fila
-   de `ai_reports` a `status = 'completado'` con el contenido del informe.
-5. El participante consulta el resultado en `/informes/[sessionId]`.
+   (`src/app/api/webhooks/ai-report/route.ts`), autenticado con un secreto
+   compartido (`AI_REPORT_WEBHOOK_SECRET`, comparación timing-safe contra el
+   header `X-Webhook-Secret`). Este endpoint es tráfico servidor-a-servidor,
+   por lo que está agregado a `PUBLIC_PATHS` en `lib/supabase/proxy.ts` (no
+   pasa por el chequeo de sesión de Supabase). Usa el cliente `admin` para
+   actualizar la fila de `ai_reports` a `status = 'completado'` (filtrando
+   por `status = 'pendiente'`, así un reintento del webhook no pisa un
+   informe ya completado).
+5. El participante consulta el resultado en `/informes` (historial,
+   `listAiReports`) y `/informes/[sessionId]` (detalle, `getAiReport`). Si
+   el informe sigue `pendiente`, la página se auto-refresca sola cada 3s
+   (`components/reports/pending-auto-refresh.tsx`) hasta que cambie de
+   estado — en la práctica el ciclo completo (n8n + GPT-4o-mini + callback)
+   tarda unos 5 segundos.
+
+### Workflow de n8n (armado 2026-09-19)
+
+Workflow **"FocusLab - Informe de IA (Sprint 4)"**, publicado en la instancia
+local de n8n (Docker, puerto 5678). Reemplaza al workflow de prueba viejo
+("FocusLab AI Agent", de la versión inicial de la tesis, sin usar). Cinco
+nodos en cadena:
+
+1. **Webhook** — `POST /webhook/focuslab-ai-report`, responde
+   inmediatamente (`responseMode: onReceived`) para no bloquear al caller;
+   el resto de la cadena sigue en background. Body esperado:
+   `{ sessionId, activities: [...], sessionDurationMs, toolUsage: [...] }`.
+2. **Construir prompt** (Code) — arma `systemPrompt` (perfil atencional,
+   explícitamente sin diagnóstico clínico ni mención de TDAH, en español) y
+   `userPrompt` (los datos de la sesión) a partir del body.
+3. **Generar informe con OpenAI** (HTTP Request) — `POST` a
+   `https://api.openai.com/v1/chat/completions`, modelo `gpt-4o-mini`,
+   `response_format: json_object`. Usa la credencial existente **"OpenAI
+   account"** (reutilizada, no se creó una nueva).
+4. **Procesar respuesta** (Code) — parsea el JSON de OpenAI a los campos de
+   `ai_reports`: `attentional_profile`, `strengths`, `areas_for_improvement`,
+   `recommendations`, más `sessionId` (recuperado de "Construir prompt" vía
+   `$('Construir prompt')`) y `rawResponse`.
+5. **Callback a Next.js** (HTTP Request) — `POST` a
+   `AI_REPORT_WEBHOOK_URL`, autenticado con la credencial Header Auth
+   **"Webhook FocusLab Secret"** (también reutilizada — header
+   `X-Webhook-Secret`). El Route Handler `POST /api/webhooks/ai-report`
+   valida ese mismo header contra `AI_REPORT_WEBHOOK_SECRET`.
+
+**Validado end-to-end (2026-09-24/25)**, tanto con `curl` directo al
+webhook como jugando una actividad real en el navegador y usando el botón
+"Terminar sesión": los cinco nodos corren sin error (la credencial "OpenAI
+account" estaba vencida — se renovó — y la credencial "Webhook FocusLab
+Secret" del nodo Callback se resincronizó con `AI_REPORT_WEBHOOK_SECRET` de
+`.env.local`), la fila de `ai_reports` termina en `status = 'completado'`
+con contenido coherente en español y sin terminología clínica, y `/informes/
+[sessionId]` lo muestra correctamente. Un caso límite probado: sesión sin
+ninguna actividad completada — GPT igual arma un perfil razonable en vez de
+fallar, aunque la card de "Fortalezas" queda vacía (cosmético, no bloquea).
+
+**Nota de red local**: la URL de callback usada para pruebas en local es
+`http://172.17.0.1:3000/api/webhooks/ai-report` (la IP del gateway del
+bridge de Docker en Linux), no `localhost`, porque el contenedor de n8n no
+tiene `host.docker.internal` mapeado y `localhost` dentro del contenedor no
+llega al Next.js corriendo en el host. Hay que actualizar esa URL en el
+nodo "Callback a Next.js" cuando se despliegue (Vercel) o si cambia el
+setup de Docker.
 
 ## 7bis. Autenticación y motor de captura (Sprint 1)
 
@@ -208,6 +274,18 @@ el `on delete cascade` limpia todo al borrar el usuario.
   antes de lo previsto para Sprint 5).
 - **Migrations**: los 12 archivos de `supabase/migrations/` ya están
   aplicados en el proyecto de Supabase.
+
+**Nota (2026-09-25)**: `.env.local` tenía cargado un ref de Supabase que ya
+no existe (proyecto borrado/pausado, no resolvía ni por DNS). Se corrigió
+apuntando de nuevo al proyecto **focuslabv2** (org "Dev" en el dashboard de
+Supabase). De paso se notó que **Confirm email volvió a estar activado**
+en ese proyecto (contradice lo de arriba) — probablemente se reseteó junto
+con el resto de la config al recrear/pausar el proyecto. Antes del taller
+piloto real hay que volver a desactivarlo en Authentication → Emails, o el
+registro de los participantes se va a quedar trabado en "revisa tu correo"
+(Supabase Auth además rate-limita el envío de esos correos en el plan free,
+así que probar registro repetidas veces sin desactivarlo agota el límite
+rápido).
 
 ## 7ter. Las seis actividades cognitivas (Sprint 2)
 
@@ -461,6 +539,10 @@ Ver `.env.local.example`. Resumen:
 - **Sprint 2 (hecho)** — las seis actividades cognitivas, ver §7ter.
 - **Sprint 3 (hecho)** — las cuatro herramientas de productividad, ver
   §7quater.
-- **Sprint 4** — flujo de informe con IA (`generateAttentionReport`,
-  endpoints de `/api`) + panel administrativo.
+- **Sprint 4 (en progreso)** — flujo de informe con IA de punta a punta:
+  `completeSessionAndRequestReport`, `generateAttentionReport`, ambos
+  endpoints de `/api`, workflow de n8n, y UI de `/informes` +
+  `/informes/[sessionId]` con el botón "Terminar sesión", ver §7. Validado
+  end-to-end contra el proyecto real. Falta el panel administrativo
+  (`/admin`, RF-13/RF-14).
 - **Sprint 5** — integración, pruebas, pulido de UI, despliegue en Vercel.

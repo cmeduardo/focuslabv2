@@ -13,8 +13,9 @@ export async function registro(
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const passwordConfirmation = String(formData.get("password_confirmation") ?? "");
 
-  if (!fullName || !email || !password) {
+  if (!fullName || !email || !password || !passwordConfirmation) {
     return { error: "Completa todos los campos.", needsEmailConfirmation: false };
   }
 
@@ -23,6 +24,10 @@ export async function registro(
       error: "La contraseña debe tener al menos 6 caracteres.",
       needsEmailConfirmation: false,
     };
+  }
+
+  if (password !== passwordConfirmation) {
+    return { error: "Las contraseñas no coinciden.", needsEmailConfirmation: false };
   }
 
   const { error, needsEmailConfirmation } = await signUpWithPassword(
