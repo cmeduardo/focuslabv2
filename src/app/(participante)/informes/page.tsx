@@ -29,6 +29,8 @@ function formatDate(iso: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    // Se renderiza en el servidor (UTC en Vercel): fijar la zona del taller.
+    timeZone: "America/Guatemala",
   });
 }
 

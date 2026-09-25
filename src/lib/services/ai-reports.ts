@@ -100,11 +100,21 @@ export async function generateAttentionReport(
   const summary = await buildSessionSummary(supabase, session);
 
   try {
-    await fetch(webhookUrl, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(summary),
     });
+
+    // fetch no lanza en respuestas no-2xx (p. ej. 530 del túnel de
+    // Cloudflare caído, 404 si el workflow está inactivo): registrarlas
+    // explícitamente para que no fallen en silencio.
+    if (!response.ok) {
+      console.error(
+        `El webhook de informe de IA respondió ${response.status} ${response.statusText}.`,
+        await response.text().catch(() => ""),
+      );
+    }
   } catch (error) {
     console.error("No se pudo disparar el webhook de informe de IA.", error);
   }
