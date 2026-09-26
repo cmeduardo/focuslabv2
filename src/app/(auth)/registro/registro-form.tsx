@@ -104,6 +104,20 @@ export function RegistroForm() {
               required
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="password_confirmation" className="gap-1.5">
+              <Lock className="size-3.5 text-muted-foreground" />
+              Confirmar contraseña
+            </Label>
+            <Input
+              id="password_confirmation"
+              name="password_confirmation"
+              type="password"
+              autoComplete="new-password"
+              minLength={6}
+              required
+            />
+          </div>
           {state.error ? (
             <p className="text-sm text-destructive">{state.error}</p>
           ) : null}

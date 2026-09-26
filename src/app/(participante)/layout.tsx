@@ -33,6 +33,7 @@ export default async function ParticipantLayout({
       nav={PARTICIPANT_NAV}
       roleLabel="Participante"
       userEmail={user.email ?? ""}
+      sessionId={session.id}
     >
       <EventTrackerProvider sessionId={session.id} userId={user.id}>
         {children}
