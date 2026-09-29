@@ -25,6 +25,22 @@ export async function createPendingAiReport(
   }
 }
 
+// n8n corre en la máquina local del investigador (Docker), no en Vercel — el
+// nodo "Callback a Next.js" no puede tener la URL de retorno hardcodeada
+// porque el mismo workflow atiende tanto al Next.js local (dev) como al
+// desplegado en Vercel (prod). Se la pasamos en cada request:
+// `VERCEL_PROJECT_PRODUCTION_URL` la pone Vercel automáticamente en
+// producción; sin esa variable (dev local), usa el gateway del bridge de
+// Docker (ver ARCHITECTURE.md §7, nota de red local).
+function getCallbackUrl() {
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const origin = productionHost
+    ? `https://${productionHost}`
+    : "http://172.17.0.1:3000";
+
+  return `${origin}/api/webhooks/ai-report`;
+}
+
 async function buildSessionSummary(
   supabase: Client,
   session: { id: string; started_at: string; ended_at: string | null },
@@ -54,6 +70,7 @@ async function buildSessionSummary(
 
   return {
     sessionId: session.id,
+    callbackUrl: getCallbackUrl(),
     sessionDurationMs: Math.max(0, endedAt - startedAt),
     activities: (activityResults ?? []).map((row) => ({
       activityType: row.activity_type,
@@ -83,11 +100,21 @@ export async function generateAttentionReport(
   const summary = await buildSessionSummary(supabase, session);
 
   try {
-    await fetch(webhookUrl, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(summary),
     });
+
+    // fetch no lanza en respuestas no-2xx (p. ej. 530 del túnel de
+    // Cloudflare caído, 404 si el workflow está inactivo): registrarlas
+    // explícitamente para que no fallen en silencio.
+    if (!response.ok) {
+      console.error(
+        `El webhook de informe de IA respondió ${response.status} ${response.statusText}.`,
+        await response.text().catch(() => ""),
+      );
+    }
   } catch (error) {
     console.error("No se pudo disparar el webhook de informe de IA.", error);
   }
