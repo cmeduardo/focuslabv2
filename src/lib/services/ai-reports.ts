@@ -145,6 +145,43 @@ export async function completeSessionAndRequestReport(
   return session;
 }
 
+// Reintento manual (investigador): los informes que quedan 'pendiente' por un
+// webhook caído o mal configurado no se reintentan solos. Vuelve a disparar el
+// webhook con el resumen de la sesión; si el informe estaba 'fallido', primero
+// lo regresa a 'pendiente' para que applyAiReportResult pueda aplicarlo.
+// Devuelve false si no hay informe que reintentar o ya está completado.
+export async function retryAiReport(sessionId: string) {
+  const admin = createAdminClient();
+
+  const [{ data: session }, { data: report }] = await Promise.all([
+    admin
+      .from("sessions")
+      .select("id, started_at, ended_at")
+      .eq("id", sessionId)
+      .maybeSingle(),
+    admin
+      .from("ai_reports")
+      .select("id, status")
+      .eq("session_id", sessionId)
+      .maybeSingle(),
+  ]);
+
+  if (!session || !report || report.status === "completado") {
+    return false;
+  }
+
+  if (report.status === "fallido") {
+    await admin
+      .from("ai_reports")
+      .update({ status: "pendiente", completed_at: null })
+      .eq("id", report.id);
+  }
+
+  await generateAttentionReport(admin, session);
+
+  return true;
+}
+
 // RF-12: historial de informes del participante, para /informes. Trae la
 // fecha de la sesión en una segunda consulta (sin relaciones embebidas en
 // database.ts, ver convención del resto de lib/services/).

@@ -88,16 +88,16 @@ Control de acceso en dos niveles:
 | Ruta | Rol | Estado | Sprint |
 |---|---|---|---|
 | `/` | público | Landing | 0 |
-| `/login`, `/registro`, `/consentimiento` | público | Wireframe (formularios deshabilitados) | 1 |
+| `/login`, `/registro`, `/consentimiento` | público | Implementado | 1 |
 | `/dashboard` | participante | Accesos rápidos | 1 |
 | `/actividades` | participante | Listado de las 6 actividades | 1 |
-| `/actividades/{reaction-test,focus-flow,memory-matrix,word-sprint,pattern-hunt,deep-read}` | participante | Wireframe | 2 |
+| `/actividades/{reaction-test,focus-flow,memory-matrix,word-sprint,pattern-hunt,deep-read}` | participante | Implementado | 2 |
 | `/herramientas` | participante | Listado de las 4 herramientas | 1 |
-| `/herramientas/{pomodoro,kanban,habitos,calendario}` | participante | Wireframe | 3 |
+| `/herramientas/{pomodoro,kanban,habitos,calendario}` | participante | Implementado | 3 |
 | `/informes` | participante | Historial de informes (RF-12) | 4 |
 | `/informes/[sessionId]` | participante | Detalle de informe (RF-11), auto-refresh mientras está `pendiente` | 4 |
-| `/admin` | investigador, autoridad | Wireframe (panel agregado, RF-13) | 4 |
-| `/admin/participantes` | investigador | Wireframe (gestión del taller) | 4 |
+| `/admin` | investigador, autoridad | Panel agregado sobre las vistas `vw_*` (RF-13) + exportación CSV (RF-14) | 4 |
+| `/admin/participantes` | investigador | Consentimiento, avance e informes por participante; reintento de informes atascados | 4 |
 
 Endpoints de API (implementados, ver §7):
 
@@ -105,6 +105,7 @@ Endpoints de API (implementados, ver §7):
 |---|---|---|---|
 | `/api/sessions/[sessionId]/complete` | `POST` | participante | 4 |
 | `/api/webhooks/ai-report` | `POST` | n8n (secreto compartido) | 4 |
+| `/admin/export?dataset=actividades\|eventos\|sesiones\|herramientas` | `GET` | investigador, autoridad | 4 |
 
 ## 6. Modelo de datos (entidad-relación)
 
@@ -539,10 +540,14 @@ Ver `.env.local.example`. Resumen:
 - **Sprint 2 (hecho)** — las seis actividades cognitivas, ver §7ter.
 - **Sprint 3 (hecho)** — las cuatro herramientas de productividad, ver
   §7quater.
-- **Sprint 4 (en progreso)** — flujo de informe con IA de punta a punta:
+- **Sprint 4 (hecho)** — flujo de informe con IA de punta a punta:
   `completeSessionAndRequestReport`, `generateAttentionReport`, ambos
   endpoints de `/api`, workflow de n8n, y UI de `/informes` +
   `/informes/[sessionId]` con el botón "Terminar sesión", ver §7. Validado
-  end-to-end contra el proyecto real. Falta el panel administrativo
-  (`/admin`, RF-13/RF-14).
+  end-to-end contra el proyecto real. Panel administrativo: `/admin` lee las
+  vistas agregadas `vw_*` con el cliente del usuario (RLS + `current_user_role()`,
+  sin `user_id`, RS-04) y ofrece exportación CSV por dataset (RF-14);
+  `/admin/participantes` (solo investigador) lista consentimiento, sesiones y
+  último informe, y permite reintentar manualmente informes `fallido` o
+  `pendiente` por más de 5 min (`retryAiReport`, vía Server Action).
 - **Sprint 5** — integración, pruebas, pulido de UI, despliegue en Vercel.
