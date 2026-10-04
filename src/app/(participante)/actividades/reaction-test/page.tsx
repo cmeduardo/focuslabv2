@@ -2,63 +2,41 @@
 
 import { Zap } from "lucide-react";
 
-import { ActivityIntro } from "@/components/activities/activity-intro";
-import { ActivityLayout } from "@/components/activities/activity-layout";
-import { ActivityResult } from "@/components/activities/activity-result";
-import { ReactionTestGame } from "@/components/activities/reaction-test-game";
-import { useActivityResult } from "@/hooks/use-activity-result";
+import { ActivityShell } from "@/components/activities/activity-shell";
+import { ReactionTestRound } from "@/components/activities/reaction-test-round";
+import { REACTION_TEST_CONFIG } from "@/lib/activities/config";
+import { stat } from "@/lib/activities/format";
+import { summarizeReactionTest } from "@/lib/activities/reaction-test/metrics";
+import type { ActivitySummary } from "@/lib/activities/types";
+
+function resultStats({ metrics, accuracy }: ActivitySummary) {
+  return [
+    { label: "Mediana", value: stat(metrics.rtMedianMs, " ms") },
+    { label: "Variabilidad", value: stat(metrics.rtSdMs, " ms") },
+    { label: "Respuestas a tiempo", value: stat(accuracy, "%") },
+    { label: "Respuestas lentas", value: stat(metrics.lapses) },
+    { label: "Respuestas anticipadas", value: stat(metrics.anticipations) },
+    { label: "Señales", value: stat(metrics.scoredTrials) },
+  ];
+}
 
 export default function ReactionTestPage() {
-  const { phase, result, start, finish, reset } =
-    useActivityResult("reaction_test");
-
   return (
-    <ActivityLayout title="Reaction Test" icon={Zap} backHref="/actividades">
-      {phase === "intro" && (
-        <ActivityIntro
-          title="Reaction Test"
-          description="Tiempo de reacción y puntería, en una grilla de 9 celdas, durante 90 segundos."
-          instructions={[
-            "En cada instante aparece un círculo violeta o un cuadrado coral en alguna de las 9 celdas — cambia de lugar y de ritmo cada vez.",
-            "Hacé clic justo sobre el círculo violeta apenas lo veas — con cada acierto seguido se achica y vale más puntos.",
-            "Si es el cuadrado coral (poco frecuente), no hagas nada — dejalo pasar.",
-            "Un clic en la celda equivocada, o sin que haya nada para responder, corta tu racha.",
-          ]}
-          onStart={start}
-        />
-      )}
-      {phase === "playing" && <ReactionTestGame onFinish={finish} />}
-      {(phase === "saving" || phase === "done") && result && (
-        <ActivityResult
-          saving={phase === "saving"}
-          backHref="/actividades"
-          onRetry={reset}
-          stats={[
-            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
-            {
-              label: "Racha máxima",
-              value: `${Number(result.metrics.bestStreak)}`,
-            },
-            { label: "Precisión", value: `${result.accuracy ?? 0}%` },
-            {
-              label: "Tiempo promedio",
-              value: `${Number(result.metrics.avgReactionMs)} ms`,
-            },
-            {
-              label: "Variabilidad (DE)",
-              value: `${Number(result.metrics.reactionRtSD)} ms`,
-            },
-            {
-              label: "Arranques en falso",
-              value: `${Number(result.metrics.falseStarts)}`,
-            },
-            {
-              label: "Comisiones",
-              value: `${Number(result.metrics.commissions)}`,
-            },
-          ]}
-        />
-      )}
-    </ActivityLayout>
+    <ActivityShell
+      activityType="reaction_test"
+      title="Reaction Test"
+      icon={Zap}
+      tagline="¿Qué tan rápido reaccionas cuando la señal llega sin aviso? Un reto de alerta de unos 3 minutos."
+      instructions={[
+        "Mira el centro de la pantalla y espera.",
+        "Cuando aparezca el círculo, responde lo más rápido que puedas.",
+        "La espera cambia cada vez: a veces 2 segundos, a veces 10. No te adelantes.",
+      ]}
+      inputHint="En laptop puedes usar la barra espaciadora o el mouse; en celular, toca cualquier parte de la pantalla."
+      config={REACTION_TEST_CONFIG}
+      Round={ReactionTestRound}
+      summarize={summarizeReactionTest}
+      resultStats={resultStats}
+    />
   );
 }

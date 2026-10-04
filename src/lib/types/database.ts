@@ -31,6 +31,9 @@ export type InteractionEventType =
   | "session_pulse";
 export type KanbanTaskStatus = "pendiente" | "en_progreso" | "completado";
 export type AiReportStatus = "pendiente" | "completado" | "fallido";
+export type ActivityRunStatus = "en_curso" | "completada" | "incompleta";
+export type DeviceType = "mobile" | "tablet" | "desktop";
+export type InputType = "touch" | "mouse" | "keyboard";
 
 export interface Database {
   public: {
@@ -108,6 +111,8 @@ export interface Database {
           level_reached: number | null;
           metrics: Record<string, unknown>;
           completed_at: string;
+          run_id: string | null;
+          protocol_version: string;
         };
         Insert: Partial<
           Database["public"]["Tables"]["activity_results"]["Row"]
@@ -118,6 +123,69 @@ export interface Database {
           duration_ms: number;
         };
         Update: Partial<Database["public"]["Tables"]["activity_results"]["Row"]>;
+        Relationships: [];
+      };
+      activity_runs: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          activity_type: ActivityType;
+          protocol_version: string;
+          status: ActivityRunStatus;
+          started_at: string;
+          ended_at: string | null;
+          practice_rounds: number;
+          config: Record<string, unknown>;
+          device_type: DeviceType | null;
+          input_primary: InputType | null;
+          input_counts: Partial<Record<InputType, number>>;
+          viewport_w: number | null;
+          viewport_h: number | null;
+          device_pixel_ratio: number | null;
+          orientation: "portrait" | "landscape" | null;
+          browser: string | null;
+          os: string | null;
+          refresh_hz_est: number | null;
+          visibility_losses: number;
+        };
+        Insert: Partial<Database["public"]["Tables"]["activity_runs"]["Row"]> & {
+          id: string;
+          session_id: string;
+          user_id: string;
+          activity_type: ActivityType;
+        };
+        Update: Partial<Database["public"]["Tables"]["activity_runs"]["Row"]>;
+        Relationships: [];
+      };
+      activity_trials: {
+        Row: {
+          id: number;
+          run_id: string;
+          user_id: string;
+          trial_index: number;
+          condition: Record<string, unknown>;
+          stimulus_onset_ms: number | null;
+          response_at_ms: number | null;
+          rt_ms: number | null;
+          response: string | null;
+          response_detail: Record<string, unknown> | null;
+          correct: boolean | null;
+          classification: string | null;
+          input_type: InputType | null;
+          valid: boolean;
+          invalid_reason: string | null;
+        };
+        Insert: Partial<
+          Omit<Database["public"]["Tables"]["activity_trials"]["Row"], "id">
+        > & {
+          run_id: string;
+          user_id: string;
+          trial_index: number;
+        };
+        Update: Partial<
+          Omit<Database["public"]["Tables"]["activity_trials"]["Row"], "id">
+        >;
         Relationships: [];
       };
       pomodoro_sessions: {
@@ -249,6 +317,48 @@ export interface Database {
           precision_promedio: number | null;
           nivel_promedio: number | null;
           precision_desv_estandar: number | null;
+          protocol_version: string;
+        };
+        Relationships: [];
+      };
+      vw_actividades_dimensiones: {
+        Row: {
+          activity_type: ActivityType;
+          dimension: string;
+          metrica_principal: string;
+          device_type: string;
+          participantes: number;
+          valor_promedio: number | null;
+          valor_desv_estandar: number | null;
+          valor_minimo: number | null;
+          valor_maximo: number | null;
+          precision_promedio: number | null;
+          duracion_s_promedio: number | null;
+        };
+        Relationships: [];
+      };
+      vw_participantes_analisis: {
+        Row: Record<string, string | number | null> & { participante: string };
+        Relationships: [];
+      };
+      vw_ensayos_analisis: {
+        Row: {
+          participante: string;
+          activity_type: ActivityType;
+          device_type: string | null;
+          entrada_principal: string | null;
+          refresh_hz_est: number | null;
+          corrida_inicio: string;
+          trial_index: number;
+          condition: Record<string, unknown>;
+          stimulus_onset_ms: number | null;
+          rt_ms: number | null;
+          response: string | null;
+          correct: boolean | null;
+          classification: string | null;
+          input_type: string | null;
+          valid: boolean;
+          invalid_reason: string | null;
         };
         Relationships: [];
       };

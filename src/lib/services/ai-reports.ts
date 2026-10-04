@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { pickFirstAttempts } from "@/lib/activities/report";
 import { markSessionCompleted } from "@/lib/services/sessions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AiReportStatus, Database } from "@/lib/types/database";
@@ -45,10 +46,17 @@ async function buildSessionSummary(
   supabase: Client,
   session: { id: string; started_at: string; ended_at: string | null },
 ) {
-  const [{ data: activityResults }, { data: events }] = await Promise.all([
+  const [{ data: activityResults }, { data: runs }, { data: events }] = await Promise.all([
     supabase
       .from("activity_results")
-      .select("activity_type, accuracy, level_reached, duration_ms")
+      .select(
+        "activity_type, accuracy, level_reached, duration_ms, metrics, protocol_version, run_id",
+      )
+      .eq("session_id", session.id)
+      .order("completed_at", { ascending: true }),
+    supabase
+      .from("activity_runs")
+      .select("id, activity_type, status, device_type, input_primary")
       .eq("session_id", session.id),
     supabase
       .from("interaction_events")
@@ -65,6 +73,23 @@ async function buildSessionSummary(
     }
   }
 
+  const runById = new Map((runs ?? []).map((run) => [run.id, run]));
+  const incompleteByActivity = new Map<string, number>();
+  const deviceCounts = new Map<string, number>();
+  for (const run of runs ?? []) {
+    if (run.status === "incompleta") {
+      incompleteByActivity.set(
+        run.activity_type,
+        (incompleteByActivity.get(run.activity_type) ?? 0) + 1,
+      );
+    }
+    if (run.device_type) {
+      deviceCounts.set(run.device_type, (deviceCounts.get(run.device_type) ?? 0) + 1);
+    }
+  }
+  const primaryDevice =
+    [...deviceCounts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
   const startedAt = new Date(session.started_at).getTime();
   const endedAt = session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
 
@@ -72,12 +97,24 @@ async function buildSessionSummary(
     sessionId: session.id,
     callbackUrl: getCallbackUrl(),
     sessionDurationMs: Math.max(0, endedAt - startedAt),
-    activities: (activityResults ?? []).map((row) => ({
-      activityType: row.activity_type,
-      accuracy: row.accuracy,
-      levelReached: row.level_reached,
-      durationMs: row.duration_ms,
-    })),
+    deviceType: primaryDevice,
+    activities: pickFirstAttempts(activityResults ?? []).map(({ first, attempts }) => {
+      const run = first.run_id ? runById.get(first.run_id) : undefined;
+      const report = first.metrics?.report;
+      return {
+        activityType: first.activity_type,
+        protocolVersion: first.protocol_version,
+        accuracy: first.accuracy,
+        levelReached: first.level_reached,
+        durationMs: first.duration_ms,
+        attemptsCompleted: attempts,
+        incompleteAttempts: incompleteByActivity.get(first.activity_type) ?? 0,
+        deviceType: run?.device_type ?? null,
+        inputType: run?.input_primary ?? null,
+        // v2: métricas curadas por actividad (ActivitySummary.report).
+        ...(report && typeof report === "object" ? { metrics: report } : {}),
+      };
+    }),
     toolUsage: Array.from(toolCounts, ([tool, count]) => ({ tool, count })),
   };
 }
@@ -137,6 +174,14 @@ export async function completeSessionAndRequestReport(
   if (!session) {
     return null;
   }
+
+  // Una ronda que quedó abierta (pestaña cerrada sin que llegara el
+  // beacon, por ejemplo) ya no se va a completar.
+  await supabase
+    .from("activity_runs")
+    .update({ status: "incompleta", ended_at: new Date().toISOString() })
+    .eq("session_id", params.sessionId)
+    .eq("status", "en_curso");
 
   const admin = createAdminClient();
   await createPendingAiReport(admin, params);

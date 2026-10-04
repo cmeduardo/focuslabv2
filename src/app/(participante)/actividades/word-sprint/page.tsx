@@ -2,50 +2,41 @@
 
 import { Type } from "lucide-react";
 
-import { ActivityIntro } from "@/components/activities/activity-intro";
-import { ActivityLayout } from "@/components/activities/activity-layout";
-import { ActivityResult } from "@/components/activities/activity-result";
-import { WordSprintGame } from "@/components/activities/word-sprint-game";
-import { useActivityResult } from "@/hooks/use-activity-result";
+import { ActivityShell } from "@/components/activities/activity-shell";
+import { WordSprintRound } from "@/components/activities/word-sprint-round";
+import { WORD_SPRINT_CONFIG } from "@/lib/activities/config";
+import { stat } from "@/lib/activities/format";
+import type { ActivitySummary } from "@/lib/activities/types";
+import { summarizeWordSprint } from "@/lib/activities/word-sprint/metrics";
+
+function resultStats({ metrics }: ActivitySummary) {
+  return [
+    { label: "Color y palabra iguales", value: stat(metrics.congruentRtMs, " ms") },
+    { label: "Color y palabra distintos", value: stat(metrics.incongruentRtMs, " ms") },
+    { label: "Efecto de la palabra", value: stat(metrics.interferenceMs, " ms") },
+    { label: "Sin respuesta", value: stat(metrics.timeouts) },
+  ];
+}
 
 export default function WordSprintPage() {
-  const { phase, result, start, finish, reset } =
-    useActivityResult("word_sprint");
-
   return (
-    <ActivityLayout title="Word Sprint" icon={Type} backHref="/actividades">
-      {phase === "intro" && (
-        <ActivityIntro
-          title="Word Sprint"
-          description="Efecto Stroop: tu cerebro va a querer leer la palabra — tenés que ignorarla."
-          instructions={[
-            "Va a aparecer el nombre de un color, escrito con la tinta de otro color.",
-            "Hacé clic en el color de la TINTA, no en lo que dice la palabra — a veces van a coincidir, a veces no.",
-            "Tenés 1.6 segundos por ronda. Son 24 rondas — las que no coinciden son las que de verdad ponen a prueba tu atención.",
-          ]}
-          onStart={start}
-        />
-      )}
-      {phase === "playing" && <WordSprintGame onFinish={finish} />}
-      {(phase === "saving" || phase === "done") && result && (
-        <ActivityResult
-          saving={phase === "saving"}
-          backHref="/actividades"
-          onRetry={reset}
-          stats={[
-            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
-            {
-              label: "Racha máxima",
-              value: `${Number(result.metrics.bestStreak)}`,
-            },
-            { label: "Precisión", value: `${result.accuracy ?? 0}%` },
-            {
-              label: "Interferencia",
-              value: `+${Math.max(0, Number(result.metrics.incongruentAvgMs) - Number(result.metrics.congruentAvgMs))} ms`,
-            },
-          ]}
-        />
-      )}
-    </ActivityLayout>
+    <ActivityShell
+      activityType="word_sprint"
+      title="Word Sprint"
+      icon={Type}
+      tagline="Lees sin querer… ¿puedes fijarte solo en el color? Un reto de atención selectiva de unos 3 minutos."
+      instructions={[
+        "Aparecerán nombres de colores escritos con tinta de colores.",
+        "Elige el COLOR DE LA TINTA, no lo que dice la palabra.",
+        "Por ejemplo, si ves «AZUL» pintado de rojo, la respuesta es ROJO.",
+        "Responde rápido, pero con cuidado.",
+      ]}
+      inputHint="Toca uno de los 4 botones; en laptop también puedes usar las teclas D, F, J y K."
+      config={WORD_SPRINT_CONFIG}
+      requiresPortrait
+      Round={WordSprintRound}
+      summarize={summarizeWordSprint}
+      resultStats={resultStats}
+    />
   );
 }

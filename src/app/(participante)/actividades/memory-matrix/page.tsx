@@ -2,48 +2,40 @@
 
 import { Grid3x3 } from "lucide-react";
 
-import { ActivityIntro } from "@/components/activities/activity-intro";
-import { ActivityLayout } from "@/components/activities/activity-layout";
-import { ActivityResult } from "@/components/activities/activity-result";
-import { MemoryMatrixGame } from "@/components/activities/memory-matrix-game";
-import { useActivityResult } from "@/hooks/use-activity-result";
+import { ActivityShell } from "@/components/activities/activity-shell";
+import { MemoryMatrixRound } from "@/components/activities/memory-matrix-round";
+import { MEMORY_MATRIX_CONFIG } from "@/lib/activities/config";
+import { stat } from "@/lib/activities/format";
+import { summarizeMemoryMatrix } from "@/lib/activities/memory-matrix/metrics";
+import type { ActivitySummary } from "@/lib/activities/types";
+
+function resultStats({ metrics, accuracy }: ActivitySummary) {
+  return [
+    { label: "Secuencias correctas", value: `${stat(metrics.correctSequences)} de ${stat(metrics.sequencesAttempted)}` },
+    { label: "Precisión", value: stat(accuracy, "%") },
+    { label: "Tiempo por bloque", value: stat(metrics.meanMsPerBlock, " ms") },
+    { label: "Primer toque", value: stat(metrics.meanFirstTapMs, " ms") },
+  ];
+}
 
 export default function MemoryMatrixPage() {
-  const { phase, result, start, finish, reset } =
-    useActivityResult("memory_matrix");
-
   return (
-    <ActivityLayout title="Memory Matrix" icon={Grid3x3} backHref="/actividades">
-      {phase === "intro" && (
-        <ActivityIntro
-          title="Memory Matrix"
-          description="Memoria de trabajo: repetí secuencias en una cuadrícula que crecen en cada nivel."
-          instructions={[
-            "Observá qué celdas se iluminan y en qué orden.",
-            "Después, hacé clic en las mismas celdas, en el mismo orden.",
-            "Cada nivel agrega una celda más a la secuencia.",
-            "Un error reinicia desde el nivel 1 — tenés hasta 3 intentos, o hasta que llegues bastante lejos en uno.",
-          ]}
-          onStart={start}
-        />
-      )}
-      {phase === "playing" && <MemoryMatrixGame onFinish={finish} />}
-      {(phase === "saving" || phase === "done") && result && (
-        <ActivityResult
-          saving={phase === "saving"}
-          backHref="/actividades"
-          onRetry={reset}
-          stats={[
-            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
-            { label: "Mejor nivel", value: `${result.levelReached ?? 0}` },
-            { label: "Precisión de clics", value: `${result.accuracy ?? 0}%` },
-            {
-              label: "Intentos",
-              value: `${(result.metrics.attempts as unknown[] | undefined)?.length ?? 1}`,
-            },
-          ]}
-        />
-      )}
-    </ActivityLayout>
+    <ActivityShell
+      activityType="memory_matrix"
+      title="Memory Matrix"
+      icon={Grid3x3}
+      tagline="¿Cuántos pasos puedes recordar en orden? Un reto de memoria de trabajo de 2 a 4 minutos."
+      instructions={[
+        "Algunos bloques se encenderán uno por uno.",
+        "Cuando termine, tócalos en el mismo orden en que se encendieron.",
+        "Cada acierto suma un bloque más a la secuencia. Si fallas, tienes un segundo intento en ese nivel.",
+      ]}
+      inputHint="Toca o haz clic sobre los bloques."
+      config={MEMORY_MATRIX_CONFIG}
+      requiresPortrait
+      Round={MemoryMatrixRound}
+      summarize={summarizeMemoryMatrix}
+      resultStats={resultStats}
+    />
   );
 }
