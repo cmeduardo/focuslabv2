@@ -50,3 +50,8 @@ prompt_focuslab_claude_code.md
 .claude/projects/
 claude-session*.md
 *.claude-session.*
+
+# Playwright
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/
