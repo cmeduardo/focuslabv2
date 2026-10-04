@@ -27,10 +27,10 @@ export default function DashboardPage() {
             Tu sesión de hoy
           </span>
           <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
-            ¿En qué querés enfocarte?
+            ¿En qué quieres enfocarte?
           </h1>
           <p className="mt-1 max-w-xl text-muted-foreground">
-            Elegí una actividad cognitiva o una herramienta de productividad.
+            Elige un desafío o una herramienta de productividad.
             Cada interacción se registra en tu sesión actual.
           </p>
         </div>

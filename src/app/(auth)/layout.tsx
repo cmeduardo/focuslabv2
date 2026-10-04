@@ -18,11 +18,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
         <div className="relative max-w-sm space-y-3">
           <p className="font-heading text-2xl leading-snug font-semibold text-balance">
-            Un laboratorio para entender cómo prestás atención.
+            Un laboratorio para entender cómo prestas atención.
           </p>
           <p className="text-sm text-primary-foreground/75">
             Proyecto de tesis, Ingeniería en Sistemas de Información (UMG).
-            FocusLab no realiza ningún diagnóstico clínico.
+            Una herramienta de autoconocimiento: describe tu estilo de
+            atención, sin etiquetas ni respuestas buenas o malas.
           </p>
         </div>
       </div>

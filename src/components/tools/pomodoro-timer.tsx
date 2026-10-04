@@ -246,8 +246,8 @@ export function PomodoroTimer() {
         <CardHeader>
           <CardTitle className="font-heading text-xl">Pomodoro</CardTitle>
           <CardDescription>
-            Programá cuántos ciclos de trabajo/descanso querés hacer — se
-            cierra solo al completarlos y te muestra el resumen (o parálo
+            Programa cuántos ciclos de trabajo/descanso quieres hacer — se
+            cierra solo al completarlos y te muestra el resumen (o detenlo
             cuando quieras antes).
           </CardDescription>
         </CardHeader>
@@ -382,7 +382,7 @@ export function PomodoroTimer() {
             Descanso terminado
           </CardTitle>
           <CardDescription>
-            ¿Listo para el ciclo {cycles + 1} de {targetCycles}? Arrancá
+            ¿Listo para el ciclo {cycles + 1} de {targetCycles}? Arranca
             cuando quieras — no hay apuro.
           </CardDescription>
         </CardHeader>
@@ -393,7 +393,7 @@ export function PomodoroTimer() {
             onClick={handleStop}
           >
             <Square className="size-4" />
-            Detener acá
+            Detener aquí
           </Button>
           <Button className="flex-1 gap-1.5" onClick={handleBeginNextCycle}>
             <Play className="size-4" />
@@ -455,7 +455,7 @@ export function PomodoroTimer() {
                 ? "En pausa"
                 : phase === "work"
                   ? "Enfocado"
-                  : "Respirá un poco"}
+                  : "Respira un poco"}
             </p>
           </div>
         </div>

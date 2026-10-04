@@ -98,7 +98,7 @@ export default async function InformeDetallePage({
               No se pudo generar el informe
             </p>
             <p className="text-sm text-muted-foreground">
-              Completá una nueva sesión para volver a intentarlo.
+              Completa una nueva sesión para volver a intentarlo.
             </p>
           </CardContent>
         </Card>

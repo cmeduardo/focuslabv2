@@ -38,8 +38,8 @@ export function ConsentForm() {
         </CardTitle>
         <CardDescription>
           Debes aceptar este consentimiento antes de iniciar tu primera
-          sesión en FocusLab (RS-05). Tu aceptación queda registrada con
-          fecha y hora en la tabla <code>consents</code>.
+          sesión en FocusLab. Tu aceptación queda registrada con fecha y
+          hora.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
@@ -51,9 +51,10 @@ export function ConsentForm() {
             de investigación para un taller piloto de tesis. Los datos se
             almacenan de forma segura y solo el equipo investigador accede a
             información individual; las autoridades académicas solo ven
-            resultados agregados y anonimizados. FocusLab no realiza ningún
-            diagnóstico clínico. Puedes dejar de participar en cualquier
-            momento.
+            resultados agregados y anonimizados. FocusLab es una herramienta
+            de autoconocimiento, no una herramienta médica: describe estilos
+            y tendencias de tu atención, sin etiquetas ni juicios. Puedes
+            dejar de participar en cualquier momento.
           </div>
           <div className="flex items-start gap-2 rounded-xl border border-border bg-secondary/40 p-3">
             <Checkbox
