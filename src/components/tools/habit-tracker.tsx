@@ -213,7 +213,7 @@ export function HabitTracker() {
         <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
           <Flame className="mx-auto mb-2 size-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Todavía no definiste ningún hábito. Empezá por algo chico y
+            Todavía no definiste ningún hábito. Empieza por algo pequeño y
             concreto — se nota más rápido en la racha.
           </p>
         </div>

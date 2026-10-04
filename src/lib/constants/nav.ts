@@ -35,37 +35,37 @@ export const ACTIVITIES: {
   {
     slug: "reaction_test",
     name: "Reaction Test",
-    description: "Mide el tiempo de reacción ante un estímulo visual.",
+    description: "Alerta: reacciona a una señal que llega sin aviso.",
     icon: Zap,
   },
   {
     slug: "focus_flow",
     name: "Focus Flow",
-    description: "Atención sostenida mediante seguimiento visual continuo.",
+    description: "Atención sostenida: mantén el ritmo y frena a tiempo.",
     icon: Target,
   },
   {
     slug: "memory_matrix",
     name: "Memory Matrix",
-    description: "Memoria de trabajo con secuencias en cuadrícula.",
+    description: "Memoria de trabajo: repite secuencias cada vez más largas.",
     icon: Grid3x3,
   },
   {
     slug: "word_sprint",
     name: "Word Sprint",
-    description: "Velocidad de procesamiento y precisión léxica.",
+    description: "Atención selectiva: el color de la tinta, no la palabra.",
     icon: Type,
   },
   {
     slug: "pattern_hunt",
     name: "Pattern Hunt",
-    description: "Atención selectiva: búsqueda de patrones entre distractores.",
+    description: "Búsqueda visual: encuentra la figura entre muchas parecidas.",
     icon: Search,
   },
   {
     slug: "deep_read",
     name: "Deep Read",
-    description: "Comprensión lectora bajo tiempo limitado.",
+    description: "Lectura con interrupciones: ¿cuánto retienes?",
     icon: BookOpen,
   },
 ];

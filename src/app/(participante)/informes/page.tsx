@@ -59,10 +59,10 @@ export default async function InformesPage() {
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
             <FileText className="size-8 text-muted-foreground" />
             <p className="font-heading font-medium">
-              Todavía no tenés informes
+              Todavía no tienes informes
             </p>
             <p className="text-sm text-muted-foreground">
-              Completá una sesión de actividades para generar tu primer
+              Completa una sesión de actividades para generar tu primer
               informe.
             </p>
           </CardContent>

@@ -12,10 +12,12 @@ export function LogoutButton() {
     <Button
       variant="outline"
       size="sm"
+      className="h-10 sm:h-8"
       disabled={isPending}
       onClick={() => startTransition(() => logoutAction())}
     >
-      Cerrar sesión
+      <span className="sm:hidden">Salir</span>
+      <span className="hidden sm:inline">Cerrar sesión</span>
     </Button>
   );
 }

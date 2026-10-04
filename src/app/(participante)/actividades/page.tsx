@@ -1,4 +1,5 @@
 import { ActionTile } from "@/components/dashboard/action-tile";
+import { PendingRunsFlusher } from "@/components/activities/pending-runs-flusher";
 import { SessionPulseCheck } from "@/components/activities/session-pulse";
 import { ACTIVITIES } from "@/lib/constants/nav";
 
@@ -15,13 +16,15 @@ export default function ActividadesPage() {
   return (
     <div className="space-y-6">
       <SessionPulseCheck />
+      <PendingRunsFlusher />
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Actividades
+          Desafíos
         </h1>
         <p className="text-muted-foreground">
-          Actividades cognitivas gamificadas (RF-04). Cada resultado se
-          guarda vinculado a tu sesión actual.
+          Seis desafíos cortos, de 2 a 4 minutos cada uno, para conocer
+          cómo funciona tu atención. Cada uno empieza con una ronda de
+          práctica.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

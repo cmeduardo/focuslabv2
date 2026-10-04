@@ -27,14 +27,14 @@ export default function Home() {
             Laboratorio de atención
           </span>
           <h1 className="font-heading text-5xl font-semibold tracking-tight text-balance sm:text-6xl">
-            Entrená tu foco.{" "}
-            <span className="text-primary">Medí tu atención.</span>
+            Entrena tu foco.{" "}
+            <span className="text-primary">Conoce tu atención.</span>
           </h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
             Actividades cognitivas gamificadas y herramientas de productividad
             para estudiar patrones de atención en jóvenes universitarios.
-            FocusLab no realiza ningún diagnóstico clínico: al terminar cada
-            sesión recibes un informe descriptivo de tu perfil atencional.
+            Es una herramienta de autoconocimiento, no médica: al terminar
+            cada sesión recibes un informe que describe tu estilo de atención.
           </p>
           <div className="flex gap-3">
             <Button

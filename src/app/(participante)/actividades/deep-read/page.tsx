@@ -2,67 +2,41 @@
 
 import { BookOpen } from "lucide-react";
 
-import { ActivityIntro } from "@/components/activities/activity-intro";
-import { ActivityLayout } from "@/components/activities/activity-layout";
-import { ActivityResult } from "@/components/activities/activity-result";
-import { DeepReadGame } from "@/components/activities/deep-read-game";
-import { useActivityResult } from "@/hooks/use-activity-result";
+import { ActivityShell } from "@/components/activities/activity-shell";
+import { DeepReadRound } from "@/components/activities/deep-read-round";
+import { DEEP_READ_CONFIG } from "@/lib/activities/config";
+import { summarizeDeepRead } from "@/lib/activities/deep-read/metrics";
+import { stat } from "@/lib/activities/format";
+import type { ActivitySummary } from "@/lib/activities/types";
+
+function resultStats({ metrics }: ActivitySummary) {
+  const readingS =
+    typeof metrics.readingTimeMs === "number" ? Math.round(metrics.readingTimeMs / 1000) : null;
+  return [
+    { label: "Tiempo de lectura", value: stat(readingS, " s") },
+    { label: "Palabras por minuto", value: stat(metrics.wordsPerMinute) },
+    { label: "Notificaciones cerradas", value: `${stat(metrics.notificationsClosed)} de ${stat(metrics.notificationsShown)}` },
+    { label: "Salidas de la pestaña", value: stat(metrics.visibilityExits) },
+  ];
+}
 
 export default function DeepReadPage() {
-  const { phase, result, start, finish, reset } =
-    useActivityResult("deep_read");
-
   return (
-    <ActivityLayout title="Deep Read" icon={BookOpen} backHref="/actividades">
-      {phase === "intro" && (
-        <ActivityIntro
-          title="Deep Read"
-          description="Comprensión lectora bajo tiempo limitado: 3 párrafos al azar (de un banco de 8) y nueve preguntas — algunas literales, otras de inferencia."
-          instructions={[
-            "Leé cada párrafo con atención — tenés un tiempo límite para pasar a las preguntas, se acaba solo si no avanzás antes.",
-            "Vas a responder 3 preguntas por párrafo, también con tiempo límite cada una. Podés elegir una opción, cambiarla, y confirmarla cuando estés seguro.",
-            "Si necesitás repasar el texto, podés volver a leerlo antes de confirmar — pero el tiempo de la pregunta sigue corriendo.",
-            "Puede aparecer una notificación en la esquina mientras leés — ignorala, no hace falta cerrarla.",
-          ]}
-          onStart={start}
-        />
-      )}
-      {phase === "playing" && <DeepReadGame onFinish={finish} />}
-      {(phase === "saving" || phase === "done") && result && (
-        <ActivityResult
-          saving={phase === "saving"}
-          backHref="/actividades"
-          onRetry={reset}
-          stats={[
-            { label: "Puntaje", value: `${Number(result.metrics.score)}` },
-            {
-              label: "Racha máxima",
-              value: `${Number(result.metrics.bestStreak)}`,
-            },
-            { label: "Comprensión", value: `${result.accuracy ?? 0}%` },
-            {
-              label: "Preguntas correctas",
-              value: `${Number(result.metrics.correctCount)}/${Number(result.metrics.totalQuestions)}`,
-            },
-            {
-              label: "Literal vs. inferencia",
-              value: `${Number(result.metrics.literalAccuracy)}% / ${Number(result.metrics.inferenceAccuracy)}%`,
-            },
-            {
-              label: "Veces que releyó",
-              value: `${Number(result.metrics.rereadCount)}`,
-            },
-            {
-              label: "Distracciones ignoradas",
-              value: `${Number(result.metrics.distractionsShown) - Number(result.metrics.distractionsClicked)}/${Number(result.metrics.distractionsShown)}`,
-            },
-            {
-              label: "Preguntas sin responder",
-              value: `${Number(result.metrics.questionTimeouts)}`,
-            },
-          ]}
-        />
-      )}
-    </ActivityLayout>
+    <ActivityShell
+      activityType="deep_read"
+      title="Deep Read"
+      icon={BookOpen}
+      tagline="Un texto breve, algunas interrupciones y unas preguntas al final. Un reto de lectura de unos 4 minutos."
+      instructions={[
+        "Lee el texto con calma, a tu ritmo.",
+        "Mientras lees pueden aparecer notificaciones: ciérralas o ignóralas, como prefieras.",
+        "Al terminar responderás 5 preguntas sin volver al texto.",
+      ]}
+      inputHint="Desplázate por el texto con el dedo, la rueda del mouse o el teclado."
+      config={DEEP_READ_CONFIG}
+      Round={DeepReadRound}
+      summarize={summarizeDeepRead}
+      resultStats={resultStats}
+    />
   );
 }
