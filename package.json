@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "demo:seed": "tsx scripts/demo-data.ts seed",
+    "demo:purge": "tsx scripts/demo-data.ts purge"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -36,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   }

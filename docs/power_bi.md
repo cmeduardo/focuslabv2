@@ -172,7 +172,18 @@ correlaciones como **exploratorias**, junto con n y sin inferencias causales.
 Si se necesitan pruebas de significancia, se pueden calcular desde la
 exportación CSV "Participantes" (por ejemplo, en Excel o en Python).
 
-## 6. Exportaciones desde la app (alternativa sin Power BI)
+## 6. Datos de demostración
+
+Para armar los tableros antes del taller hay 20 participantes ficticios
+(`npm run demo:seed`, correos `@demo.focuslab.test`), generados a partir de
+rasgos latentes para que las relaciones de H1 tengan forma. Sus métricas se
+calculan con las mismas funciones de la app.
+
+Se borran con `npm run demo:purge` o con
+`supabase/scripts/reset_pre_taller.sql`. **Hay que borrarlos antes del
+taller real**: las vistas los cuentan como participantes.
+
+## 7. Exportaciones desde la app (alternativa sin Power BI)
 
 `/admin` → CSV:
 

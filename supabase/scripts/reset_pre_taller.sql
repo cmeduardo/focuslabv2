@@ -6,13 +6,18 @@
 --     ensayos e informes; más sus herramientas de productividad.
 --   * los resultados v1 (mecánicas anteriores al rediseño 2026-10-04) de
 --     cualquier cuenta.
--- NO borra perfiles, cuentas ni consentimientos.
+--   * los participantes de DEMOSTRACIÓN (scripts/demo-data.ts, correos
+--     @demo.focuslab.test): sus cuentas y, en cascada, todos sus datos.
+-- NO borra perfiles, cuentas ni consentimientos reales.
 --
 -- Es IRREVERSIBLE. Correr primero el bloque "Vista previa" y revisar los
 -- conteos; luego el bloque "Borrado" en el SQL Editor de Supabase.
 
 -- ── Vista previa ──────────────────────────────────────────────────────────
-select 'sesiones de no-participantes' as que, count(*)
+select 'participantes demo' as que, count(*)
+from auth.users where email like '%@demo.focuslab.test'
+union all
+select 'sesiones de no-participantes', count(*)
 from public.sessions s join public.profiles p on p.id = s.user_id
 where p.role <> 'participante'
 union all
@@ -32,6 +37,7 @@ from public.calendar_events x join public.profiles p on p.id = x.user_id where p
 
 -- ── Borrado (descomentar para ejecutar) ───────────────────────────────────
 -- begin;
+-- delete from auth.users where email like '%@demo.focuslab.test';
 -- delete from public.activity_results where protocol_version = 'v1';
 -- delete from public.sessions s using public.profiles p
 --   where p.id = s.user_id and p.role <> 'participante';
