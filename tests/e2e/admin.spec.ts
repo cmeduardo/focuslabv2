@@ -6,7 +6,7 @@ test.use({ storageState: "tests/e2e/.auth/researcher.json" });
 
 test("admin: panel, reporte PDF y exportaciones CSV", async ({ page, request }) => {
   await page.goto("/admin");
-  await expect(page.getByRole("heading", { name: "Dimensiones atencionales" })).toBeVisible();
+  await expect(page.getByText("Dimensiones atencionales", { exact: true })).toBeVisible();
   for (const label of ["Dimensiones", "Participantes (seudónimo)", "Ensayos (seudónimo)"]) {
     await expect(page.getByRole("link", { name: label })).toBeVisible();
   }
