@@ -41,13 +41,25 @@ export function useEventTracker({
     if (queueRef.current.length === 0) return;
     const batch = queueRef.current.splice(0, queueRef.current.length);
     const supabase = createClient();
-    void supabase.from("interaction_events").insert(
-      batch.map((event) => ({
-        session_id: sessionId,
-        user_id: userId,
-        ...event,
-      })),
-    );
+    void supabase
+      .from("interaction_events")
+      .insert(
+        batch.map((event) => ({
+          session_id: sessionId,
+          user_id: userId,
+          ...event,
+        })),
+      )
+      .then(({ error }) => {
+        // Antes un insert fallido (enum sin migrar, RLS, sesión expirada) se
+        // perdía en silencio y el panel mostraba 0 eventos sin explicación.
+        if (error) {
+          console.error(
+            `No se pudieron guardar ${batch.length} eventos de interacción.`,
+            error.message,
+          );
+        }
+      });
   }, [sessionId, userId]);
 
   const logEvent = useCallback(
