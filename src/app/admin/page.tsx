@@ -1,8 +1,14 @@
-import { Download } from "lucide-react";
+import Link from "next/link";
+import { Download, FileText } from "lucide-react";
 
+import { DimensionsTable } from "@/components/admin/dimensions-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ACTIVITIES } from "@/lib/constants/nav";
-import { getAdminOverview, type ExportDataset } from "@/lib/services/admin-stats";
+import {
+  canExport,
+  EXPORT_DATASETS,
+  getAdminOverview,
+  type ExportDataset,
+} from "@/lib/services/admin-stats";
 import { createClient } from "@/lib/supabase/server";
 
 const EVENT_LABEL: Record<string, string> = {
@@ -18,13 +24,6 @@ const EVENT_LABEL: Record<string, string> = {
   tool_progress: "Progreso de herramienta",
   session_pulse: "Pulsos de sesión",
 };
-
-const EXPORTS: { dataset: ExportDataset; label: string }[] = [
-  { dataset: "actividades", label: "Actividades" },
-  { dataset: "eventos", label: "Eventos" },
-  { dataset: "sesiones", label: "Sesiones" },
-  { dataset: "herramientas", label: "Herramientas" },
-];
 
 const number = new Intl.NumberFormat("es-GT", { maximumFractionDigits: 1 });
 
@@ -48,7 +47,18 @@ function sumBy<T>(rows: T[], pick: (row: T) => number | null) {
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
-  const { activities, events, sessions, tools } = await getAdminOverview(supabase);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .single();
+  const exports = (Object.keys(EXPORT_DATASETS) as ExportDataset[]).filter((dataset) =>
+    canExport(dataset, profile?.role),
+  );
+  const { dimensions, activities, events, sessions, tools } = await getAdminOverview(supabase);
 
   const totalSessions = sumBy(sessions, (row) => row.total_sesiones);
   const completedSessions = sumBy(
@@ -87,11 +97,6 @@ export default async function AdminDashboardPage() {
     };
   });
 
-  const activityRows = ACTIVITIES.map((activity) => ({
-    activity,
-    summary: activities.find((row) => row.activity_type === activity.slug),
-  }));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -101,22 +106,31 @@ export default async function AdminDashboardPage() {
           </h1>
           <p className="text-muted-foreground">
             Resultados del taller piloto, siempre agregados y sin datos
-            individuales (RF-13, RS-04).
+            individuales (RF-13, RS-04). Solo participantes y desafíos
+            actuales (v2).
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <Download className="size-4" /> Exportar CSV (RF-14):
-          </span>
-          {EXPORTS.map(({ dataset, label }) => (
-            <a
-              key={dataset}
-              href={`/admin/export?dataset=${dataset}`}
-              className="rounded-lg border px-2.5 py-1 transition-colors hover:bg-muted"
-            >
-              {label}
-            </a>
-          ))}
+        <div className="flex flex-col items-end gap-2 text-sm">
+          <Link
+            href="/admin/reporte"
+            className="flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-3 font-medium text-primary-foreground transition-colors hover:bg-primary/85"
+          >
+            <FileText className="size-4" /> Reporte del taller (PDF)
+          </Link>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Download className="size-4" /> CSV (RF-14):
+            </span>
+            {exports.map((dataset) => (
+              <a
+                key={dataset}
+                href={`/admin/export?dataset=${dataset}`}
+                className="rounded-lg border px-2.5 py-1 transition-colors hover:bg-muted"
+              >
+                {EXPORT_DATASETS[dataset].label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -140,43 +154,10 @@ export default async function AdminDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Resultados por actividad</CardTitle>
+          <CardTitle>Dimensiones atencionales</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-muted-foreground">
-              <tr>
-                <th className="py-2 pr-4 font-medium">Actividad</th>
-                <th className="py-2 pr-4 font-medium">Resultados</th>
-                <th className="py-2 pr-4 font-medium">Precisión media (%)</th>
-                <th className="py-2 pr-4 font-medium">Desv. estándar</th>
-                <th className="py-2 pr-4 font-medium">Duración media (s)</th>
-                <th className="py-2 font-medium">Nivel medio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityRows.map(({ activity, summary }) => (
-                <tr key={activity.slug} className="border-t">
-                  <td className="py-2 pr-4 font-medium">{activity.name}</td>
-                  <td className="py-2 pr-4">
-                    {formatNumber(summary?.total_resultados ?? 0)}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {formatNumber(summary?.precision_promedio)}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {formatNumber(summary?.precision_desv_estandar)}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {summary?.duracion_ms_promedio != null
-                      ? formatNumber(Number(summary.duracion_ms_promedio) / 1000)
-                      : "—"}
-                  </td>
-                  <td className="py-2">{formatNumber(summary?.nivel_promedio)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DimensionsTable rows={dimensions} />
         </CardContent>
       </Card>
 
