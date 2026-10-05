@@ -279,12 +279,27 @@ describe("Pattern Hunt (búsqueda visual)", () => {
 
 // ----------------------------------------------------------------- Deep Read
 describe("Deep Read", () => {
-  it("el texto tiene entre 350 y 450 palabras y 5 preguntas", () => {
+  it("el texto tiene entre 350 y 450 palabras y 8 preguntas", () => {
     expect(countWords(DEEP_READ_PASSAGE)).toBeGreaterThanOrEqual(350);
     expect(countWords(DEEP_READ_PASSAGE)).toBeLessThanOrEqual(450);
-    expect(DEEP_READ_PASSAGE.questions).toHaveLength(5);
+    expect(DEEP_READ_PASSAGE.questions).toHaveLength(8);
     for (const q of DEEP_READ_PASSAGE.questions) {
       expect(q.options.map((o) => o.id)).toContain(q.correctId);
+    }
+  });
+
+  // Pistas de forma que permiten acertar sin leer: la correcta siempre la
+  // más larga, o una opción mucho más corta/larga que las demás.
+  it("la respuesta correcta no se delata por su largo", () => {
+    const questions = DEEP_READ_PASSAGE.questions;
+    const correctIsLongest = questions.filter((q) => {
+      const longest = Math.max(...q.options.map((o) => o.text.length));
+      return q.options.find((o) => o.id === q.correctId)!.text.length === longest;
+    }).length;
+    expect(correctIsLongest).toBeLessThanOrEqual(Math.ceil(questions.length / 4));
+    for (const q of questions) {
+      const lengths = q.options.map((o) => o.text.length);
+      expect(Math.max(...lengths) / Math.min(...lengths), q.id).toBeLessThan(1.35);
     }
   });
 

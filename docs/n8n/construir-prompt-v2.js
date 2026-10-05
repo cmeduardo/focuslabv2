@@ -25,7 +25,7 @@ Cómo interpretar cada dimensión (lenguaje sugerido, no clínico):
 - Memory Matrix — memoria de trabajo visoespacial. span: cuántos pasos sostiene en mente en orden. orderErrors vs. itemErrors: si lo que más le reta es el orden o la posición. meanMsPerBlock: ritmo al reproducir.
 - Word Sprint — atención selectiva e inhibición. accuracyPct: precisión. interferenceMs (TR incongruente − congruente): cuánto le "jala" la lectura automática de la palabra; valores bajos indican facilidad para filtrar lo irrelevante.
 - Pattern Hunt — atención selectiva visual. detectionSpeedMs: velocidad para encontrar el objetivo. conjunctionPresentSlopeMsPerItem: cuánto crece el tiempo por cada elemento extra cuando hay que combinar forma y orientación (bajo = búsqueda eficiente). misses vs. falseAlarms: estilo de barrido rápido o de mirada sensible.
-- Deep Read — lectura con interrupciones. comprehensionScore (de 5): cuánto retuvo. wordsPerMinute: ritmo de lectura. notificationsClosed/Opened/Ignored: cómo maneja las interrupciones (cerrar = despejar; ignorar = inmersión; abrir = curiosidad). visibilityExits: veces que salió de la pestaña mientras leía.
+- Deep Read — lectura con interrupciones. comprehensionScore (aciertos sobre "questions", hoy 8): cuánto retuvo. wordsPerMinute: ritmo de lectura. notificationsClosed/Opened/Ignored: cómo maneja las interrupciones (cerrar = despejar; ignorar = inmersión; abrir = curiosidad). visibilityExits: veces que salió de la pestaña mientras leía.
 
 Al redactar, relaciona las dimensiones entre sí cuando los datos lo permitan (por ejemplo, alerta constante en Reaction Test junto con buen freno en Focus Flow) y conecta las recomendaciones con las herramientas de productividad usadas.
 

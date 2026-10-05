@@ -15,7 +15,7 @@ contexto de dispositivo. Todos los parámetros viven en
 | Memory Matrix | Bloques de Corsi (1972) | Memoria de trabajo visoespacial | Nivel máximo (span, en bloques) | Secuencias correctas, errores de orden vs. de bloque, tiempo de respuesta por secuencia, ms por bloque, latencia del primer toque, precisión | 2 a 4 min (longitud 2 a 9, 2 intentos por nivel) |
 | Word Sprint | Efecto Stroop (Stroop, 1935) | Atención selectiva e inhibición | Precisión global (%) | TR congruente, TR incongruente, efecto de interferencia (solo aciertos), precisión por condición, sin respuesta, interferencia por mitad | 2.5 min (48 ensayos, 50 % congruentes) |
 | Pattern Hunt | Búsqueda visual (Treisman y Gelade, 1980) | Atención selectiva visual | Velocidad de detección (TR en aciertos con objetivo presente) | Precisión, pendiente de búsqueda (ms por elemento) por tipo (rasgo / conjunción) y presencia, omisiones, falsas alarmas, tabla de TR por tipo × tamaño × presencia | 3 min (48 ensayos: 2 tipos × 6/12/18 × presente/ausente × 4) |
-| Deep Read | Lectura con distractores | Resistencia a la distracción | Puntuación de comprensión (de 5) | Tiempo de lectura, palabras por minuto, notificaciones cerradas / abiertas / ignoradas, tiempo de reacción a la notificación, salidas de pestaña, literal vs. inferencia, cambios de respuesta | 4 min (418 palabras, 3 notificaciones, 5 preguntas) |
+| Deep Read | Lectura con distractores | Resistencia a la distracción | Puntuación de comprensión (de 8) | Tiempo de lectura, palabras por minuto, notificaciones cerradas / abiertas / ignoradas, tiempo de reacción a la notificación, salidas de pestaña, literal vs. inferencia, cambios de respuesta | 4 min (418 palabras, 3 notificaciones, 8 preguntas) |
 
 Todas las actividades guardan tiempo, precisión y nivel cuando aplica (RF-05):
 `activity_results.duration_ms`, `accuracy` y `level_reached` (este último solo
@@ -223,6 +223,24 @@ confirmación de salida ("Tu ronda quedará incompleta").
   La guía de conexión y los tableros están en `docs/power_bi.md`.
 - **Prompt de n8n.** Se actualiza en n8n Cloud con
   `docs/n8n/construir-prompt-v2.js`.
+
+- **Ajustes tras la prueba en iPhone y PC (2026-10-05).**
+  - *Toques perdidos.* En Memory Matrix el recuerdo empezaba 300 ms después
+    de apagarse el último bloque, con los bloques deshabilitados: los
+    primeros toques se perdían sin aviso. Ahora empieza al apagarse el
+    último bloque, y un toque antes de tiempo muestra "Espera a que termine
+    la secuencia". Deep Read responde en `click`, para que desplazar el texto
+    no cuente como pulsar.
+  - *Confirmación neutra.* En la ronda que cuenta, cada respuesta destella y
+    suena (sin decir si fue correcta), y la barra de avance anuncia la mitad
+    y el último tramo. La regla de no revelar aciertos se mantiene: solo la
+    práctica y Memory Matrix, donde subir de nivel es parte del juego,
+    muestran acierto o error. Hay un botón para silenciar.
+  - *Deep Read con 8 preguntas* (`qanats-v2`). Los distractores salen del
+    mismo texto: el caso contrario, otras cifras del texto, o datos ciertos
+    que responden a otra pregunta. Una prueba unitaria impide que la correcta
+    se delate por su largo. La etiqueta de la vista cambia a "Comprensión
+    (de 8)" con la migración `20261005000001`.
 
 **Pendientes:**
 
