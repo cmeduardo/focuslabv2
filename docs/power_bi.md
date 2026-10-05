@@ -194,3 +194,33 @@ taller real**: las vistas los cuentan como participantes.
 
 `/admin/reporte` → "Descargar PDF" genera el reporte agregado del taller con
 el diálogo de impresión del navegador.
+
+## 8. Las mismas vistas en la web (`/admin/analisis`)
+
+Las páginas 3 a 10 del tablero del investigador están también en la app,
+solo para el rol `investigador` (la autoridad es redirigida a `/admin`).
+Se leen las mismas vistas con el cliente del usuario. Reglas de cálculo
+(`src/lib/analysis/`), iguales a las de Power BI:
+
+- **Puntaje z** dentro de variable × dispositivo, con desviación poblacional;
+  vacío si el grupo tiene menos de 3 personas o no varía.
+- **Tramos**: cinco de igual ancho dentro de variable × dispositivo.
+- **Índice pasivo**: promedio de los z pasivos. **Índice de dificultad**:
+  promedio de los z cognitivos, con span y comprensión invertidos. El estilo
+  sale del signo de ambos (0 cuenta como sereno / fluido).
+- **Pearson** sobre pares completos; "—" con menos de 5 pares.
+- **Percentil en el grupo**: proporción del grupo con valor ≤.
+- **Ensayos**: solo el primer intento de cada participante en cada
+  desafío y solo ensayos válidos (en Word Sprint y Pattern Hunt, además,
+  correctos). Las consultas se paginan de 1000 en 1000.
+
+Para comprobar las cifras de control con Vitest, descarga el CSV
+"Participantes (seudónimo)" desde `/admin` y guárdalo como
+`tests/fixtures/demo-participantes.csv` (está en `.gitignore`).
+
+Cambios de vistas pendientes de aplicar:
+
+- `20261005000001_deep_read_ocho_preguntas.sql`: etiqueta "Comprensión (de 8)".
+- `20261005000002_dia_en_guatemala.sql`: `dia` agrupa por día de Guatemala.
+  Después de aplicarla, en Power BI basta con pulsar Actualizar: la columna
+  sigue siendo fecha y hora con zona, ahora a medianoche de Guatemala.

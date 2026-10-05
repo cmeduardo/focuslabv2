@@ -55,3 +55,6 @@ claude-session*.md
 /test-results/
 /playwright-report/
 /tests/e2e/.auth/
+
+# Exportaciones con datos por participante para pruebas locales
+/tests/fixtures/*.csv

@@ -49,13 +49,17 @@ export default async function globalSetup(config: FullConfig) {
 
   const participant = await createTestUser(admin, "e2e");
   const researcher = await createTestUser(admin, "e2e-inv");
+  const authority = await createTestUser(admin, "e2e-aut");
   // Se guardan antes de cualquier otro paso: si algo falla, el teardown
   // igual los borra.
-  fs.writeFileSync(USER_FILE, JSON.stringify({ ids: [participant.id, researcher.id] }));
+  fs.writeFileSync(USER_FILE, JSON.stringify({ ids: [participant.id, researcher.id, authority.id] }));
   const role = await admin.from("profiles").update({ role: "investigador" }).eq("id", researcher.id);
   if (role.error) throw role.error;
+  const authorityRole = await admin.from("profiles").update({ role: "autoridad" }).eq("id", authority.id);
+  if (authorityRole.error) throw authorityRole.error;
 
   const baseURL = config.projects[0].use.baseURL as string;
   await saveLogin(baseURL, participant, "/dashboard", `${AUTH_DIR}/participant.json`);
   await saveLogin(baseURL, researcher, "/dashboard", `${AUTH_DIR}/researcher.json`);
+  await saveLogin(baseURL, authority, "/dashboard", `${AUTH_DIR}/authority.json`);
 }

@@ -50,3 +50,46 @@ export function formatDia(value: string | null | undefined): string {
   const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${dd}/${mm}/${date.getUTCFullYear()}`;
 }
+
+// ------------------------------------------------- recorrido del taller
+type SessionRow = { status: string; total_sesiones: number | string | null };
+
+export function sessionTotals(rows: readonly SessionRow[]) {
+  const byStatus = new Map<string, number>();
+  for (const row of rows) {
+    byStatus.set(row.status, (byStatus.get(row.status) ?? 0) + Number(row.total_sesiones ?? 0));
+  }
+  const total = [...byStatus.values()].reduce((s, v) => s + v, 0);
+  const completadas = byStatus.get("completada") ?? 0;
+  return {
+    total,
+    completadas,
+    pctCompletadas: total > 0 ? (completadas / total) * 100 : null,
+    byStatus,
+  };
+}
+
+// Participantes que completaron cada desafío (suma de dispositivos).
+export function participantsPerActivity(rows: readonly DimensionRow[]): Map<string, number> {
+  const byActivity = new Map<string, number>();
+  for (const row of rows) {
+    byActivity.set(
+      row.activity_type,
+      (byActivity.get(row.activity_type) ?? 0) + Number(row.participantes ?? 0),
+    );
+  }
+  return byActivity;
+}
+
+// Cuántas personas completaron 1, 2, … 6 desafíos.
+export function completedPerPerson(
+  rows: readonly Record<string, unknown>[],
+  maxActivities = 6,
+) {
+  const counts = Array.from({ length: maxActivities }, (_, i) => ({ completados: i + 1, n: 0 }));
+  for (const row of rows) {
+    const k = Number(row.actividades_completadas ?? 0);
+    if (k >= 1 && k <= maxActivities) counts[k - 1].n += 1;
+  }
+  return counts;
+}

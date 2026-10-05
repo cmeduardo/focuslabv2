@@ -25,6 +25,11 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Activo: el enlace más específico que contiene la ruta actual (en
+  // /admin/analisis no debe quedar marcado también "Panel agregado").
+  const activeHref = nav
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -39,7 +44,7 @@ export function AppShell({
             </Link>
             <nav className="hidden items-center gap-1 text-sm md:flex">
               {nav.map((item) => (
-                <NavLink key={item.href} item={item} pathname={pathname} />
+                <NavLink key={item.href} item={item} active={item.href === activeHref} />
               ))}
             </nav>
           </div>
@@ -64,8 +69,7 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-40 grid border-t print:hidden border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden"
       >
         {nav.map((item) => {
-          const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = item.href === activeHref;
           return (
             <Link
               key={item.href}
@@ -85,14 +89,7 @@ export function AppShell({
   );
 }
 
-function NavLink({
-  item,
-  pathname,
-}: {
-  item: NavItem;
-  pathname: string;
-}) {
-  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}

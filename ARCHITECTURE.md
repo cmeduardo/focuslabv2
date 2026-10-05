@@ -99,6 +99,7 @@ Control de acceso en dos niveles:
 | `/admin` | investigador, autoridad | Panel agregado sobre las vistas `vw_*` (RF-13) + exportación CSV (RF-14) | 4 |
 | `/admin/participantes` | investigador | Consentimiento, avance e informes por participante; reintento de informes atascados | 4 |
 | `/admin/reporte` | investigador, autoridad | Reporte agregado del taller, imprimible / "Descargar PDF" (RF-14) | 5 |
+| `/admin/analisis` + 8 subrutas | investigador | Vistas del tablero de Power BI del investigador (páginas 3 a 10) en la web. Cada página valida el rol en el servidor (`requireResearcher`); cálculos puros en `src/lib/analysis/`, gráficas en SVG propio (`src/components/analysis/`) | 5 |
 
 Endpoints de API (implementados, ver §7):
 
@@ -483,3 +484,8 @@ Ver `.env.local.example`. Resumen:
   último informe, y permite reintentar manualmente informes `fallido` o
   `pendiente` por más de 5 min (`retryAiReport`, vía Server Action).
 - **Sprint 5** — integración, pruebas, pulido de UI, despliegue en Vercel.
+  Análisis del investigador en la web (2026-10-05): `/admin/analisis`
+  replica las páginas 3 a 10 del tablero de Power BI. Los z, tramos,
+  índices, estilos y correlaciones se calculan con las mismas reglas que las
+  medidas DAX (`docs/power_bi.md` §8) y cuadran con las cifras de control de
+  los datos de demostración.
