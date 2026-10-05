@@ -209,6 +209,22 @@
   }
 }
 
+/* Confirmación neutra de respuesta: destello que se apaga (bloques de
+   Memory Matrix, botones y marcos de respuesta). Solo opacidad: vale
+   también con movimiento reducido. */
+@keyframes tap-flash {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-tap-flash {
+  animation: tap-flash 320ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .animate-pop {
     animation: pop-in 220ms ease-out;

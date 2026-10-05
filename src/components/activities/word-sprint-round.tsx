@@ -8,6 +8,7 @@ import { useResponseInput, type ResponseEvent } from "@/hooks/use-response-input
 import { useTrialClock } from "@/hooks/use-trial-clock";
 import { WORD_SPRINT_CONFIG as CONFIG } from "@/lib/activities/config";
 import type { TrialRecord } from "@/lib/activities/types";
+import { playHit, playMiss, playTap } from "@/lib/audio/beep";
 import {
   planWordSprintTrials,
   STROOP_COLORS,
@@ -36,6 +37,8 @@ export function WordSprintRound({ mode, origin, onComplete }: RoundProps) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("fixation");
   const [feedback, setFeedback] = useState<{ outcome: Outcome; ink: StroopColorId } | null>(null);
+  // Botón recién pulsado (confirmación neutra, también en la ronda que cuenta).
+  const [pressed, setPressed] = useState<{ value: StroopColorId; n: number } | null>(null);
 
   const clock = useTrialClock(origin);
   const phaseRef = useRef<Phase>("fixation");
@@ -74,7 +77,14 @@ export function WordSprintRound({ mode, origin, onComplete }: RoundProps) {
 
       phaseRef.current = "between";
       setPhase("between");
-      if (mode === "practice") setFeedback({ outcome, ink: trial.ink });
+      if (event) setPressed((p) => ({ value: event.value, n: (p?.n ?? 0) + 1 }));
+      if (mode === "practice") {
+        if (outcome === "correct") playHit();
+        else playMiss();
+        setFeedback({ outcome, ink: trial.ink });
+      } else if (event) {
+        playTap();
+      }
 
       timersRef.current.push(
         setTimeout(
@@ -190,8 +200,15 @@ export function WordSprintRound({ mode, origin, onComplete }: RoundProps) {
             type="button"
             data-testid={`stroop-answer-${color.id}`}
             {...bind(color.id)}
-            className="flex min-h-16 items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 text-left font-heading text-base font-bold transition-transform active:scale-[0.97]"
+            className="relative flex min-h-16 items-center gap-3 overflow-hidden rounded-2xl border-2 border-border bg-card px-4 text-left font-heading text-base font-bold transition-transform active:scale-[0.97]"
           >
+            {pressed?.value === color.id && (
+              <span
+                key={pressed.n}
+                aria-hidden
+                className="pointer-events-none absolute inset-0 animate-tap-flash bg-primary/25"
+              />
+            )}
             <span
               aria-hidden
               style={{ backgroundColor: color.hex }}

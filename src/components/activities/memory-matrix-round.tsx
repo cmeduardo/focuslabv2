@@ -22,7 +22,10 @@ import { cn } from "@/lib/utils";
 
 // "ready" cubre la pausa previa y la presentación completa: si la
 // presentación cambiara de fase, la limpieza del efecto cancelaría los
-// timers que faltan (bug encontrado por la E2E).
+// timers que faltan (bug encontrado por la E2E). El recuerdo empieza en
+// cuanto se apaga el último bloque: antes había 300 ms "muertos" después
+// del último bloque en los que los toques se descartaban sin aviso, y
+// casi todos empezamos a tocar justo ahí (bug del taller 2026-10-04).
 type Phase = "ready" | "recall" | "feedback";
 type Tap = { block: number; at: number; input: ResponseEvent<string>["input"] };
 
@@ -49,9 +52,15 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
   const [lit, setLit] = useState<number | null>(null);
   const [taps, setTaps] = useState<number[]>([]);
   const [result, setResult] = useState<CorsiClassification | null>(null);
+  // Destello del último bloque tocado; `n` cambia en cada toque para
+  // reiniciar la animación aunque se toque el mismo bloque.
+  const [flash, setFlash] = useState<{ block: number; n: number } | null>(null);
+  const [earlyHint, setEarlyHint] = useState(false);
 
   const clock = useTrialClock(origin);
   const tapsRef = useRef<Tap[]>([]);
+  const phaseRef = useRef<Phase>("ready");
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trialsRef = useRef<TrialRecord[]>([]);
   const doneRef = useRef(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -59,9 +68,15 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
   useEffect(
     () => () => {
       timersRef.current.forEach(clearTimeout);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
     },
     [],
   );
+
+  const goTo = useCallback((next: Phase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
 
   // Presentación: pausa breve y luego cada bloque se enciende por turno.
   useEffect(() => {
@@ -74,14 +89,18 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
       local.push(setTimeout(() => setLit(null), at + CONFIG.blockOnMs));
     });
     local.push(
-      setTimeout(() => {
-        tapsRef.current = [];
-        setTaps([]);
-        setPhase("recall");
-      }, CONFIG.preSequenceMs + sequence.length * step),
+      setTimeout(
+        () => {
+          tapsRef.current = [];
+          setTaps([]);
+          setEarlyHint(false);
+          goTo("recall");
+        },
+        CONFIG.preSequenceMs + (sequence.length - 1) * step + CONFIG.blockOnMs,
+      ),
     );
     return () => local.forEach(clearTimeout);
-  }, [phase, sequence]);
+  }, [phase, sequence, goTo]);
 
   // Inicio del recuerdo: frame en que aparece "Tu turno".
   useLayoutEffect(() => {
@@ -118,7 +137,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
       });
 
       setResult(classification);
-      setPhase("feedback");
+      goTo("feedback");
       if (classification === "correct") playLevelUp();
       else playMiss();
 
@@ -145,34 +164,45 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
           setSequence(generateCorsiSequence(next.length, CONFIG.blockCount, Math.random));
           setTrialIndex((i) => i + 1);
           setResult(null);
-          setPhase("ready");
+          setFlash(null);
+          goTo("ready");
         }, CONFIG.feedbackMs),
       );
     },
-    [sequence, clock, trialIndex, state, mode, onComplete],
+    [sequence, clock, trialIndex, state, mode, onComplete, goTo],
   );
 
   const handleTap = useCallback(
     (event: ResponseEvent<string>) => {
-      if (phase !== "recall") return;
+      // Se lee la fase del ref (no del render): un toque que llega en el
+      // mismo frame del cambio a "recall" ya cuenta.
+      if (phaseRef.current === "ready") {
+        // Toque durante la presentación: no cuenta, pero se avisa en vez
+        // de ignorarlo en silencio.
+        setEarlyHint(true);
+        if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+        hintTimerRef.current = setTimeout(() => setEarlyHint(false), 1200);
+        return;
+      }
+      if (phaseRef.current !== "recall") return;
+      if (tapsRef.current.length >= sequence.length) return;
       const block = Number(event.value);
       tapsRef.current = [...tapsRef.current, { block, at: event.at, input: event.input }];
       setTaps(tapsRef.current.map((t) => t.block));
+      setFlash((f) => ({ block, n: (f?.n ?? 0) + 1 }));
       playNote(block);
       if (tapsRef.current.length >= sequence.length) {
         finishSequence(tapsRef.current);
       }
     },
-    [phase, sequence.length, finishSequence],
+    [sequence.length, finishSequence],
   );
 
   const { bind } = useResponseInput<string>({
-    enabled: phase === "recall",
+    enabled: phase !== "feedback",
     keys: {},
     onResponse: handleTap,
   });
-
-  const lastTap = taps[taps.length - 1];
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-4 py-3">
@@ -185,7 +215,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
           result && result !== "correct" && "text-pulse",
         )}
       >
-        {phase === "ready" && "Observa…"}
+        {phase === "ready" && (earlyHint ? "Espera a que termine la secuencia" : "Observa…")}
         {phase === "recall" && `Tu turno: ${taps.length} de ${sequence.length}`}
         {phase === "feedback" && result === "correct" && "¡Correcto!"}
         {phase === "feedback" && result !== "correct" && "Esa no fue. ¡Vamos con otra!"}
@@ -201,7 +231,9 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
             data-testid={`corsi-block-${i}`}
             data-lit={lit === i}
             aria-label={`Bloque ${i + 1}`}
-            disabled={phase !== "recall"}
+            // aria-disabled y no disabled: un botón deshabilitado no recibe
+            // el toque y no podríamos avisar que fue antes de tiempo.
+            aria-disabled={phase !== "recall"}
             {...bind(BLOCK_KEYS[i])}
             style={{
               left: `${pos.x}%`,
@@ -210,15 +242,24 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
               height: `${CORSI_BLOCK_SIZE_PCT}%`,
             }}
             className={cn(
-              "absolute min-h-12 min-w-12 rounded-xl border-2 border-primary/30 bg-secondary transition-colors duration-100",
+              "absolute min-h-12 min-w-12 overflow-hidden rounded-xl border-2 border-primary/30 bg-secondary transition-colors duration-100",
               lit === i && "border-primary bg-primary shadow-[0_0_24px] shadow-primary/50",
-              phase === "recall" && "cursor-pointer",
-              phase === "recall" && lastTap === i && "animate-pop bg-primary/60",
+              phase === "recall" && "cursor-pointer border-primary/50",
             )}
-          />
+          >
+            {flash?.block === i && (
+              <span
+                key={flash.n}
+                aria-hidden
+                className="pointer-events-none absolute inset-0 animate-tap-flash bg-primary"
+              />
+            )}
+          </button>
         ))}
       </div>
+      <TapDots count={taps.length} total={sequence.length} active={phase === "recall"} />
       <RoundProgress
+        milestones={false}
         current={mode === "practice" ? trialIndex : state.length - CONFIG.startLength}
         total={
           mode === "practice" ? CONFIG.practiceSequences : CONFIG.maxLength - CONFIG.startLength + 1
@@ -229,6 +270,28 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
             : `Nivel ${state.length - CONFIG.startLength + 1} · ${state.length} bloques · intento ${state.attempt}`
         }
       />
+    </div>
+  );
+}
+
+// Un punto por bloque de la secuencia: se llenan con cada toque. Confirma
+// que el toque quedó registrado sin decir si fue el bloque correcto.
+function TapDots({ count, total, active }: { count: number; total: number; active: boolean }) {
+  return (
+    <div
+      data-testid="corsi-tap-dots"
+      aria-hidden
+      className={cn("flex h-3 items-center gap-1.5 transition-opacity", !active && "opacity-0")}
+    >
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={cn(
+            "size-2.5 rounded-full border border-primary/50 transition-colors duration-100",
+            i < count && "animate-pop border-primary bg-primary",
+          )}
+        />
+      ))}
     </div>
   );
 }
