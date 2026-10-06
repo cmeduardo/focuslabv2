@@ -98,6 +98,7 @@ Control de acceso en dos niveles:
 | `/informes/[sessionId]` | participante | Detalle de informe (RF-11), auto-refresh mientras está `pendiente` | 4 |
 | `/admin` | investigador, autoridad | Panel agregado sobre las vistas `vw_*` (RF-13) + exportación CSV (RF-14) | 4 |
 | `/admin/participantes` | investigador | Consentimiento, avance e informes por participante; reintento de informes atascados | 4 |
+| `/admin/reporte` | investigador, autoridad | Reporte agregado del taller, imprimible / "Descargar PDF" (RF-14) | 5 |
 
 Endpoints de API (implementados, ver §7):
 
@@ -105,7 +106,9 @@ Endpoints de API (implementados, ver §7):
 |---|---|---|---|
 | `/api/sessions/[sessionId]/complete` | `POST` | participante | 4 |
 | `/api/webhooks/ai-report` | `POST` | n8n (secreto compartido) | 4 |
-| `/admin/export?dataset=actividades\|eventos\|sesiones\|herramientas` | `GET` | investigador, autoridad | 4 |
+| `/api/activity-runs/[runId]/abandon` | `POST` | participante (sendBeacon) | 5 |
+| `/admin/export?dataset=dimensiones\|actividades\|eventos\|sesiones\|herramientas` | `GET` | investigador, autoridad | 4 |
+| `/admin/export?dataset=participantes\|ensayos` (seudonimizados) | `GET` | investigador | 5 |
 
 ## 6. Modelo de datos (entidad-relación)
 
@@ -115,7 +118,10 @@ auth.users (Supabase Auth)
                  ├─ 1:N ─ consents (user_id, consent_version, accepted_at)
                  ├─ 1:N ─ sessions (user_id, status, started_at, ended_at)
                  │           ├─ 1:N ─ interaction_events (session_id, user_id, event_type, payload, occurred_at)
-                 │           ├─ 1:N ─ activity_results (session_id, user_id, activity_type, duration_ms, accuracy, level_reached, metrics)
+                 │           ├─ 1:N ─ activity_runs (session_id, user_id, activity_type, protocol_version, status, contexto de dispositivo)
+                 │           │           ├─ 1:N ─ activity_trials (run_id, trial_index, condition, stimulus_onset_ms, rt_ms, response, correct, input_type, valid)
+                 │           │           └─ 1:0..1 ─ activity_results (run_id)
+                 │           ├─ 1:N ─ activity_results (session_id, user_id, activity_type, duration_ms, accuracy, level_reached, metrics, protocol_version)
                  │           └─ 1:1 ─ ai_reports (session_id, status, attentional_profile, strengths, areas_for_improvement, recommendations, raw_response)
                  ├─ 1:N ─ pomodoro_sessions (user_id, session_id?, work_duration_minutes, break_duration_minutes, completed_cycles, interrupted, pause_count, paused_ms)
                  ├─ 1:N ─ kanban_tasks (user_id, title, status, position)
@@ -126,12 +132,22 @@ auth.users (Supabase Auth)
 
 Vistas agregadas y anonimizadas (sin `user_id` ni ninguna otra columna
 identificable), pensadas para Power BI Desktop vía el conector nativo de
-PostgreSQL (RF-13, RF-14, RS-04):
+PostgreSQL (RF-13, RF-14, RS-04). Desde `20261004000002` cuentan **solo
+participantes y solo datos v2**, y aceptan el rol de solo lectura
+`powerbi_reader` (Power BI se conecta directo a Postgres, sin
+`auth.uid()`); guía completa en `docs/power_bi.md`:
 
 - `vw_activity_results_summary` — distribución de resultados por actividad.
 - `vw_interaction_events_summary` — frecuencia diaria de eventos pasivos.
 - `vw_sessions_summary` — estadísticos descriptivos de sesiones por día.
 - `vw_tool_usage_summary` — uso agregado de herramientas por día.
+- `vw_actividades_dimensiones` — métrica principal de cada dimensión
+  atencional por dispositivo (primer intento de cada participante).
+- `vw_participantes_analisis` — **solo investigador / Power BI**: una fila
+  por participante seudonimizado (`P-XXXXXX`) con métricas cognitivas y
+  variables pasivas (H1/H2).
+- `vw_ensayos_analisis` — **solo investigador / Power BI**: ensayos
+  registrados con seudónimo.
 
 El esquema completo, con todas las políticas RLS, vive en
 `supabase/migrations/` (un archivo por entidad, numerado). Para aplicarlo:
@@ -153,8 +169,10 @@ pegar cada archivo en el SQL Editor de Supabase en orden, o usar
    policy de insert para participantes) y llama a
    `generateAttentionReport(sessionId)`.
 3. `generateAttentionReport` arma el resumen estructurado de la sesión
-   (resultados de `activity_results` + conteo de `tool_start` por
-   herramienta desde `interaction_events`) y dispara el webhook hacia n8n
+   (primer intento completado de cada actividad en `activity_results`, con
+   sus métricas curadas y el dispositivo de `activity_runs`, más el conteo
+   de `tool_start` por herramienta desde `interaction_events`; ver
+   `docs/rediseno_actividades.md` §4) y dispara el webhook hacia n8n
    (`N8N_AI_REPORT_WEBHOOK_URL`). Sin esa variable configurada, no hace nada
    y el informe queda `pendiente` (mock-friendly, como estaba previsto). Un
    fallo de red hacia n8n se loguea pero no rompe el cierre de sesión del
@@ -288,144 +306,58 @@ registro de los participantes se va a quedar trabado en "revisa tu correo"
 así que probar registro repetidas veces sin desactivarlo agota el límite
 rápido).
 
-## 7ter. Las seis actividades cognitivas (Sprint 2)
+## 7ter. Las seis actividades cognitivas (rediseño v2, 2026-10-04)
 
-Cada actividad (`src/app/(participante)/actividades/*/page.tsx`) sigue el
-mismo patrón de tres fases sobre una infraestructura compartida:
+Detalle completo (tabla por actividad, esquema, diagramas del capítulo 5,
+payload de n8n y pantallas): **`docs/rediseno_actividades.md`**.
 
-1. **`useActivityResult(activityType)`** (`src/hooks/use-activity-result.ts`)
-   orquesta el ciclo de vida: `start()` cronometra y emite
-   `logEvent("activity_start", ...)`; `finish(outcome)` cronometra el fin,
-   emite `activity_end`, y guarda la fila en `activity_results` vía
-   `saveActivityResult` (`src/lib/services/activity-results.ts`, insert
-   directo desde el cliente — política RLS `activity_results_insert_own`,
-   igual que ya hace `interaction_events`).
-2. **UI compartida** en `src/components/activities/`: `ActivityLayout`
-   (header), `ActivityIntro` (instrucciones + botón "Comenzar"),
-   `ActivityResult` (estadísticas de cierre genéricas `{label, value}[]`).
-3. **El juego** (`*-game.tsx`) es un componente "tonto": solo recibe
-   `onFinish(outcome)` y no conoce Supabase ni la sesión.
+Cada actividad mide una dimensión distinta sobre un paradigma clásico:
+Reaction Test (PVT, alerta), Focus Flow (SART, atención sostenida), Memory
+Matrix (Corsi, memoria de trabajo visoespacial), Word Sprint (Stroop,
+atención selectiva e inhibición), Pattern Hunt (búsqueda visual por rasgo y
+conjunción) y Deep Read (lectura con notificaciones simuladas). Funcionan en
+laptop y celular (taller mixto). Todos los parámetros numéricos viven en
+`src/lib/activities/config.ts`.
 
-Ninguna actividad cambia `sessions.status` — el participante puede hacer
-varias actividades dentro de la misma sesión `en_progreso` (Sprint 4 marca
-`completada` vía `/api/sessions/[sessionId]/complete`).
+Arquitectura:
 
-Las mecánicas se revisaron cuatro veces (2026-08-27) tras feedback directo:
-primero porque las versiones iniciales —pocos ensayos, objetivos fáciles
-de anticipar— no generaban carga atencional real; después porque, ya con
-paradigmas válidos, la interacción se sentía demasiado plana para el
-Objetivo específico 2 de la tesis ("percibidas como juegos o desafíos, no
-como evaluaciones clínicas"); una tercera vez para subirle la dificultad
-puntual a Reaction Test, Focus Flow y Pattern Hunt, y para reemplazar Word
-Sprint (decisión léxica: real vs. pseudopalabra) por una tarea Stroop —el
-prompt original solo pedía "velocidad de procesamiento/precisión léxica"
-como constructo, no la mecánica exacta, y Stroop es un paradigma de
-atención mucho más reconocible para un usuario sin formación en
-psicología, además de igual de válido para procesamiento/interferencia.
-Y una cuarta ronda porque Focus Flow (el SART en grilla) no convencía por
-sí solo: se fusionó con Reaction Test en una sola mecánica más completa
-bajo el nombre "Reaction Test" (en la tesis solo está fijado el nombre y
-el constructo de una línea de cada actividad, no la mecánica exacta), y
-el slot "Focus Flow" se rediseñó desde cero como una actividad de
-seguimiento visual continuo (MOT) — no redundante con la fusionada. De
-paso, Deep Read sumó tiempo límite real (el propio one-liner de la tesis
-lo pedía y no estaba implementado) y distractores más difíciles de
-adivinar sin leer. Las versiones actuales combinan ambas cosas: la
-mecánica de fondo sigue paradigmas establecidos de psicología cognitiva
-(citables en el capítulo de metodología), y encima cada una tiene una
-capa de "juego" — puntaje en vivo, racha con multiplicador (`StreakBadge`,
-`src/components/activities/streak-badge.tsx`), feedback sonoro vía Web
-Audio sin assets (`src/lib/audio/beep.ts`, incluye `playCombo()` en
-hitos de racha) y animaciones de acierto/error (`.animate-pop` /
-`.animate-shake` en `globals.css`). El puntaje vive en `metrics.score`
-(jsonb) — no es parte del constructo medido, es la envoltura gamificada
-sobre `accuracy`/`level_reached`, que son los valores que importan para
-el perfil atencional.
+1. **`ActivityShell`** (`src/components/activities/activity-shell.tsx`) es el
+   motor común. Recorre instrucciones, práctica (repetible una vez, nunca se
+   guarda), cuenta regresiva, ronda registrada a pantalla completa (`100dvh`,
+   sin scroll ni zoom por doble toque, aviso de girar el teléfono), guardado
+   y resultado. Además pide Wake Lock, cuenta las pérdidas de visibilidad,
+   captura el contexto de dispositivo y descarta el clic fantasma táctil al
+   cerrar la capa.
+2. **Hooks de medición**:
+   - `useTrialClock` registra el inicio del estímulo en el frame de
+     requestAnimationFrame en que se pinta, acepta una sola respuesta por
+     ensayo y marca el ensayo inválido si la pestaña se oculta.
+   - `useResponseInput` usa Pointer Events (`pointerdown`) y teclas
+     asignadas, toma el tiempo de `event.timeStamp` y registra el tipo de
+     entrada.
+3. **Una `Round` por actividad** (`*-round.tsx`): solo estímulos y reglas.
+4. **Métricas puras** en `src/lib/activities/<actividad>/metrics.ts`
+   (probadas en `tests/unit/`). Devuelven `ActivitySummary`, con la métrica
+   principal, todas las métricas, el subconjunto curado para n8n (`report`)
+   y una frase de estilo, nunca de falla.
+5. **Persistencia** (`src/lib/services/activity-runs.ts`):
+   - Se crea la fila en `activity_runs` al empezar la ronda registrada.
+   - Al terminar se guarda en un solo lote idempotente: corrida, ensayos,
+     resumen y estado `completada`, con 3 reintentos y cola en
+     `localStorage` que se vacía al volver a /actividades.
+   - Si se cierra la página a mitad, `sendBeacon` llama a
+     `POST /api/activity-runs/[runId]/abandon` y la corrida queda
+     `incompleta`.
 
-| Actividad | Paradigma / mecánica | `accuracy` | `level_reached` |
-|---|---|---|---|
-| Reaction Test | Mecánica fusionada (2026-08-27): SART (Robertson et al. 1997) con incertidumbre espacial como columna vertebral —cadencia VARIABLE (900–2000ms, rompe el ritmo predecible), 90s, el estímulo aparece en 1 de 9 celdas al azar— más tiempo de reacción y puntería tipo PVT: el círculo-objetivo se achica con la racha (72px → 32px) y se mide la distancia del clic a su centro (`aimDistancesPx`). Responder al frecuente (círculo), inhibir el infrecuente (~20%, cuadrado). Cualquier clic fuera de la celda activa —incluso sin estímulo visible— cuenta como arranque en falso (`falseStarts`). Cuenta regresiva de 3s ("Preparate…") antes del primer ensayo (2026-08-28, evita que el primer RT quede contaminado por el arranque sorpresivo) — se muestra como overlay sobre la misma grilla, no como una pantalla aparte (el cambio de layout no dejaba acertar el primer círculo). Segundo bug encontrado en la misma función: al agregar demora antes de MOSTRAR el primer estímulo, el timer que lo OCULTA seguía disparando a los `VISIBLE_MS` fijos de siempre — el círculo quedaba visible una fracción del tiempo real (300ms en vez de 700ms), prácticamente imposible de acertar. Arreglado con un único `preDelay` (= `SOA_MIN_MS`, el mismo colchón natural que ya separa a los demás ensayos) aplicado a los tres timers del primer ensayo (mostrar/ocultar/siguiente) a la vez, no solo al de mostrar. | aciertos / (aciertos + omisiones) | — |
-| Focus Flow | Multiple Object Tracking (Pylyshyn & Storm, 1988): 8 rondas, cada una resalta 2–3 puntos ("blancos") entre 6–13 durante ~1.8s; luego todos quedan idénticos y se mueven al azar (rebotando en los bordes) durante 4.2–7.5s, cada vez más rápido y con más puntos; al detenerse, hay que marcar cuáles eran los blancos. Posiciones y velocidades viven en refs, se escriben al DOM vía `requestAnimationFrame` (nunca por `setState`, para no tirar el framerate) usando `--dot-x`/`--dot-y` (variables CSS) además del `transform` inline — bug real encontrado y arreglado 2026-08-28: `.animate-pop`/`.animate-shake` (compartidas con el resto de las actividades) definen su propio `transform: scale(...)`/`translateX(...)`, que pisaba por completo el `translate()` inline usado para posicionar cada punto — al marcar un punto correcto/incorrecto en el recall, saltaba a la esquina superior izquierda. Los puntos ahora usan `.animate-dot-pop`/`.animate-dot-shake` (mismos keyframes, pero leyendo `--dot-x`/`--dot-y` en cada frame de la animación en vez de un `transform` fijo) — ver `globals.css`. Paradigma real detrás de "seguimiento visual continuo" (el one-liner original de la tesis para esta actividad), y mecánica distinta de todo el resto del sprint. | blancos identificados / blancos totales, sumado en las 8 rondas | cantidad de puntos de la ronda final (13, proxy de dificultad máxima) |
-| Memory Matrix | Secuencia en cuadrícula 3×3, +1 celda por nivel (estilo Simon). Hasta 3 intentos (2026-08-28, antes terminaba en el primer error — con eso, alguien que fallaba en nivel 1-2 dejaba apenas unos pocos clics, muy poca señal para que el agente de IA opine con algo de certeza): un error reinicia desde el nivel 1, pero solo si ese intento se quedó corto (menos de nivel 5) — si llega lejos o lo completa perfecto, esa señal ya alcanza y no repite. `level_reached` final es el mejor intento. | clics correctos / clics totales | mejor nivel completo entre los intentos (máx. 10) |
-| Word Sprint | Efecto Stroop (Stroop, 1935): nombre de un color renderizado con tinta de otro color (~30% congruente / 70% incongruente), responder al color de la tinta ignorando la palabra. 24 rondas, 1.6s/ronda. La interferencia (RT incongruente − RT congruente, `metrics.incongruentAvgMs`/`congruentAvgMs`) es la señal diagnóstica — mucho más intuitiva para el usuario que una decisión léxica abstracta. | % respuestas correctas | — |
-| Pattern Hunt | Búsqueda por *conjunción* (Treisman & Gelade, 1980) con distractor "casi-objetivo": el objetivo combina forma+color+tamaño (estrella violeta grande) entre 3 tipos de distractor (estrellas grises, círculos violeta, estrellas violeta chicas) — no hay pop-out, exige revisión serial. 10 rondas, cuadrícula 5×5 → 9×9, con límite de 7s por ronda. | rondas encontradas sin clic erróneo | tamaño de cuadrícula máximo (9) |
-| Deep Read | Cada partida elige 3 párrafos al azar (sin repetir, orden aleatorio) de un banco de 8, 3 preguntas por párrafo (2 literales + 1 de inferencia, 9 en total). Los párrafos se reescribieron una segunda vez (2026-08-28): la primera versión, sobre hábitos de estudio genéricos, seguía siendo adivinable sin leer aunque los distractores fueran plausibles — son afirmaciones que cualquier adulto ya intuye. La versión actual usa fenómenos concretos de ciencia cognitiva (efecto de posición serial, interferencia proactiva/retroactiva, curva del olvido, consolidación durante el sueño, carga de la memoria de trabajo, efecto Zeigarnik, etc.) con mecanismos y condiciones específicas que solo se sacan leyendo el párrafo exacto. Tiempo límite real por párrafo (45s) y por pregunta (20s, corre incluso durante una relectura) — si se acaba, avanza solo y cuenta como no respondida (`readingTimeouts`/`questionTimeouts`). El participante puede releer el párrafo antes de confirmar (`rereadCount`/`rereadTimeMs`) y cambiar de opción antes de confirmar (`answerChanges`) — analiza no solo cuánto entendió sino *cómo* llegó a la respuesta (relectura, dudas, tiempo por pregunta `questionTimesMs`, precisión literal vs. inferencia por separado). También mide resistencia a la distracción (`distractionsShown`/`distractionsClicked`, notificación a ignorar durante la lectura). | % preguntas correctas | — |
+Las mecánicas anteriores (v1, Sprint 2: Reaction Test mezclado con SART,
+Focus Flow como MOT, Deep Read con 3 párrafos) se reemplazaron por completo;
+sus filas siguen en `activity_results` con `protocol_version = 'v1'`. El
+historial de esas iteraciones está en git (antes de `df2784d`).
 
-`metrics` (jsonb) guarda el detalle específico de cada una (tiempos de
-reacción individuales, respuestas por ronda, etc.) para el informe de IA
-del Sprint 4.
-
-### Profundidad de `metrics` por actividad (2026-08-27)
-
-Pedido explícito: extraer la mayor cantidad de información posible del
-comportamiento de cada usuario, no solo el resultado final — son las
-variables que el agente de IA (Sprint 4) va a tener disponibles para
-construir el perfil atencional y que sustentan la Hipótesis 1 (patrones
-diferenciados) y la Hipótesis 2 (los datos pasivos/de comportamiento
-enriquecen la precisión del perfil, más allá del puntaje). Además de lo ya
-descrito en la tabla, cada actividad guarda:
-
-- **Reaction Test** (mecánica fusionada): `reactionRtSD`, `rtCV`,
-  `earlyAvgMs`/`lateAvgMs` (decaimiento de vigilancia: ¿empeora la
-  reacción con el tiempo?), `commissionTimesMs` (un commission rápido es
-  la firma clásica de impulsividad/lapso, más diagnóstico que solo
-  contarlos), `omissionsByThirdPct` (tasa de omisión por tercio de la
-  prueba), `aimDistancesPx`/`targetSizesPx` (qué tan lejos del centro cae
-  cada clic válido — distingue error motriz de error atencional),
-  `falseStarts` (clics fuera de la celda activa, incluso sin estímulo
-  visible — impulsividad); `trialLog` (cada ensayo: índice, tipo, celda,
-  resultado, RT — reconstruible ensayo a ensayo, 2026-08-28) y
-  `hitsBySlot`/`omissionsBySlot` (distribución espacial del error entre
-  las 9 celdas — ¿se concentra en los bordes?).
-- **Focus Flow** (MOT): por ronda, `targetsPerRound`, `correctPerRound`,
-  `falsePositivesPerRound` (blanco confundido con distractor),
-  `missedPerRound` (blanco nunca marcado), `speedPxPerSec`,
-  `dotsPerRound`, `trackingDurationMsPerRound`, `recallLatencyMs` (tiempo
-  entre que los puntos se detienen y el primer clic — duda vs. respuesta
-  fluida); `pickLatenciesMsPerRound` (2026-08-28, tiempo entre cada clic
-  sucesivo del recall, no solo el primero) y
-  `falsePositiveDistancesPxPerRound` (distancia de cada clic errado al
-  blanco real más cercano — confundir con un distractor cercano vs.
-  adivinar al azar).
-- **Memory Matrix**: `clickLatenciesMs` (tiempo entre cada clic durante el
-  recuerdo — hesitación vs. respuesta fluida); `levelOfEachClick` y
-  `attemptOfEachClick` (2026-08-28, arrays paralelos a `clickLatenciesMs`
-  para poder agrupar la latencia por nivel y por intento) y
-  `attemptOfEachSequence` (idem para `sequenceLengths`); `attempts`
-  (2026-08-28, reemplaza los antiguos `mistakeAtLevel`/`mistakeAtStep`
-  sueltos — un array con un objeto por intento: `attempt, levelReached,
-  mistakeAtStep, mistakeCellDistance` — `mistakeCellDistance` es la
-  distancia en la grilla entre la celda tocada por error y la esperada,
-  resbalón motor vs. fallo real de memoria).
-- **Word Sprint (Stroop)**: `congruentAccuracy`/`incongruentAccuracy`
-  (no solo el RT sino también si la interferencia genera errores),
-  `postErrorAvgMs`/`postCorrectAvgMs` (enlentecimiento post-error: ¿se
-  frena y se cuida después de fallar, o sigue igual de impulsivo?);
-  `trialLog` (2026-08-28, cada ronda: palabra, tinta, elegido, correcto,
-  RT — permite ver qué pares de colores confunde más) y
-  `interferenceByHalf` (costo de interferencia en la primera vs. segunda
-  mitad de las 24 rondas — ¿el control cognitivo se degrada con la
-  fatiga?).
-- **Pattern Hunt**: `searchSlopeMsPerCell` (regresión simple tiempo vs.
-  tamaño de cuadrícula — la firma real de búsqueda serial vs. paralela),
-  `wrongClicksByType` (a qué distractor confunde más: el "casi-objetivo"
-  chico, el de igual color, o el de igual forma); `clickSequencePerRound`
-  (2026-08-28, cada clic —correcto o no— con su celda y tiempo desde el
-  inicio de la ronda, permite reconstruir si la búsqueda fue sistemática
-  o al azar, no solo el tiempo total).
-- **Deep Read**: `readingWpm` por párrafo (velocidad de lectura), que
-  cruzado con `rereadCount` distingue leer rápido-y-bien de leer
-  rápido-pero-inseguro; `readingTimeouts`/`questionTimeouts` (cuántas
-  veces se acabó el tiempo límite, agregado 2026-08-27 junto con el resto
-  del tiempo límite real); `firstPickLatencyMs` (2026-08-28, tiempo hasta
-  la primera opción elegida, separado del tiempo hasta confirmar) y
-  `movedAwayFromCorrect` (booleano por pregunta: en algún momento
-  seleccionó la correcta y después la cambió — "se la creyó y dudó",
-  distinto de corregirse hacia la correcta, antes indistinguibles porque
-  `answerChanges` solo contaba, no decía la dirección); `readingTimeVsAccuracy`
-  (pedido directo, 2026-08-28: cruza `readingTimesMs`/`readingWpm` contra
-  la precisión de las 3 preguntas de ESE párrafo específico — leer rápido
-  no vale nada si después no se responde bien).
+Pruebas: `npm test` (Vitest, métricas y generadores) y `npm run test:e2e`
+(Playwright en Desktop Chrome, Pixel 7 e iPhone 13 contra focuslabv2, con
+un usuario de prueba que se crea y se borra en cada corrida y
+`NEXT_PUBLIC_ACTIVITY_FAST=1`).
 
 ### Pulso de sesión (2026-08-28, reemplaza al autorreporte por-actividad)
 

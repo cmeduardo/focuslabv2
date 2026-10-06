@@ -223,3 +223,16 @@
     animation: dot-shake-x 300ms ease-in-out;
   }
 }
+
+/* Reporte del taller (/admin/reporte): impresión / "Guardar como PDF". */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #14152b !important;
+  }
+}
