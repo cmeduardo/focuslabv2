@@ -13,6 +13,7 @@ import {
   type ReactionClassification,
 } from "@/lib/activities/reaction-test/trials";
 import type { TrialRecord } from "@/lib/activities/types";
+import { playHit, playMiss, playTap } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
 type Phase = "wait" | "stimulus" | "between";
@@ -34,6 +35,8 @@ export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("wait");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  // Confirmación neutra de cada respuesta (también en la ronda que cuenta).
+  const [ack, setAck] = useState(0);
 
   const clock = useTrialClock(origin);
   const phaseRef = useRef<Phase>("wait");
@@ -85,6 +88,13 @@ export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
 
       phaseRef.current = "between";
       setPhase("between");
+      if (outcome.type !== "timeout") setAck((n) => n + 1);
+      if (mode === "practice") {
+        if (classification === "valid") playHit();
+        else playMiss();
+      } else if (outcome.type !== "timeout") {
+        playTap();
+      }
       if (mode === "practice") {
         setFeedback({
           kind: outcome.type === "early" ? "early" : classification,
@@ -178,6 +188,13 @@ export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
             phase === "wait" && "animate-[spin_12s_linear_infinite]",
           )}
         />
+        {ack > 0 && (
+          <span
+            key={ack}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 animate-tap-flash rounded-full bg-primary/25"
+          />
+        )}
         {phase === "stimulus" && (
           <span
             data-testid="reaction-stimulus"

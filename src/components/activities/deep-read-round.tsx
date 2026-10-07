@@ -18,6 +18,7 @@ import {
 import type { NotificationOutcome } from "@/lib/activities/deep-read/metrics";
 import { shuffle } from "@/lib/activities/rng";
 import type { TrialRecord } from "@/lib/activities/types";
+import { playHit, playMiss, playSelect, playTap } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
 type Stage = "reading" | "question" | "feedback";
@@ -103,6 +104,7 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
         valid: true,
         invalidReason: null,
       });
+      if (how === "done") playTap();
       setStage("question");
     },
     [clock, passage, relative],
@@ -204,10 +206,13 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
       };
 
       if (mode === "practice") {
+        if (correct) playHit();
+        else playMiss();
         setLastCorrect(correct);
         setStage("feedback");
         setTimeout(advance, CONFIG.practiceFeedbackMs);
       } else {
+        playTap();
         advance();
       }
     },
@@ -219,6 +224,7 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
       if (stage !== "question") return;
       if (firstChoiceAtRef.current === null) firstChoiceAtRef.current = event.at;
       if (selected !== null && selected !== event.value) answerChangesRef.current += 1;
+      if (selected !== event.value) playSelect();
       setSelected(event.value);
     },
     [stage, selected],
@@ -226,16 +232,19 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
 
   const { bind: bindDone } = useResponseInput<"done">({
     enabled: stage === "reading",
+    trigger: "click",
     keys: {},
     onResponse: (e) => finishReading("done", e),
   });
   const { bind: bindOption } = useResponseInput<string>({
     enabled: stage === "question",
+    trigger: "click",
     keys: {},
     onResponse: choose,
   });
   const { bind: bindConfirm } = useResponseInput<"confirm">({
     enabled: stage === "question" && selected !== null,
+    trigger: "click",
     keys: {},
     onResponse: confirm,
   });

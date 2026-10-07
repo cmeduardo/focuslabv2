@@ -13,6 +13,7 @@ import {
   type FocusFlowClassification,
 } from "@/lib/activities/focus-flow/trials";
 import type { TrialRecord } from "@/lib/activities/types";
+import { playHit, playMiss, playTap } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
 type Phase = "digit" | "mask" | "feedback";
@@ -32,6 +33,9 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("digit");
   const [feedback, setFeedback] = useState<FocusFlowClassification | null>(null);
+  // Confirmación neutra de cada toque: el ritmo del SART no cambia al
+  // responder, así que sin esto no se nota que el toque quedó registrado.
+  const [ack, setAck] = useState(0);
 
   const clock = useTrialClock(origin);
   const indexRef = useRef(0);
@@ -88,6 +92,8 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
     };
 
     if (mode === "practice") {
+      if (FEEDBACK[classification].good) playHit();
+      else playMiss();
       setFeedback(classification);
       setPhase("feedback");
       schedule(next, CONFIG.practiceFeedbackMs);
@@ -121,8 +127,10 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
       if (onset === null || event.at < onset) return; // aún no aparece el dígito
       if (!clock.claim()) return;
       responseRef.current = event;
+      setAck((n) => n + 1);
+      if (mode === "registered") playTap();
     },
-    [clock],
+    [clock, mode],
   );
 
   const { bind } = useResponseInput<"press">({
@@ -140,7 +148,14 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
       data-phase={phase}
       className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-6 px-4"
     >
-      <div className="flex size-48 items-center justify-center rounded-3xl border border-border bg-muted/30 sm:size-56">
+      <div className="relative flex size-48 items-center justify-center rounded-3xl border border-border bg-muted/30 sm:size-56">
+        {ack > 0 && (
+          <span
+            key={ack}
+            aria-hidden
+            className="pointer-events-none absolute -inset-px animate-tap-flash rounded-3xl border-4 border-primary"
+          />
+        )}
         {phase === "digit" && (
           <span
             data-testid="focus-digit"

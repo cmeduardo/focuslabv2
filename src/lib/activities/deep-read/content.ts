@@ -24,7 +24,10 @@ export type DeepReadPassage = {
 };
 
 export const DEEP_READ_PASSAGE: DeepReadPassage = {
-  id: "qanats-v1",
+  // v2 (2026-10-05): 8 preguntas en vez de 5, con distractores tomados del
+  // mismo texto (otras cifras, el caso contrario, datos ciertos que
+  // responden a otra pregunta): la versión anterior se acertaba sin leer.
+  id: "qanats-v2",
   title: "Los qanats: ríos bajo el desierto",
   paragraphs: [
     "En las mesetas áridas de Irán, donde en muchas zonas llueve menos de 250 milímetros al año, hace casi tres mil años se desarrolló una forma ingeniosa de conseguir agua: el qanat. Un qanat es un túnel subterráneo, casi horizontal, que conduce el agua de un acuífero ubicado al pie de las montañas hasta los campos y aldeas de la llanura, sin bombas ni ninguna otra fuente de energía. Todo el sistema funciona por gravedad.",
@@ -37,64 +40,112 @@ export const DEEP_READ_PASSAGE: DeepReadPassage = {
   ],
   questions: [
     {
-      id: "q1-pendiente",
+      id: "q1-pendiente-plana",
       type: "literal",
-      question: "¿Qué ocurría si la pendiente del túnel era demasiado pronunciada?",
+      question: "Según el texto, ¿qué ocurría si la pendiente del túnel era casi plana?",
       options: [
-        { id: "a", text: "El agua erosionaba las paredes y provocaba derrumbes." },
-        { id: "b", text: "El agua se estancaba y el túnel se llenaba de sedimentos." },
-        { id: "c", text: "El agua se evaporaba antes de llegar a la llanura." },
-        { id: "d", text: "Los muqannis no recibían suficiente aire para trabajar." },
-      ],
-      correctId: "a",
-    },
-    {
-      id: "q2-orden",
-      type: "literal",
-      question: "Según el texto, ¿qué se construía primero?",
-      options: [
-        { id: "a", text: "El túnel, desde la salida en la llanura." },
-        { id: "b", text: "Un pozo en la parte alta, hasta encontrar el agua." },
-        { id: "c", text: "Los pozos verticales de ventilación." },
-        { id: "d", text: "Los canales de riego de la aldea." },
+        { id: "a", text: "El agua corría con fuerza, erosionaba las paredes y causaba derrumbes." },
+        { id: "b", text: "El agua se estancaba y el túnel se iba llenando de sedimentos." },
+        { id: "c", text: "El caudal bajaba hasta igualar la recarga natural del acuífero." },
+        { id: "d", text: "Los pozos verticales ya no alcanzaban a ventilar el túnel." },
       ],
       correctId: "b",
     },
     {
-      id: "q3-pozos",
+      id: "q2-inclinacion",
       type: "literal",
-      question: "¿Cada cuánto se abrían los pozos verticales a lo largo del túnel?",
+      question: "¿Cuál era la inclinación habitual del túnel?",
       options: [
-        { id: "a", text: "Cada 2 o 3 metros." },
-        { id: "b", text: "Cada 100 a 150 metros." },
-        { id: "c", text: "Cada 20 a 35 metros." },
-        { id: "d", text: "Cada medio kilómetro." },
+        { id: "a", text: "Entre 20 y 35 metros de descenso por cada kilómetro recorrido." },
+        { id: "b", text: "Entre 5 y 10 metros de descenso por cada kilómetro." },
+        { id: "c", text: "Entre medio metro y un metro de descenso por cada kilómetro." },
+        { id: "d", text: "Unos cien metros de descenso a lo largo de todo el recorrido." },
       ],
       correctId: "c",
     },
     {
-      id: "q4-sostenible",
-      type: "inference",
-      question: "¿Por qué un qanat cuida mejor el acuífero que una bomba moderna?",
+      id: "q3-orden",
+      type: "literal",
+      question: "¿En qué orden se construía un qanat?",
       options: [
-        { id: "a", text: "Porque no necesita limpieza ni reparaciones con el paso de los años." },
-        { id: "b", text: "Porque lleva el agua más rápido hasta las aldeas." },
-        { id: "c", text: "Porque sus pozos verticales dejan entrar agua de lluvia al túnel." },
-        { id: "d", text: "Porque no puede sacar más agua de la que la montaña repone." },
+        {
+          id: "a",
+          text: "Primero el pozo madre; después el túnel, desde ese pozo y cuesta abajo hasta la llanura.",
+        },
+        {
+          id: "b",
+          text: "Primero el pozo madre; después el túnel, desde la llanura y cuesta arriba hasta ese pozo.",
+        },
+        {
+          id: "c",
+          text: "Primero el túnel, desde la llanura y cuesta arriba; después el pozo madre sobre su extremo.",
+        },
+        {
+          id: "d",
+          text: "Primero los pozos verticales del trazado; después se unían por abajo con el túnel.",
+        },
+      ],
+      correctId: "b",
+    },
+    {
+      id: "q4-gonabad",
+      type: "literal",
+      question: "¿Qué datos corresponden al qanat de Gonabad?",
+      options: [
+        { id: "a", text: "Unos 3000 años, pozo madre de más de 100 m y unos 35 km de recorrido." },
+        { id: "b", text: "Unos 2700 años, pozo madre de cerca de 100 m y unos 20 km de recorrido." },
+        { id: "c", text: "Unos 2700 años, pozo madre de unos 300 m y más de 30 km de recorrido." },
+        { id: "d", text: "Unos 1000 años, pozo madre de cerca de 300 m y unos 40 km de recorrido." },
+      ],
+      correctId: "c",
+    },
+    {
+      id: "q5-unesco",
+      type: "literal",
+      question: "¿Por qué reconoció la UNESCO a los qanats iraníes, según el texto?",
+      options: [
+        { id: "a", text: "Por ser la obra de riego más antigua del mundo que sigue en uso." },
+        { id: "b", text: "Por funcionar sin energía y casi sin perder agua por evaporación." },
+        { id: "c", text: "Por abastecer, entre los once, a unas cuarenta mil personas." },
+        { id: "d", text: "Como ejemplo de gestión comunitaria del agua entre las familias." },
       ],
       correctId: "d",
     },
     {
-      id: "q5-gonabad",
+      id: "q6-acuifero",
       type: "inference",
-      question: "¿Qué hace del qanat de Gonabad un caso notable, según el texto?",
+      question: "¿Por qué un qanat no agota el acuífero, a diferencia de una bomba moderna?",
       options: [
-        { id: "a", text: "Fue el primero que la UNESCO reconoció, en 2016." },
-        { id: "b", text: "Lleva unos 2700 años y todavía abastece a miles de personas." },
-        { id: "c", text: "Es el único que funciona con bombas además de la gravedad." },
-        { id: "d", text: "Su túnel es completamente plano, sin ninguna pendiente." },
+        { id: "a", text: "Porque el agua viaja bajo tierra y casi no se evapora en el camino." },
+        { id: "b", text: "Porque su caudal depende de cuánta agua repone la montaña." },
+        { id: "c", text: "Porque los turnos de riego limitaban el agua que usaba cada familia." },
+        { id: "d", text: "Porque su pendiente suave hace que el agua corra despacio." },
       ],
       correctId: "b",
+    },
+    {
+      id: "q7-canal-abierto",
+      type: "inference",
+      question: "Si el túnel se cambiara por un canal abierto en la superficie, ¿qué problema tendría, según el texto?",
+      options: [
+        { id: "a", text: "Sacaría más agua de la que la montaña alcanza a reponer." },
+        { id: "b", text: "Se llenaría de sedimentos por quedar casi sin pendiente." },
+        { id: "c", text: "Perdería buena parte del agua por el sol del verano." },
+        { id: "d", text: "Ya no sería posible bajar a limpiarlo ni a repararlo." },
+      ],
+      correctId: "c",
+    },
+    {
+      id: "q8-desnivel",
+      type: "inference",
+      question: "¿Qué hace indispensable que el pozo madre esté al pie de las montañas y no en la llanura?",
+      options: [
+        { id: "a", text: "Que el agua debe bajar desde más alto para llegar sola a los campos." },
+        { id: "b", text: "Que solo al pie de las montañas llueve más de 250 milímetros al año." },
+        { id: "c", text: "Que en la llanura el pozo tendría que superar los 300 metros." },
+        { id: "d", text: "Que la tierra excavada solo podía sacarse por terreno inclinado." },
+      ],
+      correctId: "a",
     },
   ],
 };

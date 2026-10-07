@@ -30,7 +30,7 @@ export default function DeepReadPage() {
       instructions={[
         "Lee el texto con calma, a tu ritmo.",
         "Mientras lees pueden aparecer notificaciones: ciérralas o ignóralas, como prefieras.",
-        "Al terminar responderás 5 preguntas sin volver al texto.",
+        "Al terminar responderás 8 preguntas sin volver al texto.",
       ]}
       inputHint="Desplázate por el texto con el dedo, la rueda del mouse o el teclado."
       config={DEEP_READ_CONFIG}

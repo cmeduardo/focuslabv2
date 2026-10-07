@@ -12,6 +12,7 @@ import {
   type SearchItem,
 } from "@/lib/activities/pattern-hunt/trials";
 import type { TrialRecord } from "@/lib/activities/types";
+import { playHit, playMiss, playTap } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
 type Answer = "present" | "absent";
@@ -53,6 +54,8 @@ export function PatternHuntRound({ mode, origin, onComplete }: RoundProps) {
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("fixation");
   const [feedback, setFeedback] = useState<Classification | null>(null);
+  // Botón recién pulsado (confirmación neutra, también en la ronda que cuenta).
+  const [pressed, setPressed] = useState<{ value: Answer; n: number } | null>(null);
 
   const clock = useTrialClock(origin);
   const phaseRef = useRef<Phase>("fixation");
@@ -91,7 +94,14 @@ export function PatternHuntRound({ mode, origin, onComplete }: RoundProps) {
 
       phaseRef.current = "between";
       setPhase("between");
-      if (mode === "practice") setFeedback(classification);
+      if (event) setPressed((p) => ({ value: event.value, n: (p?.n ?? 0) + 1 }));
+      if (mode === "practice") {
+        if (classification === "hit" || classification === "correct_rejection") playHit();
+        else playMiss();
+        setFeedback(classification);
+      } else if (event) {
+        playTap();
+      }
 
       timersRef.current.push(
         setTimeout(
@@ -219,8 +229,15 @@ export function PatternHuntRound({ mode, origin, onComplete }: RoundProps) {
             type="button"
             data-testid={`search-answer-${value}`}
             {...bind(value)}
-            className="flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 border-border bg-card font-heading text-lg font-bold transition-transform active:scale-[0.97]"
+            className="relative flex min-h-16 items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-border bg-card font-heading text-lg font-bold transition-transform active:scale-[0.97]"
           >
+            {pressed?.value === value && (
+              <span
+                key={pressed.n}
+                aria-hidden
+                className="pointer-events-none absolute inset-0 animate-tap-flash bg-primary/25"
+              />
+            )}
             {label}
             <kbd className="hidden rounded border border-border px-1.5 text-xs font-normal text-muted-foreground pointer-fine:inline">
               {key}

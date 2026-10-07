@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { CloudOff, Play, RotateCcw, Smartphone, Sparkles, X } from "lucide-react";
+import { CloudOff, Play, RotateCcw, Smartphone, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 
 import { useEventLogger } from "@/components/tracking/event-tracker-provider";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,15 @@ import {
   withRetry,
   type CompletedRunPayload,
 } from "@/lib/services/activity-runs";
+import {
+  isSoundMuted,
+  playComplete,
+  playCountdownTick,
+  playGo,
+  playLevelUp,
+  setSoundMuted,
+  unlockAudio,
+} from "@/lib/audio/beep";
 import { createClient } from "@/lib/supabase/client";
 import type { ActivityType } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
@@ -100,12 +109,26 @@ export function ActivityShell({
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   const runIdRef = useRef<string | null>(null);
   const runningRef = useRef(false);
   const startedAtRef = useRef("");
   const visibilityLossesRef = useRef(0);
   const devicePromiseRef = useRef<Promise<DeviceContext> | null>(null);
+
+  // La preferencia de sonido vive en localStorage: se lee al montar.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMuted(isSoundMuted());
+  }, []);
+  const toggleSound = useCallback(() => {
+    unlockAudio();
+    setMuted((m) => {
+      setSoundMuted(!m);
+      return !m;
+    });
+  }, []);
 
   const immersive = IMMERSIVE.includes(stage);
   useWakeLock(immersive);
@@ -153,6 +176,8 @@ export function ActivityShell({
   }, [immersive]);
 
   const startPractice = useCallback(() => {
+    // Desde un click: iOS solo habilita el audio dentro de un gesto así.
+    unlockAudio();
     setPracticeRounds((n) => n + 1);
     setOrigin(performance.now());
     setRoundKey((k) => k + 1);
@@ -163,6 +188,7 @@ export function ActivityShell({
   const startCountdown = useCallback(() => {
     // La medición de refresco (rAF) corre durante la cuenta regresiva, no
     // durante los ensayos.
+    unlockAudio();
     devicePromiseRef.current = captureDeviceContext(SHELL_CONFIG.refreshSampleFrames);
     setCountdown(SHELL_CONFIG.countdownSeconds);
     setConfirmExit(false);
@@ -193,6 +219,17 @@ export function ActivityShell({
     setRoundKey((k) => k + 1);
     setStage("running");
   }, [supabase, sessionId, userId, activityType, practiceRounds, config, logEvent]);
+
+  useEffect(() => {
+    if (stage !== "countdown") return;
+    playCountdownTick();
+  }, [stage, countdown]);
+
+  useEffect(() => {
+    if (stage === "running") playGo();
+    if (stage === "practice_done") playLevelUp();
+    if (stage === "completed") playComplete();
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== "countdown") return;
@@ -364,7 +401,8 @@ export function ActivityShell({
             <h2 className="font-heading text-xl font-semibold">¡Práctica lista!</h2>
             <p className="mt-2 text-muted-foreground">
               Ahora viene la ronda que cuenta. Durante el reto no verás si
-              aciertas o no: solo da lo mejor de ti.
+              aciertas o no, pero cada respuesta destella y suena al quedar
+              registrada. ¡Da lo mejor de ti!
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <Button size="lg" className="h-12 w-full gap-2 text-base" onClick={startCountdown}>
@@ -410,28 +448,42 @@ export function ActivityShell({
                 {stage === "practice" ? "Ronda de práctica" : "Reto"}
               </p>
             </div>
-            {confirmExit ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden text-xs text-muted-foreground sm:inline">
-                  {stage === "practice" ? "¿Salir de la práctica?" : "Tu ronda quedará incompleta."}
-                </span>
-                <Button variant="outline" className="h-12" onClick={() => setConfirmExit(false)}>
-                  Seguir
+            <div className="flex items-center gap-1">
+              {!confirmExit && (
+                <Button
+                  variant="ghost"
+                  className="size-12"
+                  aria-label={muted ? "Activar sonido" : "Silenciar"}
+                  aria-pressed={!muted}
+                  data-testid="sound-toggle"
+                  onClick={toggleSound}
+                >
+                  {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
                 </Button>
-                <Button variant="destructive" className="h-12" onClick={exitImmersive}>
-                  Salir
+              )}
+              {confirmExit ? (
+                <div className="flex items-center gap-2">
+                  <span className="hidden text-xs text-muted-foreground sm:inline">
+                    {stage === "practice" ? "¿Salir de la práctica?" : "Tu ronda quedará incompleta."}
+                  </span>
+                  <Button variant="outline" className="h-12" onClick={() => setConfirmExit(false)}>
+                    Seguir
+                  </Button>
+                  <Button variant="destructive" className="h-12" onClick={exitImmersive}>
+                    Salir
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="size-12"
+                  aria-label="Salir del desafío"
+                  onClick={() => setConfirmExit(true)}
+                >
+                  <X className="size-5" />
                 </Button>
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                className="size-12"
-                aria-label="Salir del desafío"
-                onClick={() => setConfirmExit(true)}
-              >
-                <X className="size-5" />
-              </Button>
-            )}
+              )}
+            </div>
           </header>
 
           <main className="relative min-h-0 flex-1">
