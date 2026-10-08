@@ -89,7 +89,7 @@ Control de acceso en dos niveles:
 |---|---|---|---|
 | `/` | público | Landing | 0 |
 | `/login`, `/registro`, `/consentimiento` | público | Implementado | 1 |
-| `/dashboard` | participante | Accesos rápidos | 1 |
+| `/dashboard` | participante | Accesos rápidos y "Tu progreso": mejores marcas propias e historial por actividad (solo protocolo v2, sin comparar con otros) | 1, 2026-10 |
 | `/actividades` | participante | Listado de las 6 actividades | 1 |
 | `/actividades/{reaction-test,focus-flow,memory-matrix,word-sprint,pattern-hunt,deep-read}` | participante | Implementado | 2 |
 | `/herramientas` | participante | Listado de las 4 herramientas | 1 |

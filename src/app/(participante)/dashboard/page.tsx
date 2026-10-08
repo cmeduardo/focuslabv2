@@ -2,7 +2,10 @@ import { FileText } from "lucide-react";
 
 import { FocusAperture } from "@/components/brand/focus-aperture";
 import { ActionTile } from "@/components/dashboard/action-tile";
+import { ProgressSection } from "@/components/dashboard/progress-section";
 import { ACTIVITIES, TOOLS } from "@/lib/constants/nav";
+import { listProgressRows } from "@/lib/services/progress";
+import { createClient } from "@/lib/supabase/server";
 
 const ACTIVITY_ROUTE: Record<string, string> = {
   reaction_test: "reaction-test",
@@ -13,7 +16,16 @@ const ACTIVITY_ROUTE: Record<string, string> = {
   deep_read: "deep-read",
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // Si el historial falla, el dashboard igual tiene que servir para jugar.
+  const progressRows = user
+    ? await listProgressRows(supabase, user.id).catch(() => [])
+    : [];
+
   return (
     <div className="space-y-10">
       <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-secondary/70 via-card to-card px-6 py-8 sm:px-8">
@@ -35,6 +47,16 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      <ProgressSection
+        rows={progressRows}
+        hrefs={Object.fromEntries(
+          Object.entries(ACTIVITY_ROUTE).map(([slug, route]) => [
+            slug,
+            `/actividades/${route}`,
+          ]),
+        )}
+      />
 
       <section>
         <h2 className="mb-4 font-heading text-lg font-semibold">
