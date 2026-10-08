@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 
 import { signUpWithPassword } from "@/lib/services/auth";
 
-export type RegistroState = { error: string | null; needsEmailConfirmation: boolean };
+// Nombre y correo vuelven al formulario tras un error (ver LoginState).
+export type RegistroState = {
+  error: string | null;
+  needsEmailConfirmation: boolean;
+  fullName?: string;
+  email?: string;
+};
 
 export async function registro(
   _prevState: RegistroState,
@@ -16,18 +22,20 @@ export async function registro(
   const passwordConfirmation = String(formData.get("password_confirmation") ?? "");
 
   if (!fullName || !email || !password || !passwordConfirmation) {
-    return { error: "Completa todos los campos.", needsEmailConfirmation: false };
+    return { error: "Completa todos los campos.", needsEmailConfirmation: false, fullName, email };
   }
 
   if (password.length < 6) {
     return {
       error: "La contraseña debe tener al menos 6 caracteres.",
       needsEmailConfirmation: false,
+      fullName,
+      email,
     };
   }
 
   if (password !== passwordConfirmation) {
-    return { error: "Las contraseñas no coinciden.", needsEmailConfirmation: false };
+    return { error: "Las contraseñas no coinciden.", needsEmailConfirmation: false, fullName, email };
   }
 
   const { error, needsEmailConfirmation } = await signUpWithPassword(
@@ -37,7 +45,7 @@ export async function registro(
   );
 
   if (error) {
-    return { error, needsEmailConfirmation: false };
+    return { error, needsEmailConfirmation: false, fullName, email };
   }
 
   if (needsEmailConfirmation) {

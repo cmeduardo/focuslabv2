@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Lock, Mail } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import { login, type LoginState } from "@/app/(auth)/login/actions";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,16 @@ const initialState: LoginState = { error: null };
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
   const [state, formAction, isPending] = useActionState(login, initialState);
+  // React vacía el formulario después de cada acción: el correo vuelve
+  // como valor inicial desde la acción para no reescribirlo tras un error.
+  // No es un campo controlado: lo escrito antes de que cargue el JavaScript
+  // se perdería al hidratar. La contraseña sí se borra (lo habitual) y
+  // recibe el foco para reintentar.
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (state.error) passwordRef.current?.focus();
+  }, [state]);
 
   return (
     <Card className="w-full max-w-sm">
@@ -46,6 +56,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
               type="email"
               placeholder="tu@correo.com"
               autoComplete="email"
+              defaultValue={state.email}
               required
             />
           </div>
@@ -59,6 +70,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
               name="password"
               type="password"
               autoComplete="current-password"
+              ref={passwordRef}
               required
             />
           </div>

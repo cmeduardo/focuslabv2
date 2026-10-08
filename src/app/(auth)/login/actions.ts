@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 
 import { signInWithPassword } from "@/lib/services/auth";
 
-export type LoginState = { error: string | null };
+// `email` vuelve al formulario tras un error: si se envió antes de que
+// cargara el JavaScript (celular lento), la página se vuelve a renderizar
+// en el servidor y sin esto el correo llegaría vacío.
+export type LoginState = { error: string | null; email?: string };
 
 export async function login(
   _prevState: LoginState,
@@ -15,12 +18,12 @@ export async function login(
   const redirectTo = String(formData.get("redirect") ?? "/dashboard");
 
   if (!email || !password) {
-    return { error: "Completa tu correo y contraseña." };
+    return { error: "Completa tu correo y contraseña.", email };
   }
 
   const { error } = await signInWithPassword(email, password);
   if (error) {
-    return { error: "Correo o contraseña incorrectos." };
+    return { error: "Correo o contraseña incorrectos.", email };
   }
 
   redirect(redirectTo);
