@@ -41,16 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prompt de trabajo (no forma parte del código del proyecto)
-prompt_focuslab_claude_code.md
-
-# Claude Code — configuración y sesiones locales (no versionar)
-.claude/settings.local.json
-.claude/sessions/
-.claude/projects/
-claude-session*.md
-*.claude-session.*
-
 # Playwright
 /test-results/
 /playwright-report/
