@@ -3,6 +3,7 @@ import { Download, FileText } from "lucide-react";
 
 import { DimensionsTable } from "@/components/admin/dimensions-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDia } from "@/lib/analysis/overview";
 import {
   canExport,
   EXPORT_DATASETS,
@@ -29,16 +30,6 @@ const number = new Intl.NumberFormat("es-GT", { maximumFractionDigits: 1 });
 
 function formatNumber(value: number | null | undefined) {
   return value === null || value === undefined ? "—" : number.format(Number(value));
-}
-
-// `dia` viene de date_trunc('day', …) en UTC: formatear en UTC evita que el
-// día se corra uno hacia atrás al convertir a la hora de Guatemala.
-function formatDay(iso: string) {
-  return new Date(iso).toLocaleDateString("es-GT", {
-    day: "2-digit",
-    month: "short",
-    timeZone: "UTC",
-  });
 }
 
 function sumBy<T>(rows: T[], pick: (row: T) => number | null) {
@@ -175,8 +166,8 @@ export default async function AdminDashboardPage() {
               <ul className="space-y-1.5 text-sm">
                 {recentDays.map(([dia, total]) => (
                   <li key={dia} className="flex items-center gap-3">
-                    <span className="w-14 shrink-0 text-muted-foreground">
-                      {formatDay(dia)}
+                    <span className="w-20 tabular-nums shrink-0 text-muted-foreground">
+                      {formatDia(dia)}
                     </span>
                     <div className="h-2 flex-1 rounded-full bg-muted">
                       <div

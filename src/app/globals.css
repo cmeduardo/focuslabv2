@@ -25,6 +25,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-viz-1: var(--viz-1);
+  --color-viz-2: var(--viz-2);
+  --color-viz-3: var(--viz-3);
+  --color-viz-4: var(--viz-4);
+  --color-viz-neutral: var(--viz-neutral);
+  --color-viz-grid: var(--viz-grid);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -81,6 +87,15 @@
   --chart-3: #2fb693;
   --chart-4: #ffb84d;
   --chart-5: #6b6b7c;
+  /* Gráficas del análisis (validadas con el validador de dataviz contra
+     la superficie de tarjeta, todos los pares): dispositivos y estilos.
+     El coral (--pulse) queda solo para resaltar. */
+  --viz-1: #5a46fb;
+  --viz-2: #1f9e7d;
+  --viz-3: #c27410;
+  --viz-4: #a02f8a;
+  --viz-neutral: #9a99a8;
+  --viz-grid: #e6e4de;
   --radius: 0.85rem;
   --sidebar: #faf9f6;
   --sidebar-foreground: #14152b;
@@ -118,6 +133,12 @@
   --chart-3: #4fd6ae;
   --chart-4: #ffcb73;
   --chart-5: #a3a0c2;
+  --viz-1: #8c7cff;
+  --viz-2: #1f9e7d;
+  --viz-3: #b97a1f;
+  --viz-4: #c04ea0;
+  --viz-neutral: #6f6d8c;
+  --viz-grid: #2a2c4d;
   --sidebar: #181a33;
   --sidebar-foreground: #f3f1ff;
   --sidebar-primary: #8c7cff;

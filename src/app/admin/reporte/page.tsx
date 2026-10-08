@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DimensionsTable } from "@/components/admin/dimensions-table";
+import { participantsByDevice, participantsWithResults } from "@/lib/analysis/overview";
 import { getAdminOverview } from "@/lib/services/admin-stats";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,11 +36,8 @@ export default async function ReportePage() {
     sessions.filter((r) => r.status === "completada"),
     (r) => r.total_sesiones,
   );
-  const participants = Math.max(0, ...dimensions.map((r) => Number(r.participantes)));
-  const byDevice = new Map<string, number>();
-  for (const row of dimensions.filter((r) => r.activity_type === "reaction_test")) {
-    byDevice.set(row.device_type, Number(row.participantes));
-  }
+  const participants = participantsWithResults(dimensions);
+  const byDevice = participantsByDevice(dimensions);
 
   const eventTotals = new Map<string, number>();
   for (const row of events) {

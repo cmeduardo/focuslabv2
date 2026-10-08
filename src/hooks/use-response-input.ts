@@ -42,6 +42,9 @@ export function useResponseInput<V extends string>({
 }) {
   const handlerRef = useRef(onResponse);
   const keysRef = useRef(keys);
+  // Tipo del último pointerdown: en Safari el click de un toque llega con
+  // pointerType "mouse", así que sin esto se guardaba como mouse.
+  const lastPointerRef = useRef<{ type: string; at: number } | null>(null);
   // useLayoutEffect y no useEffect: el handler nuevo queda listo antes del
   // pintado, así un toque justo después de un cambio de fase no llega al
   // handler de la fase anterior (que lo descartaría).
@@ -69,15 +72,24 @@ export function useResponseInput<V extends string>({
     (value: V) => {
       if (trigger === "click") {
         return {
+          onPointerDown: (e: React.PointerEvent) => {
+            lastPointerRef.current = { type: e.pointerType, at: e.timeStamp };
+          },
           onClick: (e: React.MouseEvent) => {
             if (!enabled) return;
-            // click es un PointerEvent en los navegadores actuales; detail 0
-            // = activado con teclado (Enter/Espacio sobre el botón).
+            // detail 0 = activado con teclado (Enter/Espacio sobre el botón).
+            // Si no, manda el pointerdown que originó el click; el
+            // pointerType del click es el respaldo.
             const native = e.nativeEvent as Partial<PointerEvent> & MouseEvent;
+            const recent =
+              lastPointerRef.current && e.timeStamp - lastPointerRef.current.at < 2000
+                ? lastPointerRef.current.type
+                : null;
+            const pointerType = recent ?? native.pointerType;
             const input: InputType =
               native.detail === 0
                 ? "keyboard"
-                : native.pointerType === "touch" || native.pointerType === "pen"
+                : pointerType === "touch" || pointerType === "pen"
                   ? "touch"
                   : "mouse";
             handlerRef.current({ value, at: eventTime(e.timeStamp), input });

@@ -23,6 +23,7 @@ export const PARTICIPANT_NAV = [
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Panel agregado" },
+  { href: "/admin/analisis", label: "Análisis" },
   { href: "/admin/participantes", label: "Participantes" },
 ] as const;
 
