@@ -64,7 +64,7 @@ export function RegistroForm() {
         <CardTitle className="font-heading text-xl">Crear cuenta</CardTitle>
         <CardDescription>
           Registro con correo y contraseña. Antes de tu primera sesión
-          deberás aceptar el consentimiento informado (RS-05).
+          deberás aceptar el consentimiento informado.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>

@@ -29,7 +29,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           Bienvenido de nuevo
         </CardTitle>
         <CardDescription>
-          Autenticación con correo y contraseña vía Supabase Auth (RF-01).
+          Entra con tu correo y contraseña.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>

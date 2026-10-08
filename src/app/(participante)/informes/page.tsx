@@ -49,8 +49,7 @@ export default async function InformesPage() {
           Mis informes
         </h1>
         <p className="text-muted-foreground">
-          Perfil atencional generado por IA al completar cada sesión (RF-11,
-          RF-12).
+          Tu perfil atencional, generado por IA al terminar cada sesión.
         </p>
       </div>
 

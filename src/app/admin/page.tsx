@@ -97,8 +97,7 @@ export default async function AdminDashboardPage() {
           </h1>
           <p className="text-muted-foreground">
             Resultados del taller piloto, siempre agregados y sin datos
-            individuales (RF-13, RS-04). Solo participantes y desafíos
-            actuales (v2).
+            individuales. Solo participantes y desafíos actuales (v2).
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 text-sm">
@@ -110,7 +109,7 @@ export default async function AdminDashboardPage() {
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="flex items-center gap-1 text-muted-foreground">
-              <Download className="size-4" /> CSV (RF-14):
+              <Download className="size-4" /> CSV:
             </span>
             {exports.map((dataset) => (
               <a

@@ -9,8 +9,8 @@ export default function HerramientasPage() {
           Herramientas
         </h1>
         <p className="text-muted-foreground">
-          Herramientas de productividad. Su uso también genera eventos en el
-          motor de captura (RF-06 a RF-09).
+          Herramientas de productividad para organizar tu tiempo. Lo que
+          hagas aquí también forma parte de tu sesión.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
