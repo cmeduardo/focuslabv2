@@ -74,6 +74,9 @@ export const MEMORY_MATRIX_CONFIG = {
   // Pausa antes de mostrar cada secuencia y para la retroalimentación.
   preSequenceMs: FAST ? 300 : 900,
   feedbackMs: FAST ? 300 : 1100,
+  // Pausa tras el último toque para ver el contador completo ("4 de 4")
+  // antes de decir si fue correcto.
+  checkMs: FAST ? 150 : 500,
   // Brillo breve de cada bloque al tocarlo durante el recuerdo.
   tapFlashMs: 180,
 } as const;
