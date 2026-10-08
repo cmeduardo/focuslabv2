@@ -65,9 +65,10 @@ export default async function ReportePage() {
           Reporte agregado del taller
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Generado el {generatedAt}. Solo participantes y desafíos actuales
-          (protocolo v2), primer intento de cada desafío. Datos agregados, sin
-          identificadores individuales.
+          Solo participantes y desafíos actuales, primer intento de cada
+          desafío. Datos agregados, sin identificadores individuales.{" "}
+          {/* La hora ya termina en "p. m.": sin punto final propio. */}
+          Generado el {generatedAt}
         </p>
       </header>
 

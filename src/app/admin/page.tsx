@@ -97,7 +97,7 @@ export default async function AdminDashboardPage() {
           </h1>
           <p className="text-muted-foreground">
             Resultados del taller piloto, siempre agregados y sin datos
-            individuales. Solo participantes y desafíos actuales (v2).
+            individuales. Solo participantes y desafíos actuales.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 text-sm">
