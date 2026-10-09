@@ -26,7 +26,9 @@ import { cn } from "@/lib/utils";
 // cuanto se apaga el último bloque: antes había 300 ms "muertos" después
 // del último bloque en los que los toques se descartaban sin aviso, y
 // casi todos empezamos a tocar justo ahí (bug del taller 2026-10-04).
-type Phase = "ready" | "recall" | "feedback";
+// "checking" es la pausa tras el último toque: el contador queda lleno un
+// momento antes de decir si fue correcto, para ver que el toque contó.
+type Phase = "ready" | "recall" | "checking" | "feedback";
 type Tap = { block: number; at: number; input: ResponseEvent<string>["input"] };
 
 const BLOCK_KEYS = CORSI_BLOCKS.map((_, i) => String(i));
@@ -136,10 +138,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
         invalidReason: hidden ? "visibility" : null,
       });
 
-      setResult(classification);
-      goTo("feedback");
-      if (classification === "correct") playLevelUp();
-      else playMiss();
+      goTo("checking");
 
       let next: CorsiState | null;
       if (mode === "practice") {
@@ -151,22 +150,30 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
         next = nextCorsiState(state, classification === "correct", CONFIG);
       }
 
+      const advance = () => {
+        if (!next) {
+          if (!doneRef.current) {
+            doneRef.current = true;
+            onComplete(trialsRef.current);
+          }
+          return;
+        }
+        setState(next);
+        setSequence(generateCorsiSequence(next.length, CONFIG.blockCount, Math.random));
+        setTrialIndex((i) => i + 1);
+        setResult(null);
+        setFlash(null);
+        goTo("ready");
+      };
+
       timersRef.current.push(
         setTimeout(() => {
-          if (!next) {
-            if (!doneRef.current) {
-              doneRef.current = true;
-              onComplete(trialsRef.current);
-            }
-            return;
-          }
-          setState(next);
-          setSequence(generateCorsiSequence(next.length, CONFIG.blockCount, Math.random));
-          setTrialIndex((i) => i + 1);
-          setResult(null);
-          setFlash(null);
-          goTo("ready");
-        }, CONFIG.feedbackMs),
+          setResult(classification);
+          goTo("feedback");
+          if (classification === "correct") playLevelUp();
+          else playMiss();
+          timersRef.current.push(setTimeout(advance, CONFIG.feedbackMs));
+        }, CONFIG.checkMs),
       );
     },
     [sequence, clock, trialIndex, state, mode, onComplete, goTo],
@@ -216,7 +223,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
         )}
       >
         {phase === "ready" && (earlyHint ? "Espera a que termine la secuencia" : "Observa…")}
-        {phase === "recall" && `Tu turno: ${taps.length} de ${sequence.length}`}
+        {(phase === "recall" || phase === "checking") && `Tu turno: ${taps.length} de ${sequence.length}`}
         {phase === "feedback" && result === "correct" && "¡Correcto!"}
         {phase === "feedback" && result !== "correct" && "Esa no fue. ¡Vamos con otra!"}
       </p>
@@ -257,7 +264,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
           </button>
         ))}
       </div>
-      <TapDots count={taps.length} total={sequence.length} active={phase === "recall"} />
+      <TapDots count={taps.length} total={sequence.length} active={phase === "recall" || phase === "checking"} />
       <RoundProgress
         milestones={false}
         current={mode === "practice" ? trialIndex : state.length - CONFIG.startLength}
