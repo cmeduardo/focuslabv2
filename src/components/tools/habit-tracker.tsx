@@ -106,7 +106,7 @@ export function HabitTracker() {
       const habit = await createHabit(supabase, { userId, name });
       setHabits((prev) => [...(prev ?? []), habit]);
       setNewName("");
-      toast.success("Hábito creado — marcalo hoy para arrancar la racha.");
+      toast.success("Hábito creado — márcalo hoy para arrancar la racha.");
       logEvent("tool_progress", {
         tool: "habitos",
         type: "habit_created",

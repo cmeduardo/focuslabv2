@@ -105,7 +105,7 @@ export default async function ParticipantesPage() {
         </h1>
         <p className="text-muted-foreground">
           Gestión del taller piloto: consentimiento, avance e informes de IA.
-          Visible solo para el investigador (RS-04).
+          Visible solo para el investigador.
         </p>
       </div>
 

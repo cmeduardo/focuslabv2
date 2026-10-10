@@ -64,7 +64,7 @@ export function RegistroForm() {
         <CardTitle className="font-heading text-xl">Crear cuenta</CardTitle>
         <CardDescription>
           Registro con correo y contraseña. Antes de tu primera sesión
-          deberás aceptar el consentimiento informado (RS-05).
+          deberás aceptar el consentimiento informado.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
@@ -74,7 +74,15 @@ export function RegistroForm() {
               <User className="size-3.5 text-muted-foreground" />
               Nombre completo
             </Label>
-            <Input id="full_name" name="full_name" autoComplete="name" required />
+            <Input
+              id="full_name"
+              name="full_name"
+              autoComplete="name"
+              // React vacía el formulario tras la acción: nombre y correo
+              // vuelven desde ella (ver LoginForm).
+              defaultValue={state.fullName}
+              required
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="gap-1.5">
@@ -87,6 +95,7 @@ export function RegistroForm() {
               type="email"
               placeholder="tu@correo.com"
               autoComplete="email"
+              defaultValue={state.email}
               required
             />
           </div>
