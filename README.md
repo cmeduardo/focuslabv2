@@ -178,7 +178,7 @@ diseño) está en [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 | Etapa | Fechas | Contenido |
 |---|---|---|
-| Prototipo | mar – abr 2026 | Primera versión: actividades, herramientas, dashboard e informes con n8n. |
+| Prototipo | mar – jul 2026 | Primera versión: actividades, herramientas, dashboard e informes con n8n. |
 | Reconstrucción (Sprint 0) | ago 2026 | Nueva arquitectura por capas, esquema de base de datos con RLS. |
 | Sprints 1 – 3 | ago – sep 2026 | Autenticación y captura de eventos, seis actividades, cuatro herramientas. |
 | Sprint 4 | sep 2026 | Informes con IA y panel administrativo. |
