@@ -7,5 +7,5 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
 
-  return <LoginForm redirectTo={params.redirect ?? "/dashboard"} />;
+  return <LoginForm redirectTo={params.redirect ?? ""} />;
 }

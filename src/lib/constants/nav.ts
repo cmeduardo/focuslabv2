@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { ActivityType } from "@/lib/types/database";
+import type { ActivityType, UserRole } from "@/lib/types/database";
 
 export const PARTICIPANT_NAV = [
   { href: "/dashboard", label: "Inicio" },
@@ -26,6 +26,21 @@ export const ADMIN_NAV = [
   { href: "/admin/analisis", label: "Análisis" },
   { href: "/admin/participantes", label: "Participantes" },
 ] as const;
+
+export const ROLE_LABEL: Record<UserRole, string> = {
+  participante: "Participante",
+  investigador: "Investigador",
+  autoridad: "Autoridad académica",
+};
+
+// Investigador y autoridad también pueden recorrer la zona de participante
+// (probar un desafío, ver lo que ve el taller): cada menú enlaza al otro.
+export const ADMIN_LINK = { href: "/admin", label: "Panel" } as const;
+export const PARTICIPANT_VIEW_LINK = { href: "/dashboard", label: "Vista participante" } as const;
+
+export function isStaffRole(role: UserRole | null | undefined): role is "investigador" | "autoridad" {
+  return role === "investigador" || role === "autoridad";
+}
 
 export const ACTIVITIES: {
   slug: ActivityType;

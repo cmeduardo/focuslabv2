@@ -87,6 +87,10 @@ para que funcione el correo de confirmación del registro.
 | `investigador` | Todo el panel `/admin`: datos agregados, participantes, reporte del taller, análisis y exportación CSV. |
 | `autoridad` | Solo lectura de `/admin` y `/admin/reporte`, sin datos identificables. |
 
+Al iniciar sesión, investigador y autoridad entran directo a `/admin`; desde
+ahí, «Vista participante» lleva a las actividades y herramientas, y «Panel»
+los regresa.
+
 Toda cuenta nueva es `participante`. El rol no se puede cambiar desde la
 aplicación ni desde la API pública (lo impide la base de datos); para dar
 otro rol, desde el SQL Editor:

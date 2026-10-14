@@ -4,8 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function signInWithPassword(email: string, password: string) {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return { error: error?.message ?? null };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    return { error: error?.message ?? "Sin usuario", role: null };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+  return { error: null, role: profile?.role ?? null };
 }
 
 export async function signUpWithPassword(

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
+import { isStaffRole } from "@/lib/constants/nav";
 import { signInWithPassword } from "@/lib/services/auth";
 
 // `email` vuelve al formulario tras un error: si se envió antes de que
@@ -16,16 +17,17 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const redirectTo = safeRedirectPath(String(formData.get("redirect") ?? ""), "/dashboard");
+  const requested = String(formData.get("redirect") ?? "");
 
   if (!email || !password) {
     return { error: "Completa tu correo y contraseña.", email };
   }
 
-  const { error } = await signInWithPassword(email, password);
+  const { error, role } = await signInWithPassword(email, password);
   if (error) {
     return { error: "Correo o contraseña incorrectos.", email };
   }
 
-  redirect(redirectTo);
+  // Sin destino pedido, investigador y autoridad entran directo al panel.
+  redirect(safeRedirectPath(requested, isStaffRole(role) ? "/admin" : "/dashboard"));
 }

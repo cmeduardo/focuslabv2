@@ -1,13 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { ADMIN_NAV } from "@/lib/constants/nav";
+import { ADMIN_NAV, PARTICIPANT_VIEW_LINK, ROLE_LABEL, isStaffRole } from "@/lib/constants/nav";
 import { createClient } from "@/lib/supabase/server";
-
-const ROLE_LABEL = {
-  investigador: "Investigador",
-  autoridad: "Autoridad académica",
-} as const;
 
 export default async function AdminLayout({
   children,
@@ -31,16 +26,18 @@ export default async function AdminLayout({
 
   // RS-06: el panel administrativo solo es accesible para investigador y
   // autoridades académicas. Un participante que llegue aquí vuelve a /dashboard.
-  if (profile?.role !== "investigador" && profile?.role !== "autoridad") {
+  if (!isStaffRole(profile?.role)) {
     redirect("/dashboard");
   }
 
   // RS-04/RF-15: la autoridad académica solo ve vistas agregadas y
   // anonimizadas, nunca el listado de participantes con datos identificables.
-  const nav =
-    profile.role === "investigador"
+  const nav = [
+    ...(profile.role === "investigador"
       ? ADMIN_NAV
-      : ADMIN_NAV.filter((item) => item.href === "/admin");
+      : ADMIN_NAV.filter((item) => item.href === "/admin")),
+    PARTICIPANT_VIEW_LINK,
+  ];
 
   return (
     <AppShell nav={nav} roleLabel={ROLE_LABEL[profile.role]} userEmail={user.email ?? ""}>

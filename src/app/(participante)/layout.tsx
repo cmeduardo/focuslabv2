@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { EventTrackerProvider } from "@/components/tracking/event-tracker-provider";
-import { PARTICIPANT_NAV } from "@/lib/constants/nav";
+import { ADMIN_LINK, PARTICIPANT_NAV, ROLE_LABEL, isStaffRole } from "@/lib/constants/nav";
 import { hasAcceptedConsent } from "@/lib/services/consents";
 import { getOrCreateActiveSession } from "@/lib/services/sessions";
 import { createClient } from "@/lib/supabase/server";
@@ -26,12 +26,16 @@ export default async function ParticipantLayout({
     redirect("/consentimiento");
   }
 
-  const session = await getOrCreateActiveSession(supabase, user.id);
+  const [session, { data: profile }] = await Promise.all([
+    getOrCreateActiveSession(supabase, user.id),
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
+  ]);
+  const role = profile?.role ?? "participante";
 
   return (
     <AppShell
-      nav={PARTICIPANT_NAV}
-      roleLabel="Participante"
+      nav={isStaffRole(role) ? [...PARTICIPANT_NAV, ADMIN_LINK] : PARTICIPANT_NAV}
+      roleLabel={ROLE_LABEL[role]}
       userEmail={user.email ?? ""}
       sessionId={session.id}
     >

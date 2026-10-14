@@ -60,6 +60,6 @@ export default async function globalSetup(config: FullConfig) {
 
   const baseURL = config.projects[0].use.baseURL as string;
   await saveLogin(baseURL, participant, "/dashboard", `${AUTH_DIR}/participant.json`);
-  await saveLogin(baseURL, researcher, "/dashboard", `${AUTH_DIR}/researcher.json`);
-  await saveLogin(baseURL, authority, "/dashboard", `${AUTH_DIR}/authority.json`);
+  await saveLogin(baseURL, researcher, "/admin", `${AUTH_DIR}/researcher.json`);
+  await saveLogin(baseURL, authority, "/admin", `${AUTH_DIR}/authority.json`);
 }
