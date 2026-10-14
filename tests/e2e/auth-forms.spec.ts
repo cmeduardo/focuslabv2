@@ -20,8 +20,8 @@ test("registro: si las contraseñas no coinciden se conservan nombre y correo", 
   await page.goto("/registro");
   await page.fill("#full_name", "Ana Prueba");
   await page.fill("#email", "ana@focuslab.test");
-  await page.fill("#password", "clave-123456");
-  await page.fill("#password_confirmation", "otra-123456");
+  await page.fill("#password", "Clave-123456");
+  await page.fill("#password_confirmation", "Otra-123456");
   await page.click("button[type=submit]");
 
   await expect(page.getByText("Las contraseñas no coinciden.")).toBeVisible();
