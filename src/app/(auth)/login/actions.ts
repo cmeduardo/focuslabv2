@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { signInWithPassword } from "@/lib/services/auth";
 
 // `email` vuelve al formulario tras un error: si se envió antes de que
@@ -15,7 +16,7 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const redirectTo = String(formData.get("redirect") ?? "/dashboard");
+  const redirectTo = safeRedirectPath(String(formData.get("redirect") ?? ""), "/dashboard");
 
   if (!email || !password) {
     return { error: "Completa tu correo y contraseña.", email };

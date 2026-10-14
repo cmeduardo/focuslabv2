@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, Mail, MailCheck, User } from "lucide-react";
-import { useActionState } from "react";
+import { Check, Circle, Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react";
+import { useActionState, useState } from "react";
 
 import { registro, type RegistroState } from "@/app/(auth)/registro/actions";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_RULES,
+} from "@/lib/auth/password-policy";
 
 function StepBadge({ step }: { step: 1 | 2 }) {
   return (
@@ -27,8 +32,32 @@ function StepBadge({ step }: { step: 1 | 2 }) {
 
 const initialState: RegistroState = { error: null, needsEmailConfirmation: false };
 
+// Requisitos de la contraseña, marcados mientras se escribe. El servidor
+// vuelve a validar con las mismas reglas (lib/auth/password-policy.ts).
+function PasswordChecklist({ password }: { password: string }) {
+  return (
+    <ul id="password-rules" className="space-y-1 text-xs" aria-live="polite">
+      {PASSWORD_RULES.map((rule) => {
+        const ok = rule.test(password);
+        return (
+          <li
+            key={rule.id}
+            className={`flex items-center gap-1.5 ${ok ? "text-primary" : "text-muted-foreground"}`}
+          >
+            {ok ? <Check className="size-3.5" /> : <Circle className="size-3" />}
+            {rule.label}
+            <span className="sr-only">{ok ? " (cumplido)" : " (pendiente)"}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function RegistroForm() {
   const [state, formAction, isPending] = useActionState(registro, initialState);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (state.needsEmailConfirmation) {
     return (
@@ -104,14 +133,30 @@ export function RegistroForm() {
               <Lock className="size-3.5 text-muted-foreground" />
               Contraseña
             </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              minLength={6}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={PASSWORD_MAX_LENGTH}
+                aria-describedby="password-rules"
+                className="pr-10"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((shown) => !shown)}
+                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+            <PasswordChecklist password={password} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password_confirmation" className="gap-1.5">
@@ -121,9 +166,10 @@ export function RegistroForm() {
             <Input
               id="password_confirmation"
               name="password_confirmation"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
               required
             />
           </div>

@@ -42,7 +42,7 @@ function signUpErrorMessage(code: string | undefined) {
     case "email_address_invalid":
       return "Revisa el correo: no parece una dirección válida.";
     case "weak_password":
-      return "La contraseña es muy débil. Usa al menos 6 caracteres.";
+      return "La contraseña es muy débil. Usa al menos 10 caracteres, con mayúscula, minúscula, número y símbolo.";
     case "over_email_send_rate_limit":
     case "over_request_rate_limit":
       return "Hubo muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.";

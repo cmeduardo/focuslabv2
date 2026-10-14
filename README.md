@@ -14,6 +14,7 @@ Caso de estudio: taller piloto en el Centro Cultural Santo Tomás de Aquino.
 - [Puesta en marcha](#puesta-en-marcha)
 - [Base de datos](#base-de-datos)
 - [Roles y cuentas](#roles-y-cuentas)
+- [Seguridad](#seguridad)
 - [Informes con IA (n8n)](#informes-con-ia-n8n)
 - [Pruebas](#pruebas)
 - [Datos de demostración y limpieza](#datos-de-demostración-y-limpieza)
@@ -86,12 +87,43 @@ para que funcione el correo de confirmación del registro.
 | `investigador` | Todo el panel `/admin`: datos agregados, participantes, reporte del taller, análisis y exportación CSV. |
 | `autoridad` | Solo lectura de `/admin` y `/admin/reporte`, sin datos identificables. |
 
-Toda cuenta nueva es `participante`. Para dar otro rol, desde el SQL Editor:
+Toda cuenta nueva es `participante`. El rol no se puede cambiar desde la
+aplicación ni desde la API pública (lo impide la base de datos); para dar
+otro rol, desde el SQL Editor:
 
 ```sql
 update public.profiles set role = 'investigador'
 where id = (select id from auth.users where email = 'correo@ejemplo.com');
 ```
+
+## Seguridad
+
+Además de las políticas RLS de cada tabla:
+
+| Medida | Dónde |
+|---|---|
+| Contraseñas de al menos 10 caracteres, con minúscula, mayúscula, número y símbolo, y sin el correo dentro | `src/lib/auth/password-policy.ts` (formulario y servidor) + Supabase Auth |
+| El rol de un perfil solo cambia desde el servidor o el SQL Editor | Migración `20261013000001_profiles_role_lock.sql` |
+| Las redirecciones tras el login o la confirmación solo van a rutas internas | `src/lib/auth/safe-redirect.ts` |
+| Cabeceras de seguridad: CSP, anti-iframe, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` | `next.config.ts` |
+| Los CSV exportados no ejecutan fórmulas al abrirse en Excel | `src/lib/csv.ts` |
+| El webhook de n8n exige un secreto compartido (comparación de tiempo constante) | `src/app/api/webhooks/ai-report/route.ts` |
+| La clave `service_role` solo se usa en el servidor | `src/lib/supabase/admin.ts` |
+
+**Configuración del dashboard de Supabase.** No vive en el repositorio y
+hay que revisarla en cada proyecto nuevo:
+
+- *Authentication → Sign In / Providers → Email*: largo mínimo de
+  contraseña **10** y requisitos **"Lowercase, uppercase letters, digits
+  and symbols"** (los mismos del formulario; es lo que frena a quien llame
+  a la API directo). *Secure email change* y *Secure password change*
+  activados.
+- *Authentication → Rate Limits*: límites bajos para inicios de sesión y
+  registros por IP, para frenar ataques de fuerza bruta.
+- *Advisors → Security Advisor*: sin alertas pendientes.
+
+Las pruebas de `tests/e2e/security.spec.ts` comprueban el bloqueo del rol,
+las redirecciones y las cabeceras.
 
 ## Informes con IA (n8n)
 

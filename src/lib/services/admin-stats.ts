@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { escapeCsv } from "@/lib/csv";
 import type { Database, UserRole } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -150,16 +151,6 @@ export async function getAdminOverview(supabase: Client) {
     sessions: sessions.data ?? [],
     tools: tools.data ?? [],
   };
-}
-
-function escapeCsv(value: unknown) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  const text = typeof value === "object" ? JSON.stringify(value) : String(value);
-
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 export async function buildDatasetCsv(supabase: Client, dataset: ExportDataset) {

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { validatePassword } from "@/lib/auth/password-policy";
 import { signUpWithPassword } from "@/lib/services/auth";
 
 // Nombre y correo vuelven al formulario tras un error (ver LoginState).
@@ -25,13 +26,9 @@ export async function registro(
     return { error: "Completa todos los campos.", needsEmailConfirmation: false, fullName, email };
   }
 
-  if (password.length < 6) {
-    return {
-      error: "La contraseña debe tener al menos 6 caracteres.",
-      needsEmailConfirmation: false,
-      fullName,
-      email,
-    };
+  const passwordError = validatePassword(password, email);
+  if (passwordError) {
+    return { error: passwordError, needsEmailConfirmation: false, fullName, email };
   }
 
   if (password !== passwordConfirmation) {
