@@ -129,7 +129,7 @@ export function HabitTracker() {
 
   // Solo se puede marcar el día de hoy — un hábito se construye con el
   // check-in del momento, no reescribiendo el historial (ver
-  // ARCHITECTURE.md §7quater).
+  // docs/decisiones_tecnicas.md).
   async function handleToggleToday(habit: Habit) {
     const habitLogs = logs.filter((l) => l.habit_id === habit.id);
     const existing = habitLogs.find((l) => l.log_date === todayKey);

@@ -32,7 +32,7 @@ export async function createPendingAiReport(
 // desplegado en Vercel (prod). Se la pasamos en cada request:
 // `VERCEL_PROJECT_PRODUCTION_URL` la pone Vercel automáticamente en
 // producción; sin esa variable (dev local), usa el gateway del bridge de
-// Docker (ver ARCHITECTURE.md §7, nota de red local).
+// Docker (ver docs/estado_proyecto.md, limitaciones técnicas).
 function getCallbackUrl() {
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const origin = productionHost
@@ -120,7 +120,7 @@ async function buildSessionSummary(
 }
 
 // Dispara el webhook hacia n8n con el resumen estructurado de la sesión (ver
-// ARCHITECTURE.md §7). Sin N8N_AI_REPORT_WEBHOOK_URL configurada (dev sin
+// ARCHITECTURE.md §9). Sin N8N_AI_REPORT_WEBHOOK_URL configurada (dev sin
 // instancia de n8n), no hace nada y el informe queda 'pendiente'. Un fallo
 // de red hacia n8n tampoco debe romper el cierre de sesión del participante:
 // solo se registra en el log del servidor.

@@ -10,7 +10,7 @@ import type { Database } from "@/lib/types/database";
  * Solo debe usarse en código de servidor de confianza (Route Handlers de
  * webhooks, servicios de backend) — nunca importarse desde un Client
  * Component. Usos previstos: escribir/actualizar `ai_reports` desde el
- * webhook de retorno de n8n (ver ARCHITECTURE.md, módulo 5).
+ * webhook de retorno de n8n (ver ARCHITECTURE.md §9).
  */
 export function createAdminClient() {
   return createSupabaseClient<Database>(

@@ -1,225 +1,176 @@
 # FocusLab
 
-Aplicación web de tesis (Ingeniería en Sistemas de Información, UMG) que
-mide y analiza patrones de atención en jóvenes universitarios mediante
-actividades cognitivas gamificadas y herramientas de productividad. Al
-cerrar una sesión, un flujo de IA genera un informe de perfil atencional
-para el participante. **No realiza diagnóstico clínico.**
+Aplicación web desarrollada como proyecto de tesis (Ingeniería en Sistemas
+de Información, UMG). Registra cómo se desempeñan jóvenes universitarios
+en actividades cognitivas breves y cómo usan herramientas de
+productividad. Con esos datos genera, para cada participante, un informe
+descriptivo de su perfil atencional.
 
-Caso de estudio: taller piloto en el Centro Cultural Santo Tomás de Aquino.
+**No es un instrumento clínico.** No diagnostica, no usa terminología
+médica y sus métricas no están normadas: describen el desempeño de una
+persona en una sesión, sin compararla con una población.
 
-## Contenido
+## El problema
 
-- [Stack](#stack)
-- [Puesta en marcha](#puesta-en-marcha)
-- [Base de datos](#base-de-datos)
-- [Roles y cuentas](#roles-y-cuentas)
-- [Seguridad](#seguridad)
-- [Informes con IA (n8n)](#informes-con-ia-n8n)
-- [Pruebas](#pruebas)
-- [Datos de demostración y limpieza](#datos-de-demostración-y-limpieza)
-- [Power BI](#power-bi)
-- [Despliegue](#despliegue)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Historial del proyecto](#historial-del-proyecto)
+Los estudiantes universitarios trabajan rodeados de interrupciones
+(notificaciones, cambios de pestaña, multitarea) y suelen tener poca
+información concreta sobre cómo responde su atención. FocusLab busca
+ofrecer esa información en un formato accesible y, para el investigador,
+reunir datos de desempeño y de comportamiento de un mismo grupo de
+participantes, para explorar si se relacionan.
 
-## Stack
+## Qué incluye
+
+**Seis actividades**, cada una basada en un paradigma de psicología
+cognitiva:
+
+| Actividad | Paradigma | Qué mide |
+|---|---|---|
+| Reaction Test | Psychomotor Vigilance Task | Alerta: tiempo de reacción y su variabilidad |
+| Focus Flow | SART | Atención sostenida: veces que se responde cuando había que frenar |
+| Memory Matrix | Bloques de Corsi | Memoria de trabajo visoespacial: longitud de secuencia |
+| Word Sprint | Stroop | Atención selectiva e inhibición: precisión e interferencia |
+| Pattern Hunt | Búsqueda visual | Atención selectiva visual: tiempo de detección |
+| Deep Read | Lectura con notificaciones simuladas | Comprensión de lectura bajo distracción |
+
+Cada una tiene instrucciones, una práctica que no se guarda y una ronda
+registrada de 2 a 4 minutos. Funcionan en computadora y en celular, y
+registran el tipo de dispositivo, porque los tiempos de reacción no son
+comparables entre ambos.
+
+**Cuatro herramientas**: Pomodoro, Kanban, Hábitos y Calendario. Además de
+su función normal, registran cómo se usan (interrupciones, pausas,
+latencia para retomar).
+
+**Informe de IA.** Al terminar la sesión, la app envía un resumen de los
+resultados a un flujo de n8n que le pide a `gpt-4o-mini` un informe con
+perfil, fortalezas, áreas de mejora y recomendaciones.
+
+**Panel del investigador**: datos agregados, avance por participante,
+reporte imprimible del taller, análisis exploratorio y exportación CSV
+seudonimizada. Hay también un rol de autoridad académica que solo ve
+datos agregados.
+
+## Tecnologías y arquitectura
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 ·
-shadcn/ui · Supabase (PostgreSQL, Auth, RLS) · n8n + GPT-4o-mini ·
-Power BI · Vercel. Pruebas con Vitest y Playwright.
+shadcn/ui · Supabase (PostgreSQL, Auth, Row Level Security) · n8n Cloud +
+OpenAI · Vercel · Vitest y Playwright.
 
-## Puesta en marcha
+```
+Navegador ──> Next.js en Vercel ──> Supabase (Postgres + Auth + RLS)
+                    │   ▲
+                    ▼   │ callback con secreto compartido
+               n8n Cloud ──> OpenAI
+Power BI ──> Supabase (rol de solo lectura, vistas seudonimizadas)
+```
+
+El código se separa en presentación (`src/app`, `src/components`), lógica
+de negocio (`src/lib/services`, con las métricas como funciones puras en
+`src/lib/activities` y `src/lib/analysis`) y acceso a datos
+(`src/lib/supabase`). Cada tabla tiene políticas RLS: un participante
+solo puede leer y escribir sus propios datos.
+
+Más detalle en [`ARCHITECTURE.md`](./ARCHITECTURE.md). Las decisiones de
+diseño están en [`docs/decisiones_tecnicas.md`](./docs/decisiones_tecnicas.md)
+y el estado del proyecto en [`docs/estado_proyecto.md`](./docs/estado_proyecto.md).
+
+## Instalación
 
 Requisitos: Node.js 20 o superior y un proyecto de Supabase.
 
 ```bash
 npm install
-cp .env.local.example .env.local   # y completar los valores
+cp .env.local.example .env.local   # completar los valores
 npm run dev                        # http://localhost:3000
 ```
 
-Variables de entorno (`.env.local`, nunca se sube a git):
-
-| Variable | Para qué sirve |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto (`https://<ref>.supabase.co`). |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública; todo lo que hace con ella pasa por RLS. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Solo en el servidor (webhook de n8n, scripts). Nunca en el navegador. |
-| `N8N_AI_REPORT_WEBHOOK_URL` | Webhook de n8n que genera el informe. Opcional: sin ella el informe queda `pendiente`. |
-| `AI_REPORT_WEBHOOK_SECRET` | Secreto compartido con n8n para el webhook de retorno. |
-
-Comandos disponibles:
-
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo. |
-| `npm run build` / `npm start` | Build de producción y servidor. |
-| `npm run lint` | ESLint. |
-| `npm test` | Pruebas unitarias (Vitest). |
-| `npm run test:e2e` | Pruebas de punta a punta (Playwright). |
-| `npm run demo:seed` / `npm run demo:purge` | Crea o borra participantes ficticios. |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` / `npm start` | Build y servidor de producción |
+| `npm run lint` | ESLint |
+| `npm test` | Pruebas unitarias |
+| `npm run test:e2e` | Pruebas de punta a punta |
+| `npm run demo:seed -- 20` / `npm run demo:purge` | Crea o borra participantes ficticios (`@demo.focuslab.test`) |
 
-## Base de datos
+## Configuración
 
-El esquema completo (tablas, políticas RLS, vistas agregadas y vistas de
-análisis) está en [`supabase/migrations/`](./supabase/migrations). Se
-aplica en orden, ya sea con el CLI:
+### Variables de entorno
 
-```bash
-supabase link --project-ref <ref>
-supabase db push
-```
+En `.env.local` (no se sube a git) y, para producción, en el proyecto de
+Vercel:
 
-o pegando cada archivo en el SQL Editor del dashboard, del más antiguo al
-más reciente. Las migraciones ya aplicadas no se editan ni se renombran:
-cualquier cambio va en una migración nueva.
-
-En el dashboard de Supabase (Authentication → URL Configuration) la URL del
-sitio y las de redirección deben apuntar al dominio donde corre la app,
-para que funcione el correo de confirmación del registro.
-
-## Roles y cuentas
-
-| Rol | Qué puede hacer |
+| Variable | Uso |
 |---|---|
-| `participante` | Registrarse, aceptar el consentimiento, hacer las actividades, usar las herramientas y ver sus propios informes. Es el rol por defecto. |
-| `investigador` | Todo el panel `/admin`: datos agregados, participantes, reporte del taller, análisis y exportación CSV. |
-| `autoridad` | Solo lectura de `/admin` y `/admin/reporte`, sin datos identificables. |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto (`https://<ref>.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública; todo lo que se hace con ella pasa por RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | Solo en el servidor (webhook de retorno, reintentos, scripts) |
+| `N8N_AI_REPORT_WEBHOOK_URL` | Webhook de n8n. Sin ella, los informes quedan `pendiente` |
+| `AI_REPORT_WEBHOOK_SECRET` | Secreto compartido con n8n para el webhook de retorno |
 
-Al iniciar sesión, investigador y autoridad entran directo a `/admin`; desde
-ahí, «Vista participante» lleva a las actividades y herramientas, y «Panel»
-los regresa.
+### Supabase
 
-Toda cuenta nueva es `participante`. El rol no se puede cambiar desde la
-aplicación ni desde la API pública (lo impide la base de datos); para dar
-otro rol, desde el SQL Editor:
+1. Aplicar las migraciones de [`supabase/migrations/`](./supabase/migrations)
+   en orden, con `supabase link --project-ref <ref>` y `supabase db push`, o
+   pegando cada archivo en el SQL Editor, del más antiguo al más reciente.
+   Un cambio de esquema siempre va en una migración nueva.
+2. En *Authentication → URL Configuration*, poner como Site URL y URL de
+   redirección el dominio donde corre la app. Con la confirmación de
+   correo activada, la plantilla de *Confirm signup* debe apuntar a
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
+3. En *Authentication → Sign In / Providers → Email*, largo mínimo de
+   contraseña 10 y los cuatro tipos de carácter (los mismos requisitos que
+   valida el formulario).
+4. Toda cuenta nueva es `participante`. Para asignar otro rol, en el SQL
+   Editor:
 
-```sql
-update public.profiles set role = 'investigador'
-where id = (select id from auth.users where email = 'correo@ejemplo.com');
-```
+   ```sql
+   update public.profiles set role = 'investigador'
+   where id = (select id from auth.users where email = 'correo@ejemplo.com');
+   ```
 
-## Seguridad
+### n8n
 
-Además de las políticas RLS de cada tabla:
+El flujo tiene cinco nodos: Webhook → Construir prompt → Generar informe
+con OpenAI → Procesar respuesta → Callback a Next.js (detalle en
+`ARCHITECTURE.md` §9). El código del nodo «Construir prompt» está en
+[`docs/n8n/construir-prompt-v2.js`](./docs/n8n/construir-prompt-v2.js).
+Hay que crear una credencial de OpenAI y una *Header Auth* llamada
+`X-Webhook-Secret` con el valor de `AI_REPORT_WEBHOOK_SECRET`. La URL de
+retorno no se configura en n8n: la app la envía en cada solicitud. Al
+activar el flujo, su URL de producción va en `N8N_AI_REPORT_WEBHOOK_URL`.
 
-| Medida | Dónde |
-|---|---|
-| Contraseñas de al menos 10 caracteres, con minúscula, mayúscula, número y símbolo, y sin el correo dentro | `src/lib/auth/password-policy.ts` (formulario y servidor) + Supabase Auth |
-| El rol de un perfil solo cambia desde el servidor o el SQL Editor | Migración `20261013000001_profiles_role_lock.sql` |
-| Las redirecciones tras el login o la confirmación solo van a rutas internas | `src/lib/auth/safe-redirect.ts` |
-| Cabeceras de seguridad: CSP, anti-iframe, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` | `next.config.ts` |
-| Los CSV exportados no ejecutan fórmulas al abrirse en Excel | `src/lib/csv.ts` |
-| El webhook de n8n exige un secreto compartido (comparación de tiempo constante) | `src/app/api/webhooks/ai-report/route.ts` |
-| La clave `service_role` solo se usa en el servidor | `src/lib/supabase/admin.ts` |
+### Power BI (opcional)
 
-**Configuración del dashboard de Supabase.** No vive en el repositorio y
-hay que revisarla en cada proyecto nuevo:
-
-- *Authentication → Sign In / Providers → Email*: largo mínimo de
-  contraseña **10** y requisitos **"Lowercase, uppercase letters, digits
-  and symbols"** (los mismos del formulario; es lo que frena a quien llame
-  a la API directo). *Secure email change* y *Secure password change*
-  activados.
-- *Authentication → Rate Limits*: límites bajos para inicios de sesión y
-  registros por IP, para frenar ataques de fuerza bruta.
-- *Advisors → Security Advisor*: sin alertas pendientes.
-
-Las pruebas de `tests/e2e/security.spec.ts` comprueban el bloqueo del rol,
-las redirecciones y las cabeceras.
-
-## Informes con IA (n8n)
-
-Cuando el participante pulsa **«Terminar sesión»**, la app marca la sesión
-como completada, crea el informe en estado `pendiente` y llama al webhook
-de n8n con un resumen de sus resultados. n8n consulta a GPT-4o-mini y
-devuelve el informe a `POST /api/webhooks/ai-report`, autenticado con el
-header `X-Webhook-Secret`. La página del informe se actualiza sola en
-cuanto llega (unos 5 segundos).
-
-Para montar el flujo en otra instancia de n8n:
-
-1. Importar [`docs/n8n/FocusLab - Informe de IA (Sprint 4).json`](./docs/n8n).
-2. Crear la credencial de OpenAI y asignarla al nodo «Generar informe con
-   OpenAI».
-3. Crear una credencial *Header Auth* con nombre `X-Webhook-Secret` y el
-   mismo valor que `AI_REPORT_WEBHOOK_SECRET`, y asignarla al nodo
-   «Callback a Next.js». La URL de retorno no se configura: la app la
-   manda en cada solicitud.
-4. Activar el flujo y copiar la URL de producción del webhook a
-   `N8N_AI_REPORT_WEBHOOK_URL`.
-
-El detalle de cada nodo está en `ARCHITECTURE.md` §7.
+Los tableros se conectan a Supabase con un rol de solo lectura que solo
+ve vistas seudonimizadas. Pasos en [`docs/power_bi.md`](./docs/power_bi.md).
 
 ## Pruebas
 
 ```bash
-npm test            # unitarias: métricas de actividades, informes, análisis
-npm run test:e2e    # punta a punta, levanta su propio servidor en el puerto 3100
+npm test            # Vitest: métricas de actividades, informes, análisis, seguridad
+npm run test:e2e    # Playwright: Desktop Chrome, Pixel 7 e iPhone 13
 ```
 
-Las pruebas E2E leen `.env.local` y **crean usuarios reales** en el
-proyecto de Supabase configurado (correos `@focuslab.test`), que se borran
-al terminar. Conviene correrlas contra un proyecto de desarrollo, no contra
-el de producción.
+Las pruebas E2E levantan su propio servidor en el puerto 3100, leen
+`.env.local` y **crean usuarios reales** (`@focuslab.test`) en el proyecto
+de Supabase configurado. Los borran al terminar, pero conviene correrlas
+contra un proyecto de desarrollo.
 
-## Datos de demostración y limpieza
+## Limitaciones conocidas
 
-- `npm run demo:seed -- 20` crea 20 participantes ficticios
-  (`@demo.focuslab.test`) con una sesión completa, útiles para armar los
-  tableros sin datos reales. `npm run demo:purge` los borra.
-- [`supabase/scripts/reset_pre_taller.sql`](./supabase/scripts/reset_pre_taller.sql)
-  deja la base limpia antes de un taller: borra lo generado por cuentas que
-  no son participantes. **No es una migración**: se ejecuta a mano en el
-  SQL Editor y no se puede deshacer.
+- Las métricas son descriptivas y no están normadas; no permiten
+  clasificar a una persona ni compararla con una población.
+- El taller piloto tuvo una muestra pequeña. Las correlaciones del panel de
+  análisis son exploratorias.
+- Los tiempos de reacción en pantallas táctiles son más lentos que con
+  mouse o teclado. Por eso se analizan por tipo de dispositivo, y el
+  umbral de lapso (500 ms) viene de estudios de laboratorio.
+- La calidad del informe depende del modelo de lenguaje. Para Focus Flow
+  hubo que calcular la interpretación antes de enviarla al modelo, porque
+  el modelo la contradecía.
+- Los informes que no regresan de n8n no se reintentan solos; el
+  investigador los reintenta desde el panel.
 
-## Power BI
-
-Los tableros se conectan directo a Supabase con el conector de PostgreSQL,
-mediante un rol de solo lectura (`powerbi_reader`) que solo ve las vistas
-de análisis, con participantes seudonimizados. La guía paso a paso está en
-[`docs/power_bi.md`](./docs/power_bi.md). Las mismas vistas se pueden
-consultar en la web en `/admin/analisis`.
-
-## Despliegue
-
-La app se despliega en Vercel desde la rama `main`: cada push genera un
-nuevo despliegue. En el proyecto de Vercel se configuran las mismas
-variables de entorno de la tabla de arriba. n8n corre aparte, en n8n Cloud.
-
-## Estructura del repositorio
-
-```
-src/
-├── app/            Rutas: (auth), (participante), admin y api
-├── components/     Interfaz: actividades, herramientas, informes, análisis, ui
-├── lib/            Lógica: servicios, métricas de actividades, análisis, clientes de Supabase
-├── hooks/          Captura de eventos de interacción
-└── proxy.ts        Sesión y protección de rutas en cada request
-supabase/
-├── migrations/     Esquema SQL, RLS y vistas
-└── scripts/        Scripts manuales (limpieza previa al taller)
-tests/
-├── unit/           Vitest
-└── e2e/            Playwright
-docs/               Diagramas UML, flujo de n8n, guía de Power BI, rediseño de actividades
-scripts/            Datos de demostración
-```
-
-La arquitectura completa (capas, rutas, modelo de datos, decisiones de
-diseño) está en [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-
-## Historial del proyecto
-
-| Etapa | Fechas | Contenido |
-|---|---|---|
-| Prototipo | mar – jul 2026 | Primera versión: actividades, herramientas, dashboard e informes con n8n. |
-| Reconstrucción (Sprint 0) | ago 2026 | Nueva arquitectura por capas, esquema de base de datos con RLS. |
-| Sprints 1 – 3 | ago – sep 2026 | Autenticación y captura de eventos, seis actividades, cuatro herramientas. |
-| Sprint 4 | sep 2026 | Informes con IA y panel administrativo. |
-| Sprint 5 | oct 2026 | Rediseño de las actividades, pruebas, análisis para Power BI, ajustes previos al taller. |
-| Taller piloto | 10 oct 2026 | Aplicación con participantes en el Centro Cultural Santo Tomás de Aquino. |
-
-Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
-`sprint-5`, `taller-piloto`).
+La lista completa está en [`docs/estado_proyecto.md`](./docs/estado_proyecto.md).

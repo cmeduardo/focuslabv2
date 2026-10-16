@@ -1,6 +1,6 @@
 # Tableros de Power BI (RF-13, RF-15)
 
-Guía para armar en Power BI Desktop los tableros del capítulo 5, conectados
+Guía para armar en Power BI Desktop los tableros del análisis, conectados
 directo a Supabase con el conector nativo de PostgreSQL. Las vistas que se
 usan las crea la migración `20261004000002_analysis_views.sql`.
 
@@ -39,8 +39,8 @@ PostgreSQL y completa:
 - **Base de datos:** `postgres`.
 - **Modo:** Importar. Las vistas son livianas; se actualiza con "Actualizar".
 - **Credenciales (pestaña "Base de datos"):** usuario
-  `powerbi_reader.pnujclczjylrlxhzrmbz` (el pooler exige el sufijo con el ref
-  del proyecto) y la contraseña del paso 1.
+  `powerbi_reader.<ref>` (el pooler exige el sufijo con el ref del
+  proyecto) y la contraseña del paso 1.
 - **Si pregunta por cifrado:** dejar SSL activado.
 
 **Paso 3.** Selecciona las vistas que necesita cada archivo (sección 4).
@@ -180,8 +180,8 @@ rasgos latentes para que las relaciones de H1 tengan forma. Sus métricas se
 calculan con las mismas funciones de la app.
 
 Se borran con `npm run demo:purge` o con
-`supabase/scripts/reset_pre_taller.sql`. **Hay que borrarlos antes del
-taller real**: las vistas los cuentan como participantes.
+`supabase/scripts/reset_pre_taller.sql`. Las vistas los cuentan como
+participantes, así que no deben convivir con datos reales.
 
 ## 7. Exportaciones desde la app (alternativa sin Power BI)
 
@@ -217,10 +217,3 @@ Se leen las mismas vistas con el cliente del usuario. Reglas de cálculo
 Para comprobar las cifras de control con Vitest, descarga el CSV
 "Participantes (seudónimo)" desde `/admin` y guárdalo como
 `tests/fixtures/demo-participantes.csv` (está en `.gitignore`).
-
-Cambios de vistas pendientes de aplicar:
-
-- `20261005000001_deep_read_ocho_preguntas.sql`: etiqueta "Comprensión (de 8)".
-- `20261005000002_dia_en_guatemala.sql`: `dia` agrupa por día de Guatemala.
-  Después de aplicarla, en Power BI basta con pulsar Actualizar: la columna
-  sigue siendo fecha y hora con zona, ahora a medianoche de Guatemala.
