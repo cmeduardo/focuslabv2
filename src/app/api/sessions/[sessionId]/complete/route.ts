@@ -25,6 +25,13 @@ export async function POST(
     userId: user.id,
   });
 
+  if (session === "sin_desafios") {
+    return NextResponse.json(
+      { error: "La sesión no tiene desafíos completados." },
+      { status: 409 },
+    );
+  }
+
   if (!session) {
     return NextResponse.json(
       { error: "La sesión no existe o ya fue completada." },

@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { completeSessionAction } from "@/components/layout/complete-session-action";
@@ -15,7 +16,12 @@ export function CompleteSessionButton({ sessionId }: { sessionId: string }) {
       size="sm"
       className="h-10 gap-1.5 sm:h-8"
       disabled={isPending}
-      onClick={() => startTransition(() => completeSessionAction(sessionId))}
+      onClick={() =>
+        startTransition(async () => {
+          const result = await completeSessionAction(sessionId);
+          if (result?.error) toast.info(result.error);
+        })
+      }
     >
       <Sparkles className="size-3.5" />
       {isPending ? (

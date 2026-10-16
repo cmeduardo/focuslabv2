@@ -160,11 +160,27 @@ export async function generateAttentionReport(
 // RF-10: orquesta el cierre de sesión completo (usada tanto por
 // POST /api/sessions/[sessionId]/complete como por el botón "Terminar
 // sesión" del AppShell, ver components/layout/complete-session-action.ts).
-// Devuelve null si la sesión no es del usuario o ya estaba cerrada.
+// Devuelve null si la sesión no es del usuario o ya estaba cerrada, y
+// "sin_desafios" (sin cerrarla) si no tiene ningún desafío completado: tras
+// cerrar una sesión el layout abre otra al instante, y pulsar "Terminar
+// sesión" ahí generaba informes vacíos (taller 2026-10-10).
 export async function completeSessionAndRequestReport(
   supabase: Client,
   params: { sessionId: string; userId: string },
 ) {
+  const { count, error } = await supabase
+    .from("activity_results")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", params.sessionId);
+
+  if (error) {
+    throw new Error("No se pudo revisar los desafíos de la sesión.");
+  }
+
+  if (!count) {
+    return "sin_desafios" as const;
+  }
+
   const session = await markSessionCompleted(
     supabase,
     params.sessionId,

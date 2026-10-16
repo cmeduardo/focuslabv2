@@ -18,10 +18,16 @@ export async function completeSessionAction(sessionId: string) {
     redirect("/login");
   }
 
-  await completeSessionAndRequestReport(supabase, {
+  const result = await completeSessionAndRequestReport(supabase, {
     sessionId,
     userId: user.id,
   });
+
+  if (result === "sin_desafios") {
+    return {
+      error: "Completa al menos un desafío para generar tu informe.",
+    };
+  }
 
   redirect(`/informes/${sessionId}`);
 }
