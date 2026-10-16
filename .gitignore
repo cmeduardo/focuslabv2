@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Exportaciones con datos por participante para pruebas locales
 /tests/fixtures/*.csv
+
+# Supabase CLI
+/supabase/.temp/
