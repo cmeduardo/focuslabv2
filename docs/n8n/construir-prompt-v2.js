@@ -8,6 +8,24 @@ const sessionDurationMs = body.sessionDurationMs ?? null;
 const toolUsage = body.toolUsage || [];
 const deviceType = body.deviceType ?? null;
 
+// La lectura de la comisión de Focus Flow se calcula acá y no se deja al
+// modelo: con los cortes solo en las instrucciones, gpt-4o-mini seguía
+// listando 75 % de comisión como fortaleza (taller 2026-10-10). Mismos
+// cortes que focusFlowStyleNote en la app.
+const focusFlow = activities.find((a) => a.activityType === "focus_flow");
+const commission = focusFlow?.metrics?.commissionRatePct;
+let focusFlowReading = "";
+if (typeof commission === "number") {
+  const base = `Lectura obligatoria de Focus Flow (ya calculada; no la contradigas): respondió al 3 en el ${commission} % de las veces que debía frenar.`;
+  if (commission <= 25) {
+    focusFlowReading = `${base} Es un buen freno: puedes incluirlo como fortaleza.`;
+  } else if (commission < 50) {
+    focusFlowReading = `${base} El impulso se adelantó en varios momentos. NO incluyas Focus Flow ni la atención sostenida en "strengths"; menciónalo con tacto en "areas_for_improvement".`;
+  } else {
+    focusFlowReading = `${base} El ritmo automático le ganó al freno la mayoría de las veces. Está PROHIBIDO incluir Focus Flow o la atención sostenida en "strengths" y describir ese desafío con "buen control", "buena atención sostenida" o "alta precisión". DEBE aparecer en "areas_for_improvement" y en al menos una recomendación.`;
+  }
+}
+
 const systemPrompt = `Eres un analista que redacta perfiles atencionales a partir de desafíos cognitivos gamificados de un taller universitario. Tu objetivo es el autoconocimiento: ayudar a la persona a reconocer su propio estilo de atención.
 
 Reglas estrictas:
@@ -17,11 +35,13 @@ Reglas estrictas:
 - Básate únicamente en los datos entregados, sin inventar información. Si una actividad no tiene datos, no la menciones.
 - Los desafíos con "protocolVersion": "v2" traen un objeto "metrics" con las métricas detalladas; los "v1" solo traen precisión, nivel y duración.
 - Cada desafío se hizo en un dispositivo ("deviceType": mobile, tablet o desktop) y con una entrada ("inputType": touch, mouse o keyboard). En celular los tiempos de reacción suelen ser 30 a 80 ms más lentos por la pantalla táctil: no interpretes esa diferencia como un rasgo de la persona.
+- Si un desafío trae "scoredTrials": 0, o casi todos sus ensayos sin respuesta (por ejemplo "timeouts" igual a "scoredTrials" o "accuracy" 0 sin ningún tiempo de reacción), trátalo como un registro técnico no válido: no lo interpretes ni lo menciones.
+- No contradigas los datos para mantener el tono positivo: el tono constructivo está en cómo lo dices, no en omitir o suavizar hasta invertir lo que muestran las métricas.
 - Solo se te entrega el primer intento de cada desafío. "attemptsCompleted" > 1 indica que repitió el desafío; "incompleteAttempts" que lo dejó a mitad. Puedes mencionarlo como interés o curiosidad, nunca como falla.
 
 Cómo interpretar cada dimensión (lenguaje sugerido, no clínico):
 - Reaction Test — alerta. rtMeanMs/rtMedianMs: rapidez de respuesta ante señales imprevistas. rtSdMs: constancia del ritmo (baja = muy estable). lapses (respuestas > 500 ms): momentos en que la atención se tomó una pausa durante esperas largas. anticipations: estilo anticipatorio, con mucha energía. vigilanceTrendMs > 0: el ritmo se fue haciendo más pausado hacia el final.
-- Focus Flow — atención sostenida. commissionRatePct (responder al 3): cuánto el ritmo automático le gana al freno; un valor bajo indica buen control. omissionRatePct: estilo cauteloso. goRtMeanMs y goRtSdMs: ritmo y su estabilidad. Si preCommissionRtMs es menor que preWithholdRtMs, se aceleraba justo antes de los momentos en que respondió al 3: el "piloto automático".
+- Focus Flow — atención sostenida. La métrica principal es commissionRatePct (porcentaje de veces que respondió al 3 cuando debía frenar), NO "accuracy": los 3 son pocos, así que la precisión global sale alta aunque el freno haya fallado seguido. Nunca describas el control en Focus Flow a partir de "accuracy". Lee commissionRatePct así: hasta 25 % = buen freno, puedes nombrarlo como fortaleza; más de 25 % y menos de 50 % = el impulso se adelantó en varios momentos, no lo presentes como fortaleza; 50 % o más = el ritmo automático le ganó al freno la mayoría de las veces: NO uses expresiones como "buen control", "alta precisión" o "frenas a tiempo" para Focus Flow, y DEBE aparecer en "areas_for_improvement" y en al menos una recomendación. Nunca presentes el porcentaje de comisión como un logro (no escribas "lograste un 75 % de comisión"); descríbelo como las veces que el impulso se adelantó. omissionRatePct: estilo cauteloso. goRtMeanMs y goRtSdMs: ritmo y su estabilidad. Si preCommissionRtMs es menor que preWithholdRtMs, se aceleraba justo antes de los momentos en que respondió al 3: el "piloto automático".
 - Memory Matrix — memoria de trabajo visoespacial. span: cuántos pasos sostiene en mente en orden. orderErrors vs. itemErrors: si lo que más le reta es el orden o la posición. meanMsPerBlock: ritmo al reproducir.
 - Word Sprint — atención selectiva e inhibición. accuracyPct: precisión. interferenceMs (TR incongruente − congruente): cuánto le "jala" la lectura automática de la palabra; valores bajos indican facilidad para filtrar lo irrelevante.
 - Pattern Hunt — atención selectiva visual. detectionSpeedMs: velocidad para encontrar el objetivo. conjunctionPresentSlopeMsPerItem: cuánto crece el tiempo por cada elemento extra cuando hay que combinar forma y orientación (bajo = búsqueda eficiente). misses vs. falseAlarms: estilo de barrido rápido o de mirada sensible.
@@ -47,7 +67,7 @@ ${JSON.stringify(activities, null, 2)}
 
 Uso de herramientas de productividad durante la sesión:
 ${JSON.stringify(toolUsage, null, 2)}
-
+${focusFlowReading ? `\n${focusFlowReading}\n` : ""}
 Genera el informe siguiendo exactamente el formato JSON indicado.`;
 
 return [{ json: { sessionId, systemPrompt, userPrompt } }];
