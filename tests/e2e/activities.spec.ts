@@ -8,12 +8,9 @@ import {
 
 type Ctx = { page: Page; touch: boolean };
 
-// Un par de frames después de que el estímulo entra al DOM: el motor solo
-// acepta respuestas desde el frame en que se pinta (una persona no puede
-// responder antes de verlo, pero Playwright sí).
+// El motor solo acepta respuestas desde el frame en que se pinta el estímulo.
 const PAINT_MS = 50;
 
-// Responde con toque en celular, con teclado o mouse en laptop.
 async function press(ctx: Ctx, target: string, key?: string) {
   const locator = ctx.page.getByTestId(target);
   if (ctx.touch) await locator.tap();
@@ -28,7 +25,6 @@ async function untilResult(page: Page, step: () => Promise<void>, until: string)
   }
 }
 
-// ------------------------------------------------------------- respuestas
 async function playFocusFlow(ctx: Ctx, until: string) {
   // Responde a todo lo que no sea un 3 visible; el ritmo es fijo.
   await untilResult(

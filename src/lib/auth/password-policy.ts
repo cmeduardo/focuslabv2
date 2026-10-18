@@ -1,8 +1,4 @@
-// Política de contraseñas del registro. La aplica la acción del servidor
-// y la muestra el formulario mientras se escribe; Supabase Auth la vuelve a
-// exigir con la misma configuración (Authentication → Sign In / Providers →
-// Email: largo mínimo 10 y "Lowercase, uppercase letters, digits and
-// symbols"), que es la que cuenta si alguien llama a la API directo.
+// Supabase Auth exige la misma política (largo 10; minúsculas, mayúsculas, dígitos y símbolos).
 
 export const PASSWORD_MIN_LENGTH = 10;
 // bcrypt, que usa Supabase Auth, ignora lo que pase de 72 bytes.
@@ -34,11 +30,7 @@ export const PASSWORD_RULES: readonly PasswordRule[] = [
   },
 ];
 
-/**
- * Devuelve el mensaje de error para mostrar al participante, o `null` si la
- * contraseña cumple. `email` es opcional: si viene, la contraseña no puede
- * contener la parte antes de la @ (p. ej. "juan.perez" en "Juan.perez2026!").
- */
+// Con `email`, la contraseña no puede contener la parte antes de la @.
 export function validatePassword(password: string, email?: string): string | null {
   if (new TextEncoder().encode(password).length > PASSWORD_MAX_LENGTH) {
     return `La contraseña es demasiado larga: usa como máximo ${PASSWORD_MAX_LENGTH} caracteres.`;

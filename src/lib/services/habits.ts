@@ -4,8 +4,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-08: rastreador de hábitos. habit_logs tiene unique(habit_id,
-// log_date) — togglear un día es un upsert sobre esa clave.
+// RF-08. Marcar un día es un upsert sobre unique(habit_id, log_date).
 export async function listHabits(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("habits")

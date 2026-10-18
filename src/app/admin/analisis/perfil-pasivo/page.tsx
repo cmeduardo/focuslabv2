@@ -23,7 +23,6 @@ const COLUMNS = [
   { key: "pulso_concentracion_promedio", label: "Pulso de concentración (1 a 5)", group: "Autorreporte" },
 ];
 
-// Página 4 · Variables pasivas y perfil (H2).
 export default async function PerfilPasivoPage({
   searchParams,
 }: {
@@ -81,7 +80,7 @@ export default async function PerfilPasivoPage({
       </ExploratoryNote>
 
       <Panel title="Participantes" description="Toca el título de una columna para ordenar. Desliza hacia el lado para ver todas.">
-        <div className="max-h-[32rem] overflow-auto rounded-xl border border-border">
+        <div className="max-h-[32rem] overflow-auto rounded-lg border border-border">
           <table className="w-max min-w-full text-xs" data-testid="participants-table">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="text-muted-foreground">

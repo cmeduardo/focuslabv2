@@ -1,7 +1,3 @@
-// Variables del análisis del investigador (mismas que el tablero de Power
-// BI "FocusLab-Investigador"). Salen de vw_participantes_analisis: una fila
-// por participante, primer intento v2 de cada desafío.
-
 export type VariableGroup = "pasiva" | "cognitiva";
 
 export type VariableDef = {
@@ -64,7 +60,6 @@ export function deviceLabel(device: string) {
   return DEVICE_LABEL[device] ?? device;
 }
 
-// Orden fijo de los grupos de dispositivo en tablas y leyendas.
 export const DEVICE_ORDER = ["mobile", "desktop", "tablet", "sin_dato"];
 
 export function sortDevices(devices: Iterable<string>) {

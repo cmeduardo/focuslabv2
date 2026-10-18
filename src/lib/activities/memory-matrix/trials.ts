@@ -1,9 +1,7 @@
 import type { MemoryMatrixConfig } from "@/lib/activities/config";
 import { shuffle, type Rng } from "@/lib/activities/rng";
 
-// Posiciones irregulares de los 9 bloques (esquina superior izquierda, en %
-// del tablero), inspiradas en el tablero original de Corsi: sin filas ni
-// columnas que faciliten agrupar la secuencia. Tamaño de bloque: 16 %.
+// Posiciones irregulares como en el tablero de Corsi (% del tablero).
 export const CORSI_BLOCK_SIZE_PCT = 16;
 export const CORSI_BLOCKS: readonly { x: number; y: number }[] = [
   { x: 8, y: 10 },
@@ -17,7 +15,6 @@ export const CORSI_BLOCKS: readonly { x: number; y: number }[] = [
   { x: 24, y: 82 },
 ];
 
-// Secuencia sin repetir bloque (como en Corsi).
 export function generateCorsiSequence(length: number, blockCount: number, rng: Rng): number[] {
   return shuffle(
     Array.from({ length: blockCount }, (_, i) => i),
@@ -44,9 +41,7 @@ export function nextCorsiState(
 
 export type CorsiClassification = "correct" | "order_error" | "item_error";
 
-// Error de orden: tocó los bloques correctos pero en otro orden (se
-// recordó el "dónde" pero no el "cuándo"). Error de ítem: algún bloque no
-// era parte de la secuencia.
+// Orden: bloques correctos en otro orden. Ítem: algún bloque ajeno a la secuencia.
 export function classifyCorsi(sequence: readonly number[], taps: readonly number[]): CorsiClassification {
   if (sequence.length === taps.length && sequence.every((b, i) => taps[i] === b)) {
     return "correct";

@@ -7,8 +7,6 @@ import { useEventLogger } from "@/components/tracking/event-tracker-provider";
 import { flushPendingRuns } from "@/lib/services/activity-runs";
 import { createClient } from "@/lib/supabase/client";
 
-// Resultados que no se pudieron guardar por falta de conexión quedan en una
-// cola local (ver ActivityShell); al volver a /actividades se reintentan.
 export function PendingRunsFlusher() {
   const { userId } = useEventLogger();
 

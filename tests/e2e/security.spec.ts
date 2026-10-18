@@ -3,9 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../src/lib/types/database";
 
-// Ataques que no pasan por la interfaz: alguien con una cuenta normal usa
-// la clave pública (la misma que tiene el navegador) para hablarle directo
-// a Supabase. Requiere la migración 20261013000001_profiles_role_lock.sql.
+// Ataques directos a Supabase con la clave pública. Requiere 20261013000001_profiles_role_lock.sql.
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;

@@ -1,18 +1,11 @@
-// Parámetros de las seis actividades (rediseño v2, 2026-10-04). Todo número
-// que afecte la medición vive acá — nunca disperso en los componentes — y
-// se copia a activity_runs.config en cada corrida, así un ajuste futuro no
-// vuelve ambiguos los datos ya guardados.
-//
-// NEXT_PUBLIC_ACTIVITY_FAST=1 (solo para las pruebas E2E, nunca en
-// producción) acorta las esperas sin cambiar la cantidad de ensayos ni las
-// reglas de clasificación.
+// Todo número que afecta la medición vive aquí y se copia a activity_runs.config.
+// NEXT_PUBLIC_ACTIVITY_FAST=1 (solo E2E) acorta las esperas.
 const FAST = process.env.NEXT_PUBLIC_ACTIVITY_FAST === "1";
 
 export const PROTOCOL_VERSION = "v2";
 
 export const SHELL_CONFIG = {
   countdownSeconds: FAST ? 1 : 3,
-  // Práctica inicial + una repetición opcional.
   maxPracticeRounds: 2,
   saveAttempts: 3,
   saveRetryBaseMs: FAST ? 100 : 800,
@@ -27,16 +20,12 @@ export const REACTION_TEST_CONFIG = {
   practiceTrials: 3,
   isiMinMs: FAST ? 300 : 2000,
   isiMaxMs: FAST ? 600 : 10_000,
-  // La práctica usa esperas cortas: su objetivo es entender la consigna,
-  // no medir vigilancia.
   practiceIsiMinMs: FAST ? 300 : 2000,
   practiceIsiMaxMs: FAST ? 600 : 4000,
   // Sin respuesta en este tiempo, el ensayo se cierra como lapso.
   responseWindowMs: 3000,
   anticipationThresholdMs: 100,
   lapseThresholdMs: 500,
-  // Pausa entre ensayos: con retroalimentación en práctica, en blanco en la
-  // ronda registrada.
   practiceFeedbackMs: FAST ? 300 : 1400,
   interTrialMs: FAST ? 150 : 600,
 } as const;
@@ -71,13 +60,9 @@ export const MEMORY_MATRIX_CONFIG = {
   practiceLength: 2,
   blockOnMs: FAST ? 200 : 700,
   blockGapMs: FAST ? 100 : 300,
-  // Pausa antes de mostrar cada secuencia y para la retroalimentación.
   preSequenceMs: FAST ? 300 : 900,
   feedbackMs: FAST ? 300 : 1100,
-  // Pausa tras el último toque para ver el contador completo ("4 de 4")
-  // antes de decir si fue correcto.
   checkMs: FAST ? 150 : 500,
-  // Brillo breve de cada bloque al tocarlo durante el recuerdo.
   tapFlashMs: 180,
 } as const;
 
@@ -104,8 +89,7 @@ export const PATTERN_HUNT_CONFIG = {
   setSizes: [6, 12, 18],
   repetitionsPerCell: 4,
   practiceTrials: 6,
-  // Grilla invisible sobre la que se ubican los elementos (con jitter):
-  // garantiza que nunca se superpongan, a cualquier tamaño de pantalla.
+  // Grilla invisible: los elementos nunca se superponen.
   gridCols: 6,
   gridRows: 6,
   jitter: 0.15,
@@ -119,8 +103,6 @@ export type PatternHuntConfig = typeof PATTERN_HUNT_CONFIG;
 
 // Deep Read — resistencia a la distracción durante la lectura.
 export const DEEP_READ_CONFIG = {
-  // Momentos (ms desde que empieza la lectura) en que aparece cada
-  // notificación simulada, si todavía se está leyendo.
   notificationAtMs: FAST ? [300, 800, 1300] : [18_000, 50_000, 85_000],
   practiceNotificationAtMs: FAST ? [200] : [4000],
   notificationVisibleMs: FAST ? 400 : 6000,

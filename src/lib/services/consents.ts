@@ -8,8 +8,7 @@ const CURRENT_CONSENT_VERSION = "v1";
 
 type Client = SupabaseClient<Database>;
 
-// RS-05: el participante debe aceptar el consentimiento informado antes de
-// iniciar su primera sesión.
+// RS-05
 export async function hasAcceptedConsent(supabase: Client, userId: string) {
   const { data } = await supabase
     .from("consents")

@@ -4,10 +4,7 @@ import type { ActivityType, Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-05: guarda el resultado estructurado de una actividad cognitiva. Se
-// llama desde Client Components (igual que useEventTracker con
-// interaction_events) — la política RLS activity_results_insert_own exige
-// user_id = auth.uid().
+// RF-05
 export async function saveActivityResult(
   supabase: Client,
   params: {

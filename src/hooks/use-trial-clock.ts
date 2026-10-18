@@ -2,22 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-/**
- * Cronometraje de un ensayo, compartido por todas las actividades:
- *
- * - `stampOnset()` se llama en un useLayoutEffect después de que el
- *   estímulo se commitea al DOM: registra el timestamp del
- *   requestAnimationFrame del frame en que realmente se pinta (no el
- *   momento del setState).
- * - Las respuestas usan `event.timeStamp` (misma base que performance.now
- *   y que el timestamp de rAF), no la hora en que corre el handler.
- * - `claim()` acepta una sola respuesta por ensayo (ignora duplicadas).
- * - Si la pestaña pierde visibilidad durante el ensayo, `wasHidden()`
- *   queda en true y el ensayo se guarda como inválido.
- *
- * Todos los tiempos que devuelve son relativos a `origin` (inicio de la
- * ronda).
- */
+// stampOnset() registra el frame de rAF en que se pinta el estímulo; las respuestas usan
+// event.timeStamp (misma base). Los tiempos son relativos a `origin`.
 export function useTrialClock(origin: number) {
   const onsetRef = useRef<number | null>(null);
   const claimedRef = useRef(false);

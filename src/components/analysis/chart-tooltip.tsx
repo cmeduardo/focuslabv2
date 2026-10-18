@@ -2,9 +2,7 @@
 
 import { useRef, useState } from "react";
 
-// Capa de tooltip para las gráficas SVG (que son Server Components): toda
-// marca con `data-tip` muestra su texto al pasar el mouse o al tocarla. El
-// texto incluye siempre el valor y el n.
+// Las gráficas son Server Components: este wrapper muestra el `data-tip` de cada marca.
 export function ChartTooltip({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);

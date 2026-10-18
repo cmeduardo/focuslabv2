@@ -1,9 +1,4 @@
-// Gráficas del análisis del investigador: SVG propio, sin librería. Son
-// Server Components (no envían JS); el tooltip lo pone <ChartTooltip>.
-// Especificaciones: barras ≤ 24 px con punta redondeada y base recta,
-// líneas de 2 px, puntos ≥ 8 px con anillo del color de la superficie,
-// rejilla de 1 px recesiva, leyenda con ≥ 2 series y texto siempre en
-// tokens de texto (nunca del color de la serie).
+// SVG propio sin librería: Server Components, sin JS en el cliente.
 
 import { ChartTooltip } from "@/components/analysis/chart-tooltip";
 import { fmtNum } from "@/lib/analysis/format";
@@ -85,9 +80,7 @@ function Marker({
   return <circle cx={cx} cy={cy} r={r} {...common} />;
 }
 
-// Las etiquetas largas ("Deep Read · comprensión (aciertos)") no caben en
-// el eje vertical: se queda la parte tras el "·"; el título del panel ya
-// nombra el desafío.
+// Etiquetas largas: queda la parte tras el "·" (el título del panel ya nombra el desafío).
 function axisLabel(text: string, max: number) {
   if (text.length <= max) return text;
   const tail = text.split(" · ").at(-1) ?? text;
@@ -147,7 +140,6 @@ function Axes({
   );
 }
 
-// ------------------------------------------------------------ dispersión
 export type ScatterPoint = { id: string; x: number; y: number; series: string; tip: string };
 
 export function ScatterChart({
@@ -190,7 +182,6 @@ export function ScatterChart({
             const s = byId.get(p.series);
             return (
               <g key={p.id} data-tip={p.tip} className="cursor-default">
-                {/* Zona de toque más grande que la marca. */}
                 <circle cx={x(p.x)} cy={y(p.y)} r={12} fill="transparent" />
                 <Marker shape={s?.shape ?? "circle"} cx={x(p.x)} cy={y(p.y)} r={5} fill={s?.color ?? "var(--viz-neutral)"} />
               </g>
@@ -202,7 +193,6 @@ export function ScatterChart({
   );
 }
 
-// ------------------------------------------------- columnas categóricas
 export type ColumnDatum = { label: string; value: number; tip: string };
 
 export function ColumnChart({
@@ -223,7 +213,6 @@ export function ColumnChart({
   const y = linear([0, yTicks.at(-1)!], [H - M.bottom, M.top]);
   const band = (W - M.left - M.right) / data.length;
   const barW = Math.min(24, band - 2);
-  // Etiquetas del eje x espaciadas para que no choquen (eje categórico).
   const every = Math.ceil(data.length / 6);
   return (
     <figure>
@@ -266,7 +255,6 @@ export function ColumnChart({
   );
 }
 
-// Barra con punta redondeada de 4 px y base recta.
 function BarPath({ x, y, w, h, fill }: { x: number; y: number; w: number; h: number; fill: string }) {
   const r = Math.min(4, w / 2, h);
   return (
@@ -277,7 +265,6 @@ function BarPath({ x, y, w, h, fill }: { x: number; y: number; w: number; h: num
   );
 }
 
-// ------------------------------------------------------------ líneas
 export type LinePoint = { x: number; y: number; tip: string };
 
 export function LineChart({
@@ -340,7 +327,6 @@ export function LineChart({
   );
 }
 
-// ------------------------------------------------------------ dona
 export function DonutChart({
   slices,
   title,
@@ -356,7 +342,6 @@ export function DonutChart({
   const r = 52;
   const C = 100;
   const visible = slices.filter((s) => s.value > 0);
-  // Ángulo inicial de cada porción: suma acumulada (sin reasignar variables).
   const starts = visible.map(
     (_, i) => -Math.PI / 2 + (visible.slice(0, i).reduce((sum, s) => sum + s.value, 0) / total) * Math.PI * 2,
   );
@@ -410,8 +395,7 @@ export function DonutChart({
   );
 }
 
-// ------------------------------------------------- barras horizontales
-// En HTML (no SVG): el texto de cada fila conserva su tamaño en celular.
+// En HTML: el texto de cada fila conserva su tamaño en celular.
 export type HBarDatum = { label: string; value: number | null; tip: string; color?: string };
 
 export function HBarChart({
@@ -466,30 +450,39 @@ export function HBarChart({
   );
 }
 
-// ------------------------------------------------------- celdas de calor
-// Divergente violeta (positivo) ↔ ámbar (negativo) con gris en 0. El texto
-// va dentro de la celda: blanco o tinta según la intensidad.
+// Violeta para positivos, ámbar para negativos, en cuatro tonos fijos.
+const HEAT_STEPS = [0, 25, 45, 65, 85];
+
+function heatColor(step: number, positive: boolean) {
+  if (step === 0) return "var(--muted)";
+  const hue = positive ? "var(--viz-1)" : "var(--viz-3)";
+  return `color-mix(in oklab, ${hue} ${HEAT_STEPS[step]}%, var(--muted))`;
+}
+
 export function divergingCell(value: number | null, maxAbs: number) {
   if (value === null) return { backgroundColor: "transparent" };
   const t = Math.min(1, Math.abs(value) / (maxAbs || 1));
-  const hue = value >= 0 ? "var(--viz-1)" : "var(--viz-3)";
+  const step = t < 0.1 ? 0 : Math.min(4, Math.ceil(t * 4));
   return {
-    backgroundColor: `color-mix(in oklab, ${hue} ${Math.round(t * 85)}%, var(--muted))`,
-    color: t > 0.75 ? "#ffffff" : undefined,
+    backgroundColor: heatColor(step, value >= 0),
+    color: step >= 4 ? "#ffffff" : undefined,
   };
 }
 
 export function DivergingKey({ low, high }: { low: string; high: string }) {
+  const steps = [
+    ...[4, 3, 2, 1].map((step) => heatColor(step, false)),
+    heatColor(0, true),
+    ...[1, 2, 3, 4].map((step) => heatColor(step, true)),
+  ];
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-hidden>
       <span>{low}</span>
-      <span
-        className="h-2.5 w-28 rounded-full"
-        style={{
-          background:
-            "linear-gradient(90deg, color-mix(in oklab, var(--viz-3) 85%, var(--muted)), var(--muted), color-mix(in oklab, var(--viz-1) 85%, var(--muted)))",
-        }}
-      />
+      <span className="flex gap-px">
+        {steps.map((color, i) => (
+          <span key={i} className="h-3 w-3.5" style={{ backgroundColor: color }} />
+        ))}
+      </span>
       <span>{high}</span>
     </div>
   );
@@ -497,7 +490,7 @@ export function DivergingKey({ low, high }: { low: string; high: string }) {
 
 export function EmptyChart() {
   return (
-    <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+    <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
       Todavía no hay datos suficientes para esta gráfica.
     </p>
   );

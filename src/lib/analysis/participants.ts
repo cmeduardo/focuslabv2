@@ -1,7 +1,4 @@
-// Análisis por participante (páginas 3, 4, 6, 7, 8 y 10 del tablero del
-// investigador). Funciones puras sobre las filas de vw_participantes_analisis:
-// sin React ni Supabase, y con las mismas reglas que las medidas DAX de
-// Power BI para que las cifras cuadren.
+// Mismas reglas que las medidas DAX de Power BI, para que las cifras cuadren.
 
 import {
   COGNITIVE_VARIABLES,
@@ -34,8 +31,7 @@ export const MIN_GROUP_FOR_Z = 3;
 export const MIN_PAIRS_FOR_R = 5;
 export const TRAMOS = 5;
 
-// PostgREST devuelve numeric como número, pero algunos agregados llegan
-// como texto: se normaliza y lo que no es número queda como null (nunca 0).
+// Algunos agregados llegan como texto; lo que no es número queda null (nunca 0).
 export function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const n = typeof value === "number" ? value : Number(value);
@@ -68,7 +64,6 @@ export function quantile(values: readonly number[], p: number): number | null {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
-// Tramo de igual ancho: min(5, floor((v − min) / (max − min) × 5) + 1).
 export function tramoOf(value: number, min: number, max: number): number {
   if (max === min) return 1;
   return Math.min(TRAMOS, Math.floor(((value - min) / (max - min)) * TRAMOS) + 1);
@@ -92,7 +87,6 @@ export function pearson(pairs: readonly (readonly [number, number])[]): { r: num
   return sx > 0 && sy > 0 ? { r: cov / Math.sqrt(sx * sy), n } : { r: null, n };
 }
 
-// ------------------------------------------------------------ formato largo
 export function toLong(rows: readonly ParticipantRow[]): LongRow[] {
   const raw: Omit<LongRow, "z" | "tramo">[] = [];
   for (const row of rows) {
@@ -134,7 +128,6 @@ export function toLong(rows: readonly ParticipantRow[]): LongRow[] {
   });
 }
 
-// ------------------------------------------------------- índices y estilos
 export const STYLES = [
   { id: "sereno_fluido", label: "Ritmo sereno y fluido" },
   { id: "activo_buen_ritmo", label: "Muy activo con buen ritmo" },
@@ -189,7 +182,6 @@ export function styleCounts(list: readonly ParticipantProfile[]) {
   return STYLES.map((s) => ({ ...s, n: list.filter((p) => p.estilo === s.id).length }));
 }
 
-// --------------------------------------------------------- correlaciones
 export type CorrelationCell = { pasiva: VariableKey; cognitiva: VariableKey; r: number | null; n: number };
 
 export function correlationMatrix(rows: readonly ParticipantRow[]): CorrelationCell[] {
@@ -205,7 +197,6 @@ export function correlationMatrix(rows: readonly ParticipantRow[]): CorrelationC
   );
 }
 
-// ---------------------------------------------------------- distribuciones
 export type DeviceDistribution = {
   dispositivo: string;
   n: number;
@@ -214,7 +205,6 @@ export type DeviceDistribution = {
   mediana: number;
   p75: number;
   max: number;
-  // Participantes por tramo (índice 0 = tramo 1).
   tramos: number[];
 };
 
@@ -240,7 +230,6 @@ export function distribution(long: readonly LongRow[], variable: VariableKey): D
   });
 }
 
-// ------------------------------------------------------- perfil individual
 export type PersonVariable = {
   variable: VariableKey;
   valor: number;

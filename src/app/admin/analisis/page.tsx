@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 import { AnalysisHeader, ANALYSIS_PAGES } from "@/components/analysis/ui";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
@@ -16,8 +15,6 @@ const DESCRIPTIONS: Record<string, string> = {
   "/admin/analisis/persona": "El estilo y la posición de una persona en cada variable, frente a su grupo.",
 };
 
-// Inicio de la sección de análisis (solo investigador): las mismas vistas
-// que las páginas 3 a 10 del tablero de Power BI del investigador.
 export default async function AnalisisPage() {
   const supabase = await requireResearcher();
   const rows = await getParticipantRows(supabase);
@@ -32,16 +29,14 @@ export default async function AnalisisPage() {
         description={`Datos por participante con seudónimo, del primer intento de cada desafío. ${rows.length} participantes: ${mobile} en celular y ${desktop} en laptop.`}
       />
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {ANALYSIS_PAGES.map((p, i) => (
+        {ANALYSIS_PAGES.map((p) => (
           <li key={p.href}>
             <Link
               href={p.href}
-              className="group flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary"
+              className="flex h-full flex-col gap-1.5 rounded-lg border border-border bg-card p-4 transition-colors hover:border-foreground/40"
             >
-              <span className="text-xs text-muted-foreground">{i + 3}</span>
               <span className="font-heading font-semibold">{p.title}</span>
               <span className="text-sm text-muted-foreground">{DESCRIPTIONS[p.href]}</span>
-              <ArrowRight className="mt-auto size-4 text-primary transition-transform group-hover:translate-x-0.5" />
             </Link>
           </li>
         ))}

@@ -17,8 +17,7 @@ export const ANALYSIS_PAGES = [
   { href: "/admin/analisis/persona", label: "Perfil individual", title: "Perfil individual" },
 ] as const;
 
-// Colores por dispositivo: siempre el mismo para la misma entidad (nunca
-// por orden de aparición).
+// Un color fijo por dispositivo, nunca por orden de aparición.
 const DEVICE_COLOR: Record<string, string> = {
   mobile: "var(--viz-1)",
   desktop: "var(--viz-2)",
@@ -38,8 +37,7 @@ export function deviceColor(device: string) {
   return DEVICE_COLOR[device] ?? "var(--viz-neutral)";
 }
 
-// Estilos: color + forma (la forma es la segunda señal para quien no
-// distingue bien los colores).
+// La forma es una segunda señal para quien no distingue bien los colores.
 const STYLE_LOOK: Record<StyleId, Pick<SeriesDef, "color" | "shape">> = {
   sereno_fluido: { color: "var(--viz-2)", shape: "circle" },
   activo_buen_ritmo: { color: "var(--viz-1)", shape: "square" },
@@ -50,17 +48,24 @@ const STYLE_LOOK: Record<StyleId, Pick<SeriesDef, "color" | "shape">> = {
 
 export const STYLE_SERIES: SeriesDef[] = STYLES.map((s) => ({ id: s.id, label: s.label, ...STYLE_LOOK[s.id] }));
 
+function tabClass(active: boolean) {
+  return cn(
+    "-mb-px inline-flex h-10 items-center border-b-2 px-3 text-sm whitespace-nowrap",
+    active
+      ? "border-foreground font-medium text-foreground"
+      : "border-transparent text-muted-foreground hover:text-foreground",
+  );
+}
+
 export function AnalysisNav({ current }: { current: string }) {
   return (
-    <nav aria-label="Páginas del análisis" className="-mx-4 overflow-x-auto px-4 print:hidden">
-      <ul className="flex w-max gap-1.5">
+    <nav aria-label="Páginas del análisis" className="-mx-4 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0 print:hidden">
+      <ul className="flex w-max">
         <li>
           <Link
             href="/admin/analisis"
-            className={cn(
-              "inline-flex h-9 items-center rounded-full border border-border px-3 text-sm",
-              current === "/admin/analisis" ? "border-primary bg-secondary font-medium" : "text-muted-foreground hover:text-foreground",
-            )}
+            aria-current={current === "/admin/analisis" ? "page" : undefined}
+            className={tabClass(current === "/admin/analisis")}
           >
             Inicio
           </Link>
@@ -70,12 +75,7 @@ export function AnalysisNav({ current }: { current: string }) {
             <Link
               href={p.href}
               aria-current={current === p.href ? "page" : undefined}
-              className={cn(
-                "inline-flex h-9 items-center rounded-full border border-border px-3 text-sm whitespace-nowrap",
-                current === p.href
-                  ? "border-primary bg-secondary font-medium text-secondary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              className={tabClass(current === p.href)}
             >
               {p.label}
             </Link>
@@ -102,7 +102,6 @@ export function AnalysisHeader({
       <AnalysisNav current={current} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl space-y-1">
-          <p className="text-sm text-muted-foreground">Análisis del investigador</p>
           <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           <p className="text-[15px] text-muted-foreground">{description}</p>
         </div>
@@ -117,9 +116,9 @@ export function ExploratoryNote({ n, children }: { n: number; children?: React.R
   return (
     <p
       data-testid="exploratory-note"
-      className="flex gap-2 rounded-xl border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+      className="flex gap-2 rounded-lg bg-muted p-3 text-sm text-muted-foreground"
     >
-      <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+      <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
         Lectura exploratoria con una muestra pequeña (n = {n}). Muestra tendencias para
         conversar, no relaciones de causa y efecto. {children}
@@ -140,7 +139,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("min-w-0 space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5", className)}>
+    <section className={cn("min-w-0 space-y-3 rounded-lg border border-border bg-card p-4 sm:p-5", className)}>
       <div className="space-y-0.5">
         <h2 className="font-heading text-lg font-semibold">{title}</h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
@@ -150,7 +149,6 @@ export function Panel({
   );
 }
 
-// Tabla de datos plegable: alternativa accesible a cada gráfica.
 export function DataTable({
   caption,
   headers,

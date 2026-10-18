@@ -1,11 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// "/consentimiento" y "/auth" (enlace de confirmación de correo) son
-// públicos a nivel de red: cada uno valida por su cuenta que haya sesión.
-// "/api/webhooks" tampoco pasa por Supabase Auth: son llamadas
-// servidor-a-servidor (n8n) autenticadas con un secreto compartido propio,
-// ver cada Route Handler.
+// Públicas a nivel de red: cada una valida su acceso (los webhooks, con un secreto compartido).
 const PUBLIC_PATHS = [
   "/",
   "/login",
@@ -21,14 +17,7 @@ function isPublicPath(pathname: string) {
   );
 }
 
-/**
- * Refresca la sesión de Supabase en cada request y redirige a /login a
- * quien no esté autenticado e intente entrar a una ruta protegida (RS-01).
- *
- * La autorización fina por rol (investigador/autoridad para /admin) se
- * resuelve en src/app/admin/layout.tsx, no aquí: este archivo solo cubre el
- * límite de red (autenticado / no autenticado), ver ARCHITECTURE.md.
- */
+// RS-01. La autorización por rol se resuelve en app/admin/layout.tsx.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 

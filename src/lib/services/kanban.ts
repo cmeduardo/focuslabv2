@@ -4,11 +4,7 @@ import type { Database, KanbanTaskStatus } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-07: tablero Kanban personal. `position` usa segundos desde epoch al
-// crear o mover una tarjeta — alcanza para ordenar sin una consulta de
-// conteo por columna en cada movimiento. Ojo: la columna es `integer`
-// (máx. ~2.1 mil millones) — Date.now() en milisegundos se pasa de rango,
-// por eso se divide entre 1000.
+// RF-07. `position` en segundos: la columna es integer y Date.now() en ms se sale de rango.
 export async function listKanbanTasks(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("kanban_tasks")

@@ -55,8 +55,6 @@ test("Reaction Test: práctica sin guardar, ronda registrada y contexto de dispo
   await expectNoHorizontalScroll(page);
   await expectNoForbiddenTerms(page);
 
-  // Escrituras: corrida con contexto de dispositivo, ensayos en UN lote,
-  // resumen v2.
   const runWrites = writes.filter((w) => w.table === "activity_runs" && w.method === "POST");
   const runWithDevice = runWrites
     .map((w) => w.body as Record<string, unknown>)

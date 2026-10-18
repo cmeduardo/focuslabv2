@@ -16,7 +16,7 @@ const ACCENTS = ["border-l-signal", "border-l-pulse"] as const;
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-secondary/60 via-background to-background">
+      <section className="relative overflow-hidden border-b bg-background">
         <FocusAperture
           animated
           className="pointer-events-none absolute -top-24 -right-24 size-[32rem] text-primary/[0.07] sm:size-[40rem]"

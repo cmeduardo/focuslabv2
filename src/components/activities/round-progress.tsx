@@ -12,8 +12,7 @@ const MILESTONES = [
 // Solo rondas largas: en la práctica (3-6 ensayos) los hitos estorban.
 const MIN_TRIALS_FOR_MILESTONES = 8;
 
-// Hito vigente: se muestra durante unos pocos ensayos tras cruzarlo. Se
-// deriva de `current` (sin estado propio) para no depender de efectos.
+// Derivado de `current`, sin estado propio.
 function activeMilestone(current: number, total: number) {
   if (total < MIN_TRIALS_FOR_MILESTONES) return null;
   const span = Math.max(1, Math.round(total * 0.04));
@@ -25,8 +24,6 @@ function activeMilestone(current: number, total: number) {
   );
 }
 
-// Avance de la ronda: barra + "n de N" + hitos de ánimo. No revela
-// aciertos ni errores.
 export function RoundProgress({
   current,
   total,
@@ -53,8 +50,6 @@ export function RoundProgress({
           style={{ width: `${pct}%` }}
         />
       </div>
-      {/* El hito reemplaza por un momento al "n de N": misma línea, sin
-          mover el resto de la pantalla. */}
       {milestone ? (
         <p
           key={milestone.text}

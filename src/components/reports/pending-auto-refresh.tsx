@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// El informe 'pendiente' se completa en background (webhook a n8n). Como la
-// página es un Server Component, refrescamos solos cada pocos segundos hasta
-// que cambie de estado, en vez de pedirle al participante que recargue a mano.
+// Refresca la página hasta que el informe deje de estar 'pendiente'.
 export function PendingAutoRefresh({ intervalMs = 3000 }: { intervalMs?: number }) {
   const router = useRouter();
 

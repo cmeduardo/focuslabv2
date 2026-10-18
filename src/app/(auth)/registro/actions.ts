@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { validatePassword } from "@/lib/auth/password-policy";
 import { signUpWithPassword } from "@/lib/services/auth";
 
-// Nombre y correo vuelven al formulario tras un error (ver LoginState).
 export type RegistroState = {
   error: string | null;
   needsEmailConfirmation: boolean;

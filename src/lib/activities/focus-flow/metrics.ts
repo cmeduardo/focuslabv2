@@ -3,9 +3,7 @@ import type { ActivitySummary, TrialRecord } from "@/lib/activities/types";
 
 const isTarget = (t: TrialRecord) => t.condition.isTarget === true;
 
-// Métricas de Focus Flow (SART). Métrica principal: tasa de errores de
-// comisión (responder al "3"), la medida clásica de fallas momentáneas de
-// la atención sostenida en este paradigma.
+// Métrica principal: tasa de comisión.
 export function summarizeFocusFlow(trials: readonly TrialRecord[]): ActivitySummary {
   const scored = trials.filter((t) => t.valid);
   const targets = scored.filter(isTarget);
@@ -20,9 +18,7 @@ export function summarizeFocusFlow(trials: readonly TrialRecord[]): ActivitySumm
   const rtMean = mean(hitRts);
   const rtSd = standardDeviation(hitRts);
 
-  // Aceleración antes de un error: TR medio de los 4 aciertos previos a
-  // una comisión vs. a una inhibición correcta. Un ritmo más rápido justo
-  // antes de fallar es la firma típica de responder "en automático".
+  // TR medio de los 4 aciertos previos a una comisión vs. a una inhibición correcta.
   const preRt = (kind: "commission" | "correct_withhold") => {
     const values: number[] = [];
     scored.forEach((t, i) => {

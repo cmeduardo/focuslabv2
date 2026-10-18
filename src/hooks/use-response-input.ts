@@ -11,24 +11,14 @@ export type ResponseEvent<V extends string> = {
   input: InputType;
 };
 
-// event.timeStamp es de alta resolución en todos los navegadores modernos;
-// si algún navegador viejo lo diera en época Unix, cae a performance.now().
+// Navegadores viejos dan timeStamp en época Unix: se usa performance.now().
 function eventTime(timeStamp: number) {
   const now = performance.now();
   return timeStamp > 0 && timeStamp <= now + 1 ? timeStamp : now;
 }
 
-/**
- * Entrada unificada para las actividades: Pointer Events (pointerdown, sin
- * el retraso del click en móviles) para mouse y táctil, más teclas
- * asignadas en laptop. Cada respuesta indica qué medio se usó.
- *
- * `bind(value)` devuelve los props para un área de respuesta.
- * `trigger: "click"` es para respuestas sin cronometraje fino dentro de
- * zonas con scroll (Deep Read): en pointerdown, empezar a desplazar el
- * texto con el dedo encima de un botón contaba como pulsarlo.
- * `keys` mapea `KeyboardEvent.code` → valor (p. ej. { Space: "go" }).
- */
+// `trigger: "click"` es para zonas con scroll (Deep Read): con pointerdown, desplazar
+// el texto con el dedo sobre un botón contaba como pulsarlo.
 export function useResponseInput<V extends string>({
   enabled,
   keys,
@@ -42,12 +32,9 @@ export function useResponseInput<V extends string>({
 }) {
   const handlerRef = useRef(onResponse);
   const keysRef = useRef(keys);
-  // Tipo del último pointerdown: en Safari el click de un toque llega con
-  // pointerType "mouse", así que sin esto se guardaba como mouse.
+  // Safari reporta el click de un toque con pointerType "mouse".
   const lastPointerRef = useRef<{ type: string; at: number } | null>(null);
-  // useLayoutEffect y no useEffect: el handler nuevo queda listo antes del
-  // pintado, así un toque justo después de un cambio de fase no llega al
-  // handler de la fase anterior (que lo descartaría).
+  // useLayoutEffect: el handler nuevo queda listo antes del pintado.
   useLayoutEffect(() => {
     handlerRef.current = onResponse;
     keysRef.current = keys;
@@ -58,8 +45,7 @@ export function useResponseInput<V extends string>({
     const onKeyDown = (e: KeyboardEvent) => {
       const value = keysRef.current[e.code];
       if (value === undefined) return;
-      // Evita el scroll con la barra espaciadora y las autorepeticiones de
-      // tecla mantenida (no son respuestas nuevas).
+      // Sin scroll con la barra espaciadora ni autorepeticiones.
       e.preventDefault();
       if (e.repeat) return;
       handlerRef.current({ value, at: eventTime(e.timeStamp), input: "keyboard" });
@@ -77,9 +63,7 @@ export function useResponseInput<V extends string>({
           },
           onClick: (e: React.MouseEvent) => {
             if (!enabled) return;
-            // detail 0 = activado con teclado (Enter/Espacio sobre el botón).
-            // Si no, manda el pointerdown que originó el click; el
-            // pointerType del click es el respaldo.
+            // detail 0 = activado con teclado.
             const native = e.nativeEvent as Partial<PointerEvent> & MouseEvent;
             const recent =
               lastPointerRef.current && e.timeStamp - lastPointerRef.current.at < 2000
@@ -99,10 +83,7 @@ export function useResponseInput<V extends string>({
       return {
         onPointerDown: (e: React.PointerEvent) => {
           if (!enabled) return;
-          // Solo el botón principal del mouse. En táctil no se filtra por
-          // isPrimary: un toque mientras otro dedo sigue apoyado (p. ej. la
-          // palma o el otro pulgar) llega como no primario y es una
-          // respuesta real.
+          // En táctil no se filtra por isPrimary: un toque con otro dedo apoyado es una respuesta real.
           if (e.pointerType === "mouse" && (!e.isPrimary || e.button !== 0)) return;
           handlerRef.current({
             value,

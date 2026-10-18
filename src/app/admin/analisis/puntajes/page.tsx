@@ -15,9 +15,7 @@ import { filterByDevice, H1_PAIRS, label, scatterPoints } from "@/lib/analysis/p
 import { deviceLabel, VARIABLES } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
 
-// Página 7 · Puntajes por dispositivo: z de cada persona frente a su propio
-// grupo de dispositivo (0 = promedio del grupo). El z se calcula con todos
-// los participantes; el filtro solo elige qué filas se muestran.
+// El z se calcula con todos los participantes; el filtro solo elige qué filas se muestran.
 export default async function PuntajesPage({
   searchParams,
 }: {
@@ -47,7 +45,7 @@ export default async function PuntajesPage({
 
       <Panel title="Participante × variable" description="Violeta: por encima del promedio de su grupo. Ámbar: por debajo.">
         <DivergingKey low="−2" high="+2" />
-        <div className="max-h-[34rem] overflow-auto rounded-xl border border-border">
+        <div className="max-h-[34rem] overflow-auto rounded-lg border border-border">
           <table className="w-max min-w-full text-xs" data-testid="z-matrix">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="text-muted-foreground">

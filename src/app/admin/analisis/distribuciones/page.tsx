@@ -6,8 +6,6 @@ import { distribution, toLong, TRAMOS } from "@/lib/analysis/participants";
 import { deviceLabel, isVariableKey, sortDevices, VARIABLES, type VariableKey } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
 
-// Página 6 · Distribuciones: participantes por tramo (5 tramos de igual
-// ancho dentro de cada dispositivo) y resumen de cinco números.
 export default async function DistribucionesPage({
   searchParams,
 }: {

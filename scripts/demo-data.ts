@@ -1,19 +1,8 @@
 /**
- * Datos de demostración para armar los tableros de Power BI antes del
- * taller. NO usar con participantes reales en la base.
+ * Datos de demostración para Power BI. No usar con participantes reales en la base.
  *
  *   npx tsx scripts/demo-data.ts seed [cantidad=20]
  *   npx tsx scripts/demo-data.ts purge
- *
- * Crea participantes ficticios (correo @demo.focuslab.test) con una sesión
- * completa: los seis desafíos v2 (corrida + ensayos + resumen), eventos
- * pasivos, pulsos de sesión y algo de Pomodoro/Kanban. Los ensayos salen de
- * rasgos latentes por participante (distracción, rapidez, memoria) para que
- * las relaciones de H1 tengan forma; las métricas se calculan con las MISMAS
- * funciones puras de la app (lib/activities/<actividad>/metrics.ts).
- *
- * `purge` (o supabase/scripts/reset_pre_taller.sql) borra todo: al eliminar
- * el usuario, ON DELETE CASCADE limpia sus filas.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -56,7 +45,6 @@ const admin = createClient<Database>(
   { auth: { persistSession: false } },
 );
 
-// ------------------------------------------------------------ utilidades
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -97,7 +85,6 @@ function trialBase(i: number): Omit<TrialRecord, "condition"> {
   };
 }
 
-// --------------------------------------------------------- generadores
 function reactionTest({ rng, traits, input }: Ctx): TrialRecord[] {
   const plan = planReactionTrials(REACTION_TEST_CONFIG, "registered", rng);
   const offset = traits.mobile ? 55 : 0;
@@ -379,7 +366,6 @@ function deviceFor(rng: Rng, mobile: boolean): DeviceContext {
   };
 }
 
-// --------------------------------------------------------------- seed
 async function seed(count: number) {
   // Taller simulado: sábado 3 de octubre de 2026, 9:00 hora de Guatemala.
   const workshopStart = Date.parse("2026-10-03T15:00:00Z");
@@ -489,14 +475,12 @@ async function seed(count: number) {
       );
       runs.push({ type: activity.type, start, end });
       clock = end + 20_000 + rng() * 40_000;
-      // Pulso de sesión cada 3 actividades.
       if (k === 2 || k === 5) {
         const rating = clamp(Math.round(normal(rng, 3.6 - 0.6 * traits.distraction, 0.7)), 1, 5);
         events.push({ session_id: sessionId, user_id: userId, event_type: "session_pulse", payload: { rating, milestone: k === 2 ? 1 : 2 }, occurred_at: iso(clock) });
       }
     }
 
-    // Herramientas: Pomodoro y Kanban, al final de la sesión.
     const pomodoros = Math.floor(rng() * 3);
     for (let p = 0; p < pomodoros; p++) {
       const start = clock + p * 6 * 60_000;
@@ -538,7 +522,6 @@ async function seed(count: number) {
     }
     const sessionEnd = clock + (pomodoros + 1) * 6 * 60_000;
 
-    // Eventos pasivos: cambios de pestaña, inactividad y clics.
     const span = sessionEnd - sessionStart;
     const at = () => sessionStart + 60_000 + rng() * (span - 120_000);
     const tabSwitches = Math.max(0, Math.round(normal(rng, 2 + 2.6 * traits.distraction, 1.2)));
@@ -578,7 +561,6 @@ async function must<T extends { error: { message: string } | null }>(promise: Pr
   return result;
 }
 
-// -------------------------------------------------------------- purge
 async function purge() {
   let removed = 0;
   for (let page = 1; ; page++) {

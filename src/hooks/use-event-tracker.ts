@@ -5,8 +5,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { InteractionEventType } from "@/lib/types/database";
 
-// Tiempo sin interacción (clic, tecla, movimiento del mouse) para
-// considerar al participante inactivo.
 const IDLE_THRESHOLD_MS = 60_000;
 const FLUSH_INTERVAL_MS = 5_000;
 const MAX_QUEUE_SIZE = 20;
@@ -17,15 +15,7 @@ type PendingEvent = {
   occurred_at: string;
 };
 
-/**
- * Motor de captura de eventos (módulo 2 / RF-03). Registra, de forma no
- * intrusiva, clics, cambios de pestaña/ventana, periodos de inactividad, y
- * expone logEvent() para que actividades y herramientas reporten sus
- * propios eventos (activity_start/end, tool_start/end/interrupt).
- *
- * Los eventos se acumulan en memoria y se envían a Supabase en lote, para
- * no hacer un insert por cada clic.
- */
+// RF-03: clics, cambios de pestaña e inactividad, enviados en lote.
 export function useEventTracker({
   sessionId,
   userId,
@@ -51,8 +41,6 @@ export function useEventTracker({
         })),
       )
       .then(({ error }) => {
-        // Antes un insert fallido (enum sin migrar, RLS, sesión expirada) se
-        // perdía en silencio y el panel mostraba 0 eventos sin explicación.
         if (error) {
           console.error(
             `No se pudieron guardar ${batch.length} eventos de interacción.`,

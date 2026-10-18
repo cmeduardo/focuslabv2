@@ -1,17 +1,10 @@
-// Cálculos del panel agregado y del reporte (sin React ni Supabase, para
-// poder probarlos).
-
 type DimensionRow = {
   activity_type: string;
   device_type: string;
   participantes: number | string | null;
 };
 
-// vw_actividades_dimensiones trae una fila por desafío × dispositivo. Los
-// participantes de un desafío son la suma de sus dispositivos (cada
-// persona hace cada desafío en un solo dispositivo, su primer intento); el
-// total del taller es el máximo entre desafíos. Tomar el máximo de las
-// filas sueltas daba solo el del dispositivo más usado (16 en vez de 20).
+// Total del taller: el máximo entre desafíos de la suma de dispositivos.
 export function participantsWithResults(rows: readonly DimensionRow[]): number {
   const byActivity = new Map<string, number>();
   for (const row of rows) {
@@ -36,12 +29,8 @@ export function participantsByDevice(
   return byDevice;
 }
 
-// `dia` de las vistas: desde la migración 20261005000002 es la medianoche
-// de Guatemala (06:00 UTC); antes era la medianoche UTC. En ambos casos la
-// fecha UTC es el día correcto del bucket, así que se formatea en UTC: si
-// se formateara en America/Guatemala, un bucket a medianoche UTC se
-// correría al día anterior ("2 oct, 6 PM" en Power BI). También acepta
-// fechas simples "YYYY-MM-DD". Formato dd/MM/yyyy.
+// `dia` es medianoche de Guatemala (06:00 UTC) o, en datos viejos, medianoche UTC: en
+// ambos casos la fecha UTC es la correcta. Formato dd/MM/yyyy.
 export function formatDia(value: string | null | undefined): string {
   if (!value) return "—";
   const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00Z`) : new Date(value);
@@ -51,7 +40,6 @@ export function formatDia(value: string | null | undefined): string {
   return `${dd}/${mm}/${date.getUTCFullYear()}`;
 }
 
-// ------------------------------------------------- recorrido del taller
 type SessionRow = { status: string; total_sesiones: number | string | null };
 
 export function sessionTotals(rows: readonly SessionRow[]) {
@@ -69,7 +57,6 @@ export function sessionTotals(rows: readonly SessionRow[]) {
   };
 }
 
-// Participantes que completaron cada desafío (suma de dispositivos).
 export function participantsPerActivity(rows: readonly DimensionRow[]): Map<string, number> {
   const byActivity = new Map<string, number>();
   for (const row of rows) {
@@ -81,7 +68,6 @@ export function participantsPerActivity(rows: readonly DimensionRow[]): Map<stri
   return byActivity;
 }
 
-// Cuántas personas completaron 1, 2, … 6 desafíos.
 export function completedPerPerson(
   rows: readonly Record<string, unknown>[],
   maxActivities = 6,

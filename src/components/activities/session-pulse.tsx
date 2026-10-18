@@ -6,12 +6,7 @@ import { toast } from "sonner";
 import { useEventLogger } from "@/components/tracking/event-tracker-provider";
 import { createClient } from "@/lib/supabase/client";
 
-// Reemplaza el autorreporte por-actividad (se sintió repetitivo, feedback
-// directo 2026-08-28): un pulso liviano a nivel de sesión, cada 3
-// actividades completadas — un toast con emojis, no una pantalla que
-// bloquea. Vive en /actividades (el momento "entre actividades"), nunca
-// interrumpe mientras se está jugando. No renderiza nada visible por sí
-// mismo — dispara el toast como efecto secundario.
+// Pulso de sesión cada 3 actividades. No renderiza nada: dispara el toast.
 const MILESTONE_INTERVAL = 3;
 const EMOJIS = [
   { value: 1, emoji: "😞", label: "Nada concentrado" },

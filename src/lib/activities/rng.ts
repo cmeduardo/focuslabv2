@@ -1,6 +1,4 @@
-// Generador pseudoaleatorio con semilla (mulberry32): los generadores de
-// ensayos reciben una función `Rng` para que las pruebas sean
-// deterministas; en la app se usa Math.random.
+// mulberry32 con semilla, para pruebas deterministas.
 export type Rng = () => number;
 
 export function seededRng(seed: number): Rng {

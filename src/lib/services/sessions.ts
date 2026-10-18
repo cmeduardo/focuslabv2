@@ -6,9 +6,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-02: inicia una sesión de uso vinculada al participante. Si ya tiene una
-// sesión en progreso (p. ej. otra pestaña, o simplemente sigue navegando la
-// app), la reutiliza en vez de abrir sesiones duplicadas.
+// RF-02: reutiliza la sesión en progreso si ya existe.
 export async function getOrCreateActiveSession(supabase: Client, userId: string) {
   const { data: existing } = await supabase
     .from("sessions")
@@ -44,10 +42,7 @@ export async function markSessionAbandoned(supabase: Client, sessionId: string) 
     .eq("status", "en_progreso");
 }
 
-// RF-10: cierra la sesión al pedido del participante (POST
-// /api/sessions/[sessionId]/complete), disparando el flujo de informe de IA.
-// El filtro por user_id + status = 'en_progreso' evita completar la sesión
-// de otro participante o completar dos veces la misma.
+// RF-10. El filtro por user_id y 'en_progreso' evita cerrar una sesión ajena o dos veces.
 export async function markSessionCompleted(
   supabase: Client,
   sessionId: string,

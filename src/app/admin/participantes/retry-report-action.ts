@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { retryAiReport } from "@/lib/services/ai-reports";
 import { createClient } from "@/lib/supabase/server";
 
-// Solo el investigador puede reintentar informes (misma restricción RS-04
-// que el listado de participantes).
+// RS-04: solo el investigador.
 export async function retryReportAction(sessionId: string) {
   const supabase = await createClient();
   const {

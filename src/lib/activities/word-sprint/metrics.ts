@@ -12,7 +12,7 @@ function interference(trials: readonly TrialRecord[]) {
   return { congruent: c, incongruent: i, effect: c !== null && i !== null ? i - c : null };
 }
 
-// Métricas de Word Sprint (Stroop). Métrica principal: precisión global.
+// Métrica principal: precisión global.
 export function summarizeWordSprint(trials: readonly TrialRecord[]): ActivitySummary {
   const scored = trials.filter((t) => t.valid);
   const congruent = scored.filter((t) => t.condition.congruent === true);

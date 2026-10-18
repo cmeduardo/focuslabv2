@@ -1,10 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Pruebas E2E de las actividades en los tres perfiles del taller: laptop,
-// Android y iPhone (emulación con touch). Corre contra el proyecto real de
-// Supabase (focuslabv2) con un usuario de prueba que global-setup crea y
-// global-teardown borra (ON DELETE CASCADE limpia todo lo que generó).
-// NEXT_PUBLIC_ACTIVITY_FAST=1 acorta las esperas de los ensayos.
+// Corre contra el proyecto real de Supabase con usuarios que crea global-setup y borra
+// global-teardown. NEXT_PUBLIC_ACTIVITY_FAST=1 acorta las esperas de los ensayos.
 try {
   process.loadEnvFile(".env.local");
 } catch {

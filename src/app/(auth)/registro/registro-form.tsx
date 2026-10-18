@@ -32,8 +32,7 @@ function StepBadge({ step }: { step: 1 | 2 }) {
 
 const initialState: RegistroState = { error: null, needsEmailConfirmation: false };
 
-// Requisitos de la contraseña, marcados mientras se escribe. El servidor
-// vuelve a validar con las mismas reglas (lib/auth/password-policy.ts).
+// El servidor vuelve a validar con las mismas reglas.
 function PasswordChecklist({ password }: { password: string }) {
   return (
     <ul id="password-rules" className="space-y-1 text-xs" aria-live="polite">
@@ -107,8 +106,6 @@ export function RegistroForm() {
               id="full_name"
               name="full_name"
               autoComplete="name"
-              // React vacía el formulario tras la acción: nombre y correo
-              // vuelven desde ella (ver LoginForm).
               defaultValue={state.fullName}
               required
             />

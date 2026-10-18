@@ -1,12 +1,5 @@
-// Sonidos de las actividades (Web Audio, sin assets). Defensivo a
-// propósito: si el navegador bloquea el audio o algo falla, no debe romper
-// el juego — el sonido es un extra, no un requisito.
-//
-// iOS solo deja arrancar el audio dentro de un gesto completo (click o
-// touchend), no en pointerdown: por eso el shell llama a `unlockAudio()`
-// desde los botones "Empezar práctica" / "Comenzar el reto". Después de
-// eso el contexto queda activo y los sonidos en pointerdown sí suenan.
-// (El interruptor de silencio del iPhone también apaga Web Audio.)
+// El sonido es un extra: nunca debe romper el juego. iOS solo habilita el audio dentro
+// de un click, por eso el shell llama a unlockAudio() desde los botones de inicio.
 let ctx: AudioContext | null = null;
 let muted: boolean | null = null;
 
@@ -48,12 +41,10 @@ export function setSoundMuted(value: boolean) {
   try {
     window.localStorage.setItem(MUTE_KEY, value ? "1" : "0");
   } catch {
-    // preferencia solo en memoria
   }
 }
 
-// Llamar desde un click: crea/reanuda el contexto y reproduce un buffer
-// vacío (lo que iOS necesita para "desbloquear" el audio).
+// Desde un click: reproduce un buffer vacío para desbloquear el audio en iOS.
 export function unlockAudio() {
   try {
     const audioCtx = getContext();
@@ -98,8 +89,7 @@ function tone(
   }
 }
 
-// Confirmación neutra de que la respuesta quedó registrada: no dice si fue
-// correcta (se usa también en la ronda que cuenta).
+// Confirmación neutra: no dice si la respuesta fue correcta.
 export function playTap() {
   tone(740, 45, "triangle", 0.04);
 }
@@ -126,7 +116,6 @@ export function playLevelUp() {
   tone(880, 140, "sine", 0.07, 90);
 }
 
-// Cuenta regresiva: 3-2-1 graves y una nota aguda al empezar.
 export function playCountdownTick() {
   tone(523, 90, "sine", 0.05);
 }
@@ -136,7 +125,6 @@ export function playGo() {
   tone(1046, 160, "sine", 0.06, 70);
 }
 
-// Hito de avance (mitad, último tramo).
 export function playMilestone() {
   tone(659, 80, "sine", 0.045);
   tone(784, 80, "sine", 0.045, 80);

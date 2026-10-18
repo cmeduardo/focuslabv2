@@ -2,10 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 
-// El participante cerró o recargó la página a mitad de una ronda
-// registrada: navigator.sendBeacon (que sí sobrevive a pagehide y manda las
-// cookies de sesión) llega acá y la corrida queda 'incompleta'. Solo pasa
-// de 'en_curso' a 'incompleta' — nunca pisa una corrida ya completada.
+// sendBeacon al cerrar la página a mitad de la ronda. Solo pasa de 'en_curso' a 'incompleta'.
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ runId: string }> },

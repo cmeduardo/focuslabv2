@@ -208,11 +208,8 @@ describe("detalle por ensayo", () => {
   });
 });
 
-// ----------------------------------------------------------------------
-// Cifras de control de Power BI (datos de demostración, 20 participantes).
-// Para correrla: en /admin → "Participantes (seudónimo)" descargar el CSV y
-// guardarlo como tests/fixtures/demo-participantes.csv. Sin el archivo, se
-// omite.
+// Cifras de control de Power BI. Requiere tests/fixtures/demo-participantes.csv (CSV
+// "Participantes (seudónimo)" de /admin); sin el archivo, se omite.
 const FIXTURE = "tests/fixtures/demo-participantes.csv";
 
 function parseCsv(text: string): ParticipantRow[] {

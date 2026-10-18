@@ -5,9 +5,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// Historial propio para "Tu progreso" (RF-12). Solo protocolo v2: las filas
-// v1 son de mecánicas anteriores y no se pueden comparar con las actuales.
-// La RLS activity_results_select_own ya limita a las filas del usuario.
+// RF-12. Solo protocolo v2: las filas v1 no son comparables.
 export async function listProgressRows(
   supabase: Client,
   userId: string,

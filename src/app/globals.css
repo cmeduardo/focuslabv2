@@ -56,11 +56,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/*
- * Paleta de marca — "instrumento de foco":
- * Ink #14152B · Paper #FAF9F6 · Signal #5A46FB (violeta) · Pulse #FF5A36
- * (coral) · Mist #E7E3F5 · Graphite #6B6B7C
- */
 :root {
   --background: #faf9f6;
   --foreground: #14152b;
@@ -87,9 +82,6 @@
   --chart-3: #2fb693;
   --chart-4: #ffb84d;
   --chart-5: #6b6b7c;
-  /* Gráficas del análisis (validadas con el validador de dataviz contra
-     la superficie de tarjeta, todos los pares): dispositivos y estilos.
-     El coral (--pulse) queda solo para resaltar. */
   --viz-1: #5a46fb;
   --viz-2: #1f9e7d;
   --viz-3: #c27410;
@@ -161,7 +153,6 @@
   }
 }
 
-/* Feedback "juice" para las actividades: acierto/error/subida de nivel. */
 @keyframes pop-in {
   0% {
     transform: scale(0.82);
@@ -193,12 +184,7 @@
   }
 }
 
-/* Variantes para elementos que además se posicionan con transform:
-   translate(...) inline (p. ej. los puntos de Focus Flow/MOT) — pop-in/
-   shake-x de arriba pisan cualquier translate porque transform no es
-   aditivo entre la cascada de animación y el estilo inline. Estas
-   retienen la posición (--dot-x/--dot-y, ver focus-flow-game.tsx) en
-   cada frame de la animación. */
+/* Para elementos posicionados con translate inline: conservan --dot-x/--dot-y. */
 @keyframes dot-pop-in {
   0% {
     transform: translate(var(--dot-x, 0px), var(--dot-y, 0px)) scale(0.82);
@@ -230,9 +216,7 @@
   }
 }
 
-/* Confirmación neutra de respuesta: destello que se apaga (bloques de
-   Memory Matrix, botones y marcos de respuesta). Solo opacidad: vale
-   también con movimiento reducido. */
+/* Solo opacidad: vale también con movimiento reducido. */
 @keyframes tap-flash {
   0% {
     opacity: 0.85;
@@ -261,7 +245,6 @@
   }
 }
 
-/* Reporte del taller (/admin/reporte): impresión / "Guardar como PDF". */
 @media print {
   @page {
     size: A4;

@@ -22,9 +22,7 @@ const EVENT_LABEL: Record<string, string> = {
   session_pulse: "Pulsos de sesión",
 };
 
-// RF-14: reporte agregado del taller (investigador y autoridad), listo para
-// imprimir o guardar como PDF. Solo vistas agregadas: nunca datos
-// individuales (RS-04).
+// RF-14: reporte agregado (RS-04), para imprimir o guardar como PDF.
 export default async function ReportePage() {
   const supabase = await createClient();
   const { dimensions, events, sessions, tools } = await getAdminOverview(supabase);
@@ -67,7 +65,6 @@ export default async function ReportePage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Solo participantes y desafíos actuales, primer intento de cada
           desafío. Datos agregados, sin identificadores individuales.{" "}
-          {/* La hora ya termina en "p. m.": sin punto final propio. */}
           Generado el {generatedAt}
         </p>
       </header>
@@ -83,7 +80,7 @@ export default async function ReportePage() {
             text: `${fmt(byDevice.get("mobile") ?? 0)} / ${fmt(byDevice.get("desktop") ?? 0)}`,
           },
         ].map((kpi) => (
-          <div key={kpi.label} className="rounded-xl border p-3 break-inside-avoid">
+          <div key={kpi.label} className="rounded-lg border p-3 break-inside-avoid">
             <p className="text-xs text-muted-foreground">{kpi.label}</p>
             <p className="font-heading text-2xl font-semibold">{kpi.text ?? fmt(kpi.value)}</p>
           </div>

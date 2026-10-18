@@ -1,8 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// La etiqueta de rol se oculta en pantallas angostas (ver AppShell): se
-// comprueba que esté en la página, no que se vea. Los enlaces sí se ven en
-// todos los tamaños (menú superior o barra inferior).
+// La etiqueta de rol se oculta en pantallas angostas: se comprueba que exista, no que se vea.
 async function expectRole(page: Page, label: string) {
   await expect(page.getByRole("banner").getByText(label, { exact: true })).toBeAttached();
 }

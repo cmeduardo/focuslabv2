@@ -27,15 +27,11 @@ const FEEDBACK_TEXT: Record<Feedback["kind"], string> = {
   early: "¡Muy pronto! Espera a ver el círculo.",
 };
 
-// Reaction Test (PVT): tras una espera aleatoria aparece un círculo; hay que
-// responder lo más rápido posible. Toda el área es zona de respuesta
-// (mouse, toque o barra espaciadora).
 export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
   const [plan] = useState(() => planReactionTrials(CONFIG, mode, Math.random));
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("wait");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  // Confirmación neutra de cada respuesta (también en la ronda que cuenta).
   const [ack, setAck] = useState(0);
 
   const clock = useTrialClock(origin);
@@ -124,7 +120,6 @@ export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
     [clearTimers, clock, plan, mode, schedule, onComplete],
   );
 
-  // Espera aleatoria de cada ensayo; el estímulo aparece al cumplirse.
   useEffect(() => {
     clock.begin();
     const timer = setTimeout(() => {
@@ -136,8 +131,6 @@ export function ReactionTestRound({ mode, origin, onComplete }: RoundProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, plan]);
 
-  // El estímulo ya está en el DOM: registrar el frame en que se pinta y,
-  // desde ese instante, abrir la ventana de respuesta.
   useLayoutEffect(() => {
     if (phase !== "stimulus") return;
     let cancelled = false;

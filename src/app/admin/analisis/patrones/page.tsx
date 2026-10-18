@@ -15,7 +15,6 @@ import { filterByDevice, H1_PAIRS, label, scatterPoints } from "@/lib/analysis/p
 import { COGNITIVE_VARIABLES, PASSIVE_VARIABLES } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
 
-// Página 3 · Patrones diferenciados (H1).
 export default async function PatronesPage({
   searchParams,
 }: {

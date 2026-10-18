@@ -33,8 +33,6 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   autoridad: "Autoridad académica",
 };
 
-// Investigador y autoridad también pueden recorrer la zona de participante
-// (probar un desafío, ver lo que ve el taller): cada menú enlaza al otro.
 export const ADMIN_LINK = { href: "/admin", label: "Panel" } as const;
 export const PARTICIPANT_VIEW_LINK = { href: "/dashboard", label: "Vista participante" } as const;
 

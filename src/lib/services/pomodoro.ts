@@ -4,9 +4,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-06: temporizador Pomodoro configurable. Se llama desde Client
-// Components (igual que activity-results.ts) — la política RLS
-// pomodoro_sessions_all_own exige user_id = auth.uid().
+// RF-06
 export async function startPomodoroSession(
   supabase: Client,
   params: {

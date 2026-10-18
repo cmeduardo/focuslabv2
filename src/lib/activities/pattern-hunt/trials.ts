@@ -11,7 +11,6 @@ export type ItemShape = "oval" | "bar";
 export type ItemOrientation = "vertical" | "horizontal";
 
 export type SearchItem = {
-  // Centro del elemento, en unidades del tablero (0–1).
   x: number;
   y: number;
   shape: ItemShape;
@@ -33,8 +32,6 @@ function distractorFor(type: SearchType, i: number): Pick<SearchItem, "shape" | 
     : { shape: "bar", orientation: "vertical" };
 }
 
-// Cada elemento ocupa una celda distinta de la grilla, con un jitter menor
-// a media celda: nunca se superponen, a cualquier tamaño de pantalla.
 export function layoutSearchItems(
   type: SearchType,
   setSize: number,

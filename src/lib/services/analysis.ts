@@ -8,12 +8,7 @@ import type { TrialRow } from "@/lib/analysis/trials";
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityType } from "@/lib/types/database";
 
-// Capa de acceso del análisis del investigador. Cada página de
-// /admin/analisis llama a requireResearcher(): el layout de /admin no
-// vuelve a ejecutarse en cada navegación (renderizado parcial), así que el
-// rol se valida aquí, junto a los datos. Solo se leen vistas vw_* con el
-// cliente del usuario; las de nivel participante además se filtran en la
-// base con can_read_participant_level().
+// El layout de /admin no se vuelve a ejecutar en cada navegación: el rol se valida aquí.
 export const requireResearcher = cache(async () => {
   const supabase = await createClient();
   const {
@@ -36,8 +31,7 @@ export const getParticipantRows = cache(async (supabase: Client): Promise<Partic
   return (data ?? []) as ParticipantRow[];
 });
 
-// PostgREST devuelve como máximo 1000 filas por consulta: se pagina, y
-// solo se piden los desafíos y columnas que usa la página de ensayos.
+// PostgREST devuelve hasta 1000 filas: se pagina.
 const PAGE = 1000;
 
 export async function getTrialRows(supabase: Client, activities: ActivityType[]): Promise<TrialRow[]> {

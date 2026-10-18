@@ -103,7 +103,7 @@ export default async function AdminDashboardPage() {
         <div className="flex flex-col items-end gap-2 text-sm">
           <Link
             href="/admin/reporte"
-            className="flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-3 font-medium text-primary-foreground transition-colors hover:bg-primary/85"
+            className="flex min-h-10 items-center gap-1.5 rounded-md bg-primary px-3 font-medium text-primary-foreground transition-colors hover:bg-primary/85"
           >
             <FileText className="size-4" /> Reporte del taller (PDF)
           </Link>
@@ -115,7 +115,7 @@ export default async function AdminDashboardPage() {
               <a
                 key={dataset}
                 href={`/admin/export?dataset=${dataset}`}
-                className="rounded-lg border px-2.5 py-1 transition-colors hover:bg-muted"
+                className="rounded-md border px-2.5 py-1 transition-colors hover:bg-muted"
               >
                 {EXPORT_DATASETS[dataset].label}
               </a>
@@ -168,9 +168,9 @@ export default async function AdminDashboardPage() {
                     <span className="w-20 tabular-nums shrink-0 text-muted-foreground">
                       {formatDia(dia)}
                     </span>
-                    <div className="h-2 flex-1 rounded-full bg-muted">
+                    <div className="h-2 flex-1 rounded-sm bg-muted">
                       <div
-                        className="h-2 rounded-full bg-primary"
+                        className="h-2 rounded-sm bg-primary"
                         style={{ width: `${(total / maxPerDay) * 100}%` }}
                       />
                     </div>

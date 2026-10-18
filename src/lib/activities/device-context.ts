@@ -61,9 +61,7 @@ export function detectOs(ua: string, uaData: UserAgentData | undefined): string 
   return "desconocido";
 }
 
-// Frecuencia de refresco estimada: mediana de los intervalos entre
-// callbacks de requestAnimationFrame. Útil para interpretar TR (a 60 Hz un
-// estímulo puede tardar hasta ~16.7 ms en pintarse).
+// Mediana de los intervalos de rAF.
 export function estimateRefreshHz(frames: number): Promise<number | null> {
   return new Promise((resolve) => {
     const stamps: number[] = [];

@@ -8,9 +8,7 @@ import {
 } from "@/lib/activities/stats";
 import type { ActivitySummary, TrialRecord } from "@/lib/activities/types";
 
-// Métricas del Reaction Test (PVT). Solo cuentan los ensayos válidos para
-// medición (record.valid): un ensayo en que la pestaña perdió visibilidad
-// se excluye de todo y se informa aparte.
+// Solo ensayos válidos (record.valid).
 export function summarizeReactionTest(
   trials: readonly TrialRecord[],
 ): ActivitySummary {
@@ -23,8 +21,7 @@ export function summarizeReactionTest(
   const timeouts = lapses.filter((t) => t.rtMs === null).length;
 
   const validRts = valid.map((t) => t.rtMs as number);
-  // Todas las respuestas con TR medido y no anticipadas (válidas + lapsos
-  // lentos), para la cola lenta de la distribución.
+  // Válidas y lapsos lentos, para la cola lenta.
   const respondedRts = [...valid, ...lapses]
     .filter((t) => t.rtMs !== null)
     .map((t) => t.rtMs as number);
@@ -32,8 +29,6 @@ export function summarizeReactionTest(
   const rtMean = mean(validRts);
   const rtSd = standardDeviation(validRts);
 
-  // Tendencia de vigilancia: TR medio válido en la primera vs. la segunda
-  // mitad de la ronda.
   const half = Math.ceil(scored.length / 2);
   const halfMean = (slice: readonly TrialRecord[]) =>
     round(

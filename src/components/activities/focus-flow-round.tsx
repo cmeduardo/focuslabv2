@@ -25,16 +25,12 @@ const FEEDBACK: Record<FocusFlowClassification, { text: string; good: boolean }>
   omission: { text: "Responde a todos los números menos al 3.", good: false },
 };
 
-// Focus Flow (SART): flujo de dígitos a ritmo fijo (250 ms visible +
-// máscara). Responder a todos menos al 3. El ritmo no se detiene al
-// responder: el ensayo dura siempre lo mismo.
 export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
   const [plan] = useState(() => planFocusFlowTrials(CONFIG, mode, Math.random));
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("digit");
   const [feedback, setFeedback] = useState<FocusFlowClassification | null>(null);
-  // Confirmación neutra de cada toque: el ritmo del SART no cambia al
-  // responder, así que sin esto no se nota que el toque quedó registrado.
+  // El ritmo no se detiene al responder: sin este destello no se nota el toque.
   const [ack, setAck] = useState(0);
 
   const clock = useTrialClock(origin);
@@ -102,8 +98,6 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
     }
   }, [plan, clock, mode, schedule, onComplete]);
 
-  // Cada dígito: se registra el frame en que se pinta y, desde ahí, la
-  // máscara y el fin del ensayo.
   useLayoutEffect(() => {
     let cancelled = false;
     const local: ReturnType<typeof setTimeout>[] = [];
@@ -117,7 +111,7 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
       cancelled = true;
       local.forEach(clearTimeout);
     };
-    // Un ensayo por índice; clock/endTrial/schedule son estables durante la ronda.
+    // clock, endTrial y schedule son estables durante la ronda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
@@ -188,8 +182,6 @@ export function FocusFlowRound({ mode, origin, onComplete }: RoundProps) {
   );
 }
 
-// Máscara del SART: un círculo con una cruz, del mismo tamaño en todos los
-// ensayos.
 function Mask() {
   return (
     <svg viewBox="0 0 100 100" className="size-24 text-muted-foreground/60" aria-hidden>

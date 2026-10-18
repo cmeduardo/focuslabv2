@@ -5,9 +5,7 @@ import { redirect } from "next/navigation";
 import { completeSessionAndRequestReport } from "@/lib/services/ai-reports";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-10: botón "Terminar sesión" del AppShell — misma lógica que
-// POST /api/sessions/[sessionId]/complete, disponible como Server Action
-// para no depender de un fetch desde el cliente.
+// RF-10: misma lógica que POST /api/sessions/[sessionId]/complete, como Server Action.
 export async function completeSessionAction(sessionId: string) {
   const supabase = await createClient();
   const {

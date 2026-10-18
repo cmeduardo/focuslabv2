@@ -1,10 +1,4 @@
-// Deep Read (v2): un único texto de divulgación para todos los
-// participantes (comparable entre personas), con las opciones de cada
-// pregunta barajadas. El tema es deliberadamente específico y poco
-// conocido: la lección de las versiones anteriores fue que con temas de
-// sentido común las respuestas se adivinan sin leer, por plausibles que
-// sean los distractores. Aquí cada respuesta depende de un dato o un
-// mecanismo concreto del texto.
+// Tema poco conocido a propósito: cada respuesta depende de un dato del texto.
 
 export type DeepReadOption = { id: string; text: string };
 
@@ -24,9 +18,7 @@ export type DeepReadPassage = {
 };
 
 export const DEEP_READ_PASSAGE: DeepReadPassage = {
-  // v2 (2026-10-05): 8 preguntas en vez de 5, con distractores tomados del
-  // mismo texto (otras cifras, el caso contrario, datos ciertos que
-  // responden a otra pregunta): la versión anterior se acertaba sin leer.
+  // Distractores tomados del mismo texto.
   id: "qanats-v2",
   title: "Los qanats: ríos bajo el desierto",
   paragraphs: [

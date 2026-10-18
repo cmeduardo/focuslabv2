@@ -2,9 +2,7 @@ import type { WordSprintConfig } from "@/lib/activities/config";
 import { shuffle, type Rng } from "@/lib/activities/rng";
 import type { RoundMode } from "@/lib/activities/types";
 
-// Tintas pensadas para el panel oscuro del estímulo (#16172b): todas
-// superan 4.5:1 de contraste. Los botones de respuesta llevan además la
-// palabra escrita, para no depender solo del color.
+// Contraste ≥ 4.5:1 sobre el panel del estímulo (#16172b).
 export const STROOP_COLORS = [
   { id: "rojo", label: "ROJO", hex: "#ff5c5c", key: "KeyD" },
   { id: "azul", label: "AZUL", hex: "#5b9bff", key: "KeyF" },
@@ -52,11 +50,8 @@ export function planWordSprintTrials(
   return orderWithoutInkRepeats(pool, rng);
 }
 
-// Construcción paso a paso: en cada posición elige al azar entre los
-// ensayos restantes cuya tinta difiere de la anterior. Prioriza la tinta
-// con más ensayos pendientes cuando ya no queda margen, y reinicia si se
-// atasca (raro). Barajar y descartar no sirve: con 48 ensayos y 4 tintas
-// casi ninguna permutación al azar cumple la condición.
+// Barajar y descartar casi nunca cumple la condición: se arma paso a paso, priorizando
+// la tinta con más ensayos pendientes y reiniciando si se atasca.
 function orderWithoutInkRepeats(pool: readonly WordSprintTrialPlan[], rng: Rng) {
   for (let attempt = 0; attempt < 200; attempt++) {
     const remaining = shuffle(pool, rng);

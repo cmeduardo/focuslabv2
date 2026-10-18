@@ -37,7 +37,7 @@ export function SelectNav({
           startTransition(() => router.replace(`${pathname}?${next.toString()}`, { scroll: false }));
         }}
         className={cn(
-          "h-11 min-w-44 rounded-xl border border-border bg-card px-3 text-sm text-foreground",
+          "h-11 min-w-44 rounded-lg border border-border bg-card px-3 text-sm text-foreground",
           pending && "opacity-60",
         )}
       >

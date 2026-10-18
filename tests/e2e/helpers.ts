@@ -1,7 +1,6 @@
 import { expect, type Page, type Request } from "@playwright/test";
 
-// Términos que no pueden aparecer en ninguna cadena visible (lenguaje no
-// clínico, ver restricciones del rediseño 2026-10-04).
+// Lenguaje no clínico.
 export const FORBIDDEN_TERMS = [
   "diagnóstico",
   "prueba",
@@ -33,7 +32,6 @@ export async function expectNoHorizontalScroll(page: Page) {
 
 export type CapturedWrite = { table: string; method: string; body: unknown };
 
-// Registra toda escritura hacia las tablas de actividades (PostgREST).
 export function captureActivityWrites(page: Page) {
   const writes: CapturedWrite[] = [];
   page.on("request", (request: Request) => {

@@ -9,9 +9,7 @@ import {
 } from "@/lib/activities/progress";
 import { ACTIVITIES } from "@/lib/constants/nav";
 
-// "Tu progreso": resumen personal sobre los desafíos completados. Solo se
-// compara a cada quien consigo mismo y el texto evita etiquetas ("eres…"):
-// describe intentos, no personas.
+// Cada quien se compara solo consigo mismo; el texto describe intentos, no personas.
 export function ProgressSection({
   rows,
   hrefs,
@@ -53,9 +51,6 @@ export function ProgressSection({
           {days === 1 ? "día activo" : "días activos"}
         </p>
       </div>
-      {/* Tarjetas solo para lo que ya se jugó (en celular seis tarjetas
-          empujaban los desafíos dos pantallas abajo); lo pendiente va en
-          una sola línea. */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {played.map(({ activity, progress }) => (
           <ProgressCard
@@ -140,9 +135,7 @@ function ProgressCard({
   );
 }
 
-// Mini-gráfica de los últimos intentos. Si en la métrica "menos es mejor"
-// (tiempos, errores) se invierte el eje, para que hacia arriba siempre
-// signifique "mejor" y no haya que explicarlo.
+// En métricas donde menos es mejor se invierte el eje: arriba siempre es mejor.
 function Sparkline({ values, better }: { values: number[]; better: "higher" | "lower" }) {
   const w = 96;
   const h = 32;
@@ -154,7 +147,6 @@ function Sparkline({ values, better }: { values: number[]; better: "higher" | "l
     const x = pad + (i * (w - 2 * pad)) / (values.length - 1);
     const t = (v - min) / span;
     const up = better === "higher" ? t : 1 - t;
-    // Sin variación: línea plana al centro.
     const y = max === min ? h / 2 : h - pad - up * (h - 2 * pad);
     return [x, y] as const;
   });

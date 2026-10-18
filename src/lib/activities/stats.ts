@@ -1,14 +1,11 @@
-// Estadística descriptiva pura, compartida por las métricas de todas las
-// actividades. Todo devuelve null con datos insuficientes en vez de 0, para
-// no confundir "no hay datos" con "valor cero" en el informe.
+// Con datos insuficientes todo devuelve null, nunca 0.
 
 export function mean(values: readonly number[]): number | null {
   if (values.length === 0) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-// Desviación estándar muestral (n − 1), la usual en reportes de tiempos de
-// reacción.
+// Muestral (n − 1).
 export function standardDeviation(values: readonly number[]): number | null {
   if (values.length < 2) return null;
   const m = mean(values) as number;
@@ -26,8 +23,6 @@ export function median(values: readonly number[]): number | null {
     : sorted[mid];
 }
 
-// Pendiente de mínimos cuadrados de y sobre x (p. ej. ms por elemento
-// adicional en búsqueda visual).
 export function linearSlope(
   xs: readonly number[],
   ys: readonly number[],

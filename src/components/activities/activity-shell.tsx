@@ -47,11 +47,6 @@ export type RoundProps = {
   onComplete: (trials: TrialRecord[]) => void;
 };
 
-// Estados de una actividad (diagrama de estados del capítulo 5):
-// instrucciones → práctica → práctica lista (repetir 1 vez) → cuenta
-// regresiva → en curso → guardando → completada. "Incompleta" no es una
-// pantalla: es el estado en que queda la corrida en la base si se sale o
-// se cierra la página durante "en curso".
 type Stage =
   | "instructions"
   | "practice"
@@ -65,13 +60,6 @@ type SaveStatus = "saved" | "queued";
 
 const IMMERSIVE: Stage[] = ["practice", "countdown", "running"];
 
-/**
- * Motor común de las seis actividades: instrucciones, práctica (no se
- * guarda), cuenta regresiva, ronda registrada a pantalla completa,
- * visibilidad, wake lock, contexto de dispositivo y envío final en lote.
- * Cada actividad solo aporta su `Round` (estímulos y reglas) y su función
- * pura `summarize` (métricas).
- */
 export function ActivityShell({
   activityType,
   title,
@@ -117,7 +105,6 @@ export function ActivityShell({
   const visibilityLossesRef = useRef(0);
   const devicePromiseRef = useRef<Promise<DeviceContext> | null>(null);
 
-  // La preferencia de sonido vive en localStorage: se lee al montar.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMuted(isSoundMuted());
@@ -134,7 +121,6 @@ export function ActivityShell({
   useWakeLock(immersive);
   const landscapeBlocked = useLandscapeBlock(requiresPortrait && immersive);
 
-  // Pantalla completa sin scroll ni rebote mientras dura la actividad.
   useEffect(() => {
     if (!immersive) return;
     const root = document.documentElement;
@@ -146,12 +132,7 @@ export function ActivityShell({
     };
   }, [immersive]);
 
-  // Clic fantasma en táctil: las respuestas se toman en pointerdown, y si
-  // esa respuesta cierra la capa de pantalla completa, el navegador igual
-  // dispara después el click sintético sobre lo que quedó debajo (p. ej. la
-  // barra de navegación inferior). Ese click no viene precedido de un
-  // pointerdown propio: se descarta solo si llega antes de cualquier toque
-  // nuevo (un toque real en "Comenzar el reto" sí pasa).
+  // Descarta el click sintético que llega tras un toque que cerró la capa.
   const wasImmersiveRef = useRef(false);
   useEffect(() => {
     const closed = wasImmersiveRef.current && !immersive;
@@ -176,7 +157,7 @@ export function ActivityShell({
   }, [immersive]);
 
   const startPractice = useCallback(() => {
-    // Desde un click: iOS solo habilita el audio dentro de un gesto así.
+    // iOS solo habilita el audio dentro de un click.
     unlockAudio();
     setPracticeRounds((n) => n + 1);
     setOrigin(performance.now());
@@ -186,8 +167,6 @@ export function ActivityShell({
   }, []);
 
   const startCountdown = useCallback(() => {
-    // La medición de refresco (rAF) corre durante la cuenta regresiva, no
-    // durante los ensayos.
     unlockAudio();
     devicePromiseRef.current = captureDeviceContext(SHELL_CONFIG.refreshSampleFrames);
     setCountdown(SHELL_CONFIG.countdownSeconds);
@@ -240,8 +219,6 @@ export function ActivityShell({
     return () => clearTimeout(timer);
   }, [stage, countdown, beginRegistered]);
 
-  // Durante la ronda registrada: contar pérdidas de visibilidad y, si se
-  // cierra la página, marcar la corrida como incompleta.
   useEffect(() => {
     if (stage !== "running") return;
     const onVisibility = () => {
@@ -269,8 +246,7 @@ export function ActivityShell({
     });
   }, [supabase, logEvent, activityType]);
 
-  // Navegación dentro de la app a mitad de la ronda (botón atrás): solo al
-  // desmontar de verdad, sin depender de la identidad del callback.
+  // Solo al desmontar, sin depender de la identidad del callback.
   const abandonRef = useRef(abandonRun);
   useEffect(() => {
     abandonRef.current = abandonRun;
@@ -590,7 +566,6 @@ function ResultCard({
   );
 }
 
-// Celular en horizontal en una actividad que necesita vertical.
 function useLandscapeBlock(enabled: boolean) {
   const [blocked, setBlocked] = useState(false);
   useEffect(() => {

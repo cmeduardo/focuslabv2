@@ -26,8 +26,6 @@ type Habit = Database["public"]["Tables"]["habits"]["Row"];
 type HabitLog = Database["public"]["Tables"]["habit_logs"]["Row"];
 
 const WEEKDAY_LETTERS = ["D", "L", "M", "M", "J", "V", "S"];
-// Rachas que valen una celebración extra (sonido distinto + toast), en vez
-// de saludar cada día por igual.
 const STREAK_MILESTONES = new Set([3, 5, 7]);
 
 function toDateKey(date: Date) {
@@ -37,8 +35,7 @@ function toDateKey(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-// Ventana rodante de los últimos 7 días terminando hoy — nunca hay días
-// futuros, así que no hace falta deshabilitar nada en la UI.
+// Últimos 7 días, terminando hoy.
 function lastSevenDays(): Date[] {
   const days: Date[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -53,8 +50,6 @@ function elapsedSince(ref: { current: number }) {
   return Math.round(performance.now() - ref.current);
 }
 
-// Racha actual: días consecutivos cumplidos contando hacia atrás desde
-// hoy, dentro de la ventana de 7 días visible.
 function currentStreak(habitLogs: HabitLog[], days: Date[]) {
   let streak = 0;
   for (let i = days.length - 1; i >= 0; i--) {
@@ -127,9 +122,7 @@ export function HabitTracker() {
     }
   }
 
-  // Solo se puede marcar el día de hoy — un hábito se construye con el
-  // check-in del momento, no reescribiendo el historial (ver
-  // docs/decisiones_tecnicas.md).
+  // Solo se marca el día de hoy (ver docs/decisiones_tecnicas.md).
   async function handleToggleToday(habit: Habit) {
     const habitLogs = logs.filter((l) => l.habit_id === habit.id);
     const existing = habitLogs.find((l) => l.log_date === todayKey);

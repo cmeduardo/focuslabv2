@@ -10,10 +10,7 @@ const SEARCH_TYPE: Record<string, { label: string; color: string; shape: "circle
   conjunction: { label: "Conjunción (forma y orientación)", color: "var(--viz-4)", shape: "square" },
 };
 
-// Tipo de búsqueda con colores distintos a los de dispositivo (violeta y
-// verde ya significan celular y laptop en toda la sección).
-// Página 5 · Detalle por ensayo. Siempre un panel por dispositivo: los
-// tiempos de celular y laptop no comparten eje.
+// Colores distintos a los de dispositivo (violeta y verde ya son celular y laptop).
 export default async function EnsayosPage() {
   const supabase = await requireResearcher();
   const trials = firstRunOnly(await getTrialRows(supabase, ["reaction_test", "word_sprint", "pattern_hunt"]));

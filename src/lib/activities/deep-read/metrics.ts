@@ -9,9 +9,7 @@ const asNotifications = (detail: JsonObject | null | undefined) =>
     reactionMs?: number | null;
   }[];
 
-// Métricas de Deep Read. El ensayo 0 es la lectura (tiempo, notificaciones,
-// salidas de pestaña); los siguientes son las preguntas. Métrica principal:
-// puntuación de comprensión (respuestas correctas).
+// Ensayo 0 = lectura; los siguientes, preguntas.
 export function summarizeDeepRead(trials: readonly TrialRecord[]): ActivitySummary {
   const reading = trials.find((t) => t.condition.kind === "reading");
   const questions = trials.filter((t) => t.condition.kind === "question");

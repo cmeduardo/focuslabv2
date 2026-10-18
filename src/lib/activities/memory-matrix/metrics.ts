@@ -3,8 +3,7 @@ import type { ActivitySummary, TrialRecord } from "@/lib/activities/types";
 
 const lengthOf = (t: TrialRecord) => Number(t.condition.length);
 
-// Métricas de Memory Matrix (Corsi). Métrica principal: nivel máximo
-// (span) = la secuencia más larga reproducida en orden correcto.
+// Métrica principal: span.
 export function summarizeMemoryMatrix(trials: readonly TrialRecord[]): ActivitySummary {
   const scored = trials.filter((t) => t.valid);
   const correct = scored.filter((t) => t.classification === "correct");

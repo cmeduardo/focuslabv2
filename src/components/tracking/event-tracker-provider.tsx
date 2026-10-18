@@ -34,9 +34,6 @@ export function EventTrackerProvider({
   );
 }
 
-// Para usar desde actividades y herramientas (Sprint 2+), p. ej.:
-// const { logEvent } = useEventLogger();
-// logEvent("activity_start", { activity_type: "reaction_test" });
 export function useEventLogger() {
   const context = useContext(EventTrackerContext);
   if (!context) {

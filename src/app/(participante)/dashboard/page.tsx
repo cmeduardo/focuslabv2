@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-10">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-secondary/70 via-card to-card px-6 py-8 sm:px-8">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card px-6 py-8 sm:px-8">
         <FocusAperture
           className="pointer-events-none absolute -top-10 -right-10 size-56 text-primary/10 sm:size-64"
           animated

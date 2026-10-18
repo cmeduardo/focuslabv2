@@ -4,9 +4,7 @@ import type { ActivitySummary, TrialRecord } from "@/lib/activities/types";
 const rtsOf = (trials: readonly TrialRecord[]) =>
   trials.map((t) => t.rtMs).filter((rt): rt is number => rt !== null);
 
-// Pendiente de búsqueda (ms por elemento adicional) en aciertos: ~0 indica
-// que el objetivo "salta a la vista"; una pendiente alta, revisión elemento
-// por elemento.
+// ms por elemento adicional, en aciertos.
 function slopeFor(trials: readonly TrialRecord[]) {
   const ok = trials.filter((t) => t.correct === true && t.rtMs !== null);
   return round(
@@ -18,8 +16,7 @@ function slopeFor(trials: readonly TrialRecord[]) {
   );
 }
 
-// Métricas de Pattern Hunt (búsqueda visual). Métrica principal: velocidad
-// de detección = TR medio en aciertos con el objetivo presente.
+// Métrica principal: TR medio en aciertos con el objetivo presente.
 export function summarizePatternHunt(trials: readonly TrialRecord[]): ActivitySummary {
   const scored = trials.filter((t) => t.valid);
   const correct = scored.filter((t) => t.correct === true);

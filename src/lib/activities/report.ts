@@ -8,9 +8,7 @@ export type ActivityResultRow = {
   run_id: string | null;
 };
 
-// Para el informe se usa el PRIMER intento completado de cada actividad en
-// la sesión (decisión 2026-10-04: los reintentos no deben pesar más que el
-// primer contacto con el desafío); los demás solo se cuentan.
+// Solo el primer intento completado de cada actividad; los demás solo se cuentan.
 export function pickFirstAttempts(rows: readonly ActivityResultRow[]) {
   const byActivity = new Map<string, { first: ActivityResultRow; attempts: number }>();
   for (const row of rows) {

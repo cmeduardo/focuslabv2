@@ -12,8 +12,7 @@ export default async function globalTeardown() {
     process.env.SUPABASE_SERVICE_ROLE_KEY as string,
     { auth: { persistSession: false } },
   );
-  // ON DELETE CASCADE: borra perfil, consentimiento, sesiones, corridas,
-  // ensayos y resultados de los usuarios de prueba.
+  // ON DELETE CASCADE borra todo lo de los usuarios de prueba.
   for (const id of ids) await admin.auth.admin.deleteUser(id);
   fs.rmSync(USER_FILE);
 }

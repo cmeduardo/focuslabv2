@@ -34,15 +34,12 @@ export async function signUpWithPassword(
 
   return {
     error: error ? signUpErrorMessage(error.code) : null,
-    // Si el proyecto de Supabase exige confirmar el correo, signUp no
-    // devuelve sesión: hay que avisarle al participante para que revise su
-    // bandeja de entrada en vez de redirigirlo como si ya hubiera iniciado sesión.
+    // Con confirmación de correo, signUp no devuelve sesión.
     needsEmailConfirmation: Boolean(data.user && !data.session),
   };
 }
 
-// Los mensajes de Supabase Auth vienen en inglés y con jerga técnica
-// ("User already registered"): al participante se le muestra uno propio.
+// Los mensajes de Supabase Auth vienen en inglés.
 function signUpErrorMessage(code: string | undefined) {
   switch (code) {
     case "user_already_exists":

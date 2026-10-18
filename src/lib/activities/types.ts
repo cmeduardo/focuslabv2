@@ -12,8 +12,7 @@ export type JsonValue =
   | { [key: string]: JsonValue };
 export type JsonObject = { [key: string]: JsonValue };
 
-// Un ensayo tal como se guarda en activity_trials. Los tiempos son ms
-// relativos al inicio de la ronda registrada (performance.now()).
+// Tiempos en ms relativos al inicio de la ronda.
 export type TrialRecord = {
   trialIndex: number;
   condition: JsonObject;
@@ -41,13 +40,10 @@ export type DeviceContext = {
   refreshHzEst: number | null;
 };
 
-// Lo que cada actividad calcula a partir de sus ensayos (función pura en
-// lib/activities/<actividad>/metrics.ts).
 export type ActivitySummary = {
   // RF-05: precisión (0–100) y nivel cuando aplique.
   accuracy: number | null;
   levelReached: number | null;
-  // Métrica principal documentada en la tesis.
   primary: { key: string; label: string; value: number | null; unit: string };
   // Todas las métricas calculadas → activity_results.metrics.
   metrics: JsonObject;

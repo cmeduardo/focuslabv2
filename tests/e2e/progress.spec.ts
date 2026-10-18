@@ -4,10 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../../src/lib/types/database";
 import { expectNoForbiddenTerms, expectNoHorizontalScroll } from "./helpers";
 
-// "Tu progreso" del dashboard con un usuario propio (el participante
-// compartido acumula resultados de activities.spec y no tendría un
-// historial predecible). Se crea vacío, se revisa el estado sin datos,
-// se siembra un historial y se revisan las tarjetas.
+// Usuario propio, para tener un historial predecible.
 const admin = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,

@@ -5,11 +5,6 @@ import { cookies } from "next/headers";
 
 import type { Database } from "@/lib/types/database";
 
-/**
- * Cliente de Supabase para Server Components y Route Handlers. Usa la anon
- * key + las cookies de sesión del request: queda sujeto a RLS igual que el
- * cliente de navegador. Debe crearse una instancia nueva por request.
- */
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -27,8 +22,7 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             }
           } catch {
-            // Se llamó desde un Server Component: se puede ignorar porque
-            // src/proxy.ts ya se encarga de refrescar la sesión.
+            // Desde un Server Component: src/proxy.ts ya refresca la sesión.
           }
         },
       },

@@ -24,14 +24,12 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single();
 
-  // RS-06: el panel administrativo solo es accesible para investigador y
-  // autoridades académicas. Un participante que llegue aquí vuelve a /dashboard.
+  // RS-06: solo investigador y autoridad.
   if (!isStaffRole(profile?.role)) {
     redirect("/dashboard");
   }
 
-  // RS-04/RF-15: la autoridad académica solo ve vistas agregadas y
-  // anonimizadas, nunca el listado de participantes con datos identificables.
+  // RS-04: la autoridad solo ve vistas agregadas.
   const nav = [
     ...(profile.role === "investigador"
       ? ADMIN_NAV

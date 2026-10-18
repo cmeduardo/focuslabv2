@@ -25,15 +25,14 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // Activo: el enlace más específico que contiene la ruta actual (en
-  // /admin/analisis no debe quedar marcado también "Panel agregado").
+  // El enlace más específico que contiene la ruta actual.
   const activeHref = nav
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-40 print:hidden border-b border-border/80 bg-background/85 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 print:hidden border-b border-border bg-background">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 sm:py-3.5">
           <div className="flex shrink-0 items-center gap-8">
             <Link href="/" className="flex items-center gap-2 text-primary">
@@ -49,10 +48,9 @@ export function AppShell({
             </nav>
           </div>
           <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-3">
-            <Badge className="hidden shrink-0 bg-accent text-accent-foreground sm:inline-flex">
+            <Badge variant="outline" className="hidden shrink-0 text-muted-foreground sm:inline-flex">
               {roleLabel}
             </Badge>
-            {/* El correo es lo único que cede espacio: se recorta antes que encimarse con el menú. */}
             <span title={userEmail} className="hidden min-w-0 truncate text-sm text-muted-foreground xl:inline">
               {userEmail}
             </span>
@@ -64,10 +62,9 @@ export function AppShell({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 sm:px-6 sm:py-10 lg:pb-10 print:p-0">
         {children}
       </main>
-      {/* Celular y tableta: navegación como barra inferior, al alcance del pulgar. */}
       <nav
         style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}
-        className="fixed inset-x-0 bottom-0 z-40 grid border-t print:hidden border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid border-t print:hidden border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {nav.map((item) => {
           const active = item.href === activeHref;
@@ -96,12 +93,11 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground",
-        active && "text-foreground",
+        "whitespace-nowrap rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground",
+        active && "bg-muted text-foreground",
       )}
     >
-      {active && <span className="absolute inset-0 rounded-full bg-secondary" />}
-      <span className="relative">{item.label}</span>
+      {item.label}
     </Link>
   );
 }

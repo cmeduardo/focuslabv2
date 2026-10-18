@@ -4,8 +4,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
-// Enlace de confirmación de registro (RF-01). El template de correo de
-// Supabase debe apuntar aquí con {{ .TokenHash }} — ver README.md.
+// RF-01. La plantilla de correo de Supabase apunta aquí con {{ .TokenHash }}.
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");

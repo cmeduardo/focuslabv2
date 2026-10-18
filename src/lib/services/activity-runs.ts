@@ -5,10 +5,6 @@ import type { ActivityType, Database, InputType } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// Corridas registradas de las actividades v2 (ver migración
-// 20261004000001). Se llama desde Client Components: las políticas RLS
-// exigen user_id = auth.uid() y consentimiento aceptado (RS-02, RS-05).
-
 export type RunIdentity = {
   runId: string;
   sessionId: string;
@@ -33,8 +29,7 @@ export type CompletedRunPayload = RunIdentity & {
   metrics: JsonObject;
 };
 
-// Abre la corrida al empezar la ronda registrada (la práctica nunca crea
-// filas). Si falla, el guardado final la vuelve a crear con el mismo id.
+// Si falla, el guardado final la crea con el mismo id.
 export async function startActivityRun(
   supabase: Client,
   run: RunIdentity & { practiceRounds: number; config: JsonObject },
@@ -52,9 +47,7 @@ export async function startActivityRun(
   if (error) throw new Error(`No se pudo abrir la corrida: ${error.message}`);
 }
 
-// Guardado final en lote, idempotente: el orden (corrida → ensayos →
-// resumen → estado completada) hace que un reintento a mitad de camino
-// nunca duplique nada (upserts sobre claves únicas).
+// Idempotente: corrida → ensayos → resumen → completada, con upserts.
 export async function saveCompletedRun(supabase: Client, p: CompletedRunPayload) {
   const run = await supabase.from("activity_runs").upsert({
     id: p.runId,
@@ -152,15 +145,12 @@ export async function markRunIncomplete(supabase: Client, runId: string) {
     .eq("status", "en_curso");
 }
 
-// Cierre de pestaña/página a mitad de la ronda: fetch normal no sobrevive a
-// pagehide, sendBeacon sí (y manda las cookies de sesión, mismo origen).
+// fetch no sobrevive a pagehide; sendBeacon sí.
 export function beaconRunIncomplete(runId: string) {
   navigator.sendBeacon(`/api/activity-runs/${runId}/abandon`);
 }
 
-// Cola local para guardados que fallaron tras todos los reintentos (red
-// caída en el taller): se reintenta al volver a /actividades. Es la única
-// copia del resultado hasta que suba, por eso no se descarta en silencio.
+// Guardados fallidos: se reintentan al volver a /actividades.
 const PENDING_KEY = "focuslab:pending-runs";
 
 function readPending(): CompletedRunPayload[] {

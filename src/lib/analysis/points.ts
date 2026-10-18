@@ -5,8 +5,6 @@ import { deviceLabel, VARIABLE_BY_KEY } from "@/lib/analysis/variables";
 
 export const label = (key: string) => VARIABLE_BY_KEY.get(key)?.label ?? key;
 
-// Puntos de dispersión (uno por participante con ambos valores), color por
-// dispositivo. El tooltip lleva seudónimo, dispositivo y los dos valores.
 export function scatterPoints(
   rows: readonly ParticipantRow[],
   xKey: string,

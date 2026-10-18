@@ -7,8 +7,7 @@ import type { AiReportStatus } from "@/lib/types/database";
 
 import { RetryReportButton } from "./retry-report-button";
 
-// Un informe 'pendiente' normalmente tarda segundos: pasado este margen se
-// considera atascado (webhook caído, workflow inactivo) y se ofrece reintento.
+// Pasado este margen, un informe 'pendiente' se considera atascado.
 const STUCK_AFTER_MS = 5 * 60 * 1000;
 
 const STATUS_LABEL: Record<AiReportStatus, string> = {
@@ -48,8 +47,7 @@ export default async function ParticipantesPage() {
     .eq("id", user!.id)
     .single();
 
-  // RS-04: el listado de participantes incluye datos identificables, por lo
-  // que queda restringido al investigador (nunca a autoridades académicas).
+  // RS-04: datos identificables, solo para el investigador.
   if (profile?.role !== "investigador") {
     redirect("/admin");
   }

@@ -35,9 +35,7 @@ type AiReportWebhookBody = {
   rawResponse?: unknown;
 };
 
-// Webhook de retorno del flujo de informe de IA (módulo 5, Sprint 4): n8n
-// llama acá con el resultado de GPT-4o-mini tras generar el informe
-// atencional de una sesión. Ver ARCHITECTURE.md §9.
+// Retorno de n8n con el informe de la sesión.
 export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });

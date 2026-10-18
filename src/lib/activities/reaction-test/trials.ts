@@ -4,8 +4,6 @@ import type { RoundMode } from "@/lib/activities/types";
 
 export type ReactionTrialPlan = { isiMs: number };
 
-// Espera aleatoria uniforme entre estímulos (el corazón del PVT: la
-// incertidumbre temporal es lo que exige mantener la alerta).
 export function planReactionTrials(
   config: ReactionTestConfig,
   mode: RoundMode,

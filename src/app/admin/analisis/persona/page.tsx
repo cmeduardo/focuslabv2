@@ -7,7 +7,6 @@ import { label } from "@/lib/analysis/points";
 import { deviceLabel } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
 
-// Página 10 · Perfil individual (solo seudónimos).
 export default async function PersonaPage({
   searchParams,
 }: {
@@ -48,15 +47,15 @@ export default async function PersonaPage({
             Se compara solo con su grupo de {deviceLabel(selected.dispositivo).toLowerCase()}.
           </ExploratoryNote>
           <section className="grid gap-3 sm:grid-cols-3" data-testid="person-summary">
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Estilo</p>
               <p className="font-heading text-lg font-semibold">{style?.label}</p>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Índice de actividad pasiva</p>
               <p className="font-heading text-2xl font-semibold tabular-nums">{fmtSigned(selected.pasivo)}</p>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Índice de dificultad en desafíos</p>
               <p className="font-heading text-2xl font-semibold tabular-nums">{fmtSigned(selected.dificultad)}</p>
             </div>

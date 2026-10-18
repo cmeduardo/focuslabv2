@@ -9,9 +9,7 @@ import type { AiReportStatus, Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// Módulo 5 (Sprint 4): crea la fila 'pendiente' al completar la sesión (ver
-// POST /api/sessions/[sessionId]/complete). Requiere el cliente admin: no
-// hay policy de insert para participantes, ver 0011_ai_reports.sql.
+// Cliente admin: los participantes no tienen policy de insert.
 export async function createPendingAiReport(
   supabase: Client,
   params: { sessionId: string; userId: string },
@@ -26,13 +24,7 @@ export async function createPendingAiReport(
   }
 }
 
-// n8n corre en la máquina local del investigador (Docker), no en Vercel — el
-// nodo "Callback a Next.js" no puede tener la URL de retorno hardcodeada
-// porque el mismo workflow atiende tanto al Next.js local (dev) como al
-// desplegado en Vercel (prod). Se la pasamos en cada request:
-// `VERCEL_PROJECT_PRODUCTION_URL` la pone Vercel automáticamente en
-// producción; sin esa variable (dev local), usa el gateway del bridge de
-// Docker (ver docs/estado_proyecto.md, limitaciones técnicas).
+// El mismo workflow atiende dev y producción: la URL de retorno va en cada request.
 function getCallbackUrl() {
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const origin = productionHost
@@ -111,7 +103,6 @@ async function buildSessionSummary(
         incompleteAttempts: incompleteByActivity.get(first.activity_type) ?? 0,
         deviceType: run?.device_type ?? null,
         inputType: run?.input_primary ?? null,
-        // v2: métricas curadas por actividad (ActivitySummary.report).
         ...(report && typeof report === "object" ? { metrics: report } : {}),
       };
     }),
@@ -119,11 +110,7 @@ async function buildSessionSummary(
   };
 }
 
-// Dispara el webhook hacia n8n con el resumen estructurado de la sesión (ver
-// ARCHITECTURE.md §9). Sin N8N_AI_REPORT_WEBHOOK_URL configurada (dev sin
-// instancia de n8n), no hace nada y el informe queda 'pendiente'. Un fallo
-// de red hacia n8n tampoco debe romper el cierre de sesión del participante:
-// solo se registra en el log del servidor.
+// Sin N8N_AI_REPORT_WEBHOOK_URL no hace nada. Un fallo hacia n8n no rompe el cierre de sesión.
 export async function generateAttentionReport(
   supabase: Client,
   session: { id: string; started_at: string; ended_at: string | null },
@@ -143,9 +130,7 @@ export async function generateAttentionReport(
       body: JSON.stringify(summary),
     });
 
-    // fetch no lanza en respuestas no-2xx (p. ej. 530 del túnel de
-    // Cloudflare caído, 404 si el workflow está inactivo): registrarlas
-    // explícitamente para que no fallen en silencio.
+    // fetch no lanza en respuestas no-2xx.
     if (!response.ok) {
       console.error(
         `El webhook de informe de IA respondió ${response.status} ${response.statusText}.`,
@@ -157,13 +142,8 @@ export async function generateAttentionReport(
   }
 }
 
-// RF-10: orquesta el cierre de sesión completo (usada tanto por
-// POST /api/sessions/[sessionId]/complete como por el botón "Terminar
-// sesión" del AppShell, ver components/layout/complete-session-action.ts).
-// Devuelve null si la sesión no es del usuario o ya estaba cerrada, y
-// "sin_desafios" (sin cerrarla) si no tiene ningún desafío completado: tras
-// cerrar una sesión el layout abre otra al instante, y pulsar "Terminar
-// sesión" ahí generaba informes vacíos (taller 2026-10-10).
+// RF-10. null si la sesión no es del usuario o ya estaba cerrada; "sin_desafios" (sin
+// cerrarla) si no completó ningún desafío.
 export async function completeSessionAndRequestReport(
   supabase: Client,
   params: { sessionId: string; userId: string },
@@ -191,8 +171,7 @@ export async function completeSessionAndRequestReport(
     return null;
   }
 
-  // Una ronda que quedó abierta (pestaña cerrada sin que llegara el
-  // beacon, por ejemplo) ya no se va a completar.
+  // Una ronda que quedó abierta ya no se va a completar.
   await supabase
     .from("activity_runs")
     .update({ status: "incompleta", ended_at: new Date().toISOString() })
@@ -206,11 +185,7 @@ export async function completeSessionAndRequestReport(
   return session;
 }
 
-// Reintento manual (investigador): los informes que quedan 'pendiente' por un
-// webhook caído o mal configurado no se reintentan solos. Vuelve a disparar el
-// webhook con el resumen de la sesión; si el informe estaba 'fallido', primero
-// lo regresa a 'pendiente' para que applyAiReportResult pueda aplicarlo.
-// Devuelve false si no hay informe que reintentar o ya está completado.
+// Reintento manual: un informe 'fallido' vuelve a 'pendiente' antes de reenviarse.
 export async function retryAiReport(sessionId: string) {
   const admin = createAdminClient();
 
@@ -243,9 +218,7 @@ export async function retryAiReport(sessionId: string) {
   return true;
 }
 
-// RF-12: historial de informes del participante, para /informes. Trae la
-// fecha de la sesión en una segunda consulta (sin relaciones embebidas en
-// database.ts, ver convención del resto de lib/services/).
+// RF-12
 export async function listAiReports(supabase: Client, userId: string) {
   const { data: reports, error } = await supabase
     .from("ai_reports")
@@ -279,9 +252,7 @@ export async function listAiReports(supabase: Client, userId: string) {
   }));
 }
 
-// RF-11: detalle de un informe puntual, para /informes/[sessionId]. El
-// filtro por user_id es defensa en profundidad (RLS ya restringe a lo
-// propio), no la única barrera.
+// RF-11. El filtro por user_id es defensa en profundidad (RLS ya restringe).
 export async function getAiReport(
   supabase: Client,
   sessionId: string,
@@ -303,10 +274,7 @@ export async function getAiReport(
   return data;
 }
 
-// Módulo 5 (Sprint 4): aplica el resultado que n8n/GPT-4o-mini devuelve al
-// webhook de retorno (POST /api/webhooks/ai-report) sobre la fila 'pendiente'
-// creada al completar la sesión. El filtro por status = 'pendiente' evita
-// pisar un informe que ya se haya completado (reintentos del webhook, etc.).
+// Solo se aplica si el informe sigue 'pendiente'.
 export async function applyAiReportResult(
   supabase: Client,
   params: {

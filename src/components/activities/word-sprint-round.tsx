@@ -29,15 +29,11 @@ const KEYS = Object.fromEntries(STROOP_COLORS.map((c) => [c.key, c.id])) as Reco
   StroopColorId
 >;
 
-// Word Sprint (Stroop): nombres de colores escritos en una tinta que
-// coincide o no; se responde el COLOR DE LA TINTA con 4 botones grandes
-// (nunca teclado de texto) o con las teclas D F J K en laptop.
 export function WordSprintRound({ mode, origin, onComplete }: RoundProps) {
   const [plan] = useState(() => planWordSprintTrials(CONFIG, mode, Math.random));
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("fixation");
   const [feedback, setFeedback] = useState<{ outcome: Outcome; ink: StroopColorId } | null>(null);
-  // Botón recién pulsado (confirmación neutra, también en la ronda que cuenta).
   const [pressed, setPressed] = useState<{ value: StroopColorId; n: number } | null>(null);
 
   const clock = useTrialClock(origin);
@@ -109,7 +105,6 @@ export function WordSprintRound({ mode, origin, onComplete }: RoundProps) {
     [clearTimers, plan, clock, mode, onComplete],
   );
 
-  // Punto de fijación y luego la palabra.
   useEffect(() => {
     clock.begin();
     const timer = setTimeout(() => {

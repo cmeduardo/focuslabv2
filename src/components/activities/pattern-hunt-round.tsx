@@ -47,14 +47,11 @@ function classify(present: boolean, answer: Answer | null): Classification {
   return answer === "absent" ? "correct_rejection" : "false_alarm";
 }
 
-// Pattern Hunt (búsqueda visual): ¿está el óvalo vertical? Dos botones
-// grandes (o F / J en laptop).
 export function PatternHuntRound({ mode, origin, onComplete }: RoundProps) {
   const [plan] = useState(() => planPatternHuntTrials(CONFIG, mode, Math.random));
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("fixation");
   const [feedback, setFeedback] = useState<Classification | null>(null);
-  // Botón recién pulsado (confirmación neutra, también en la ronda que cuenta).
   const [pressed, setPressed] = useState<{ value: Answer; n: number } | null>(null);
 
   const clock = useTrialClock(origin);

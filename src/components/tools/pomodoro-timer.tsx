@@ -60,9 +60,7 @@ export function PomodoroTimer() {
   const phaseStartedAtRef = useRef(0);
   const readyShownAtRef = useRef(0);
 
-  // Cierra cualquier pausa abierta y devuelve el total acumulado — se usa
-  // en todos los caminos que persisten la sesión (detener, terminar,
-  // desmontar), para que la última pausa en curso también cuente.
+  // Cierra la pausa abierta para que también cuente.
   function closeOpenPause() {
     if (pauseStartedAtRef.current !== null) {
       pausedMsRef.current += performance.now() - pauseStartedAtRef.current;
@@ -73,11 +71,7 @@ export function PomodoroTimer() {
     return rounded;
   }
 
-  // Cuenta regresiva: 1 tick/segundo alcanza, no hace falta rAF. El
-  // intervalo se recrea en cada cambio de fase (work<->break), y toda la
-  // lógica de transición (incluyendo el cierre al llegar a los ciclos
-  // programados) vive dentro del callback del setInterval, nunca
-  // sincrónicamente en el cuerpo del efecto.
+  // Las transiciones viven en el callback del intervalo, nunca en el cuerpo del efecto.
   useEffect(() => {
     if (phase === "idle" || phase === "finished" || phase === "ready" || paused) {
       return;
@@ -112,8 +106,6 @@ export function PomodoroTimer() {
             wallMs,
           });
           if (cyclesRef.current >= targetCycles) {
-            // Se cumplieron los ciclos programados: cierra solo, con el
-            // descanso del último ciclo ya completo.
             const id = pomodoroIdRef.current;
             pomodoroIdRef.current = null;
             if (id) {
@@ -127,10 +119,7 @@ export function PomodoroTimer() {
             playLevelUp();
             setPhase("finished");
           } else {
-            // En vez de arrancar el próximo bloque solo, espera a que el
-            // participante vuelva a interactuar — mide cuánto tarda en
-            // re-comprometerse después del descanso (tool_progress
-            // "cycle_resume" al tocar "Empezar ciclo").
+            // Espera a que el participante retome: mide cuánto tarda (tool_progress "cycle_resume").
             readyShownAtRef.current = performance.now();
             setPhase("ready");
           }
@@ -141,8 +130,6 @@ export function PomodoroTimer() {
     return () => clearInterval(interval);
   }, [phase, paused, workMinutes, breakMinutes, targetCycles, logEvent]);
 
-  // Best-effort: si el participante navega a otra página con un bloque
-  // corriendo, igual queda marcado como interrumpido.
   useEffect(() => {
     return () => {
       if (pomodoroIdRef.current) {
@@ -183,10 +170,7 @@ export function PomodoroTimer() {
     setPhase("work");
   }
 
-  // Llegar acá implica que la sesión no llegó a "finished" por su
-  // cuenta (sea cual sea la fase — incluso "ready", donde el reloj ya
-  // está en 0 pero no arrancó el siguiente bloque) — siempre cuenta como
-  // interrumpida.
+  // Si no llegó a "finished" por su cuenta, cuenta como interrumpida.
   async function handleStop() {
     const id = pomodoroIdRef.current;
     pomodoroIdRef.current = null;
@@ -230,10 +214,7 @@ export function PomodoroTimer() {
   }
 
   const totalForPhase = (phase === "work" ? workMinutes : breakMinutes) * 60;
-  // El anillo se deriva de remainingDisplay (estado, no un temporizador
-  // CSS aparte) — a diferencia de una transición de ancho fija en
-  // segundos, esto respeta la pausa: si remainingDisplay deja de
-  // actualizarse, el anillo se queda quieto en vez de seguir animando.
+  // Derivado de remainingDisplay: se queda quieto en pausa.
   const ringProgress =
     totalForPhase > 0
       ? Math.max(0, Math.min(1, remainingDisplay / totalForPhase))

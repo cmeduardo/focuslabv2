@@ -13,8 +13,6 @@ export function ToolLayout({
   title: string;
   icon: LucideIcon;
   backHref: string;
-  // Kanban (3 columnas) y Calendario (7 columnas) necesitan más ancho que
-  // el max-w-2xl centrado que usan Pomodoro y Hábitos.
   wide?: boolean;
   children: React.ReactNode;
 }) {

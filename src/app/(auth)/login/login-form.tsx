@@ -21,11 +21,8 @@ const initialState: LoginState = { error: null };
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
   const [state, formAction, isPending] = useActionState(login, initialState);
-  // React vacía el formulario después de cada acción: el correo vuelve
-  // como valor inicial desde la acción para no reescribirlo tras un error.
-  // No es un campo controlado: lo escrito antes de que cargue el JavaScript
-  // se perdería al hidratar. La contraseña sí se borra (lo habitual) y
-  // recibe el foco para reintentar.
+  // React vacía el formulario tras cada acción: el correo vuelve desde la acción.
+  // No es controlado para no perder lo escrito antes de hidratar.
   const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

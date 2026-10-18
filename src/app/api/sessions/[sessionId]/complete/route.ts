@@ -3,8 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { completeSessionAndRequestReport } from "@/lib/services/ai-reports";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-10: el participante cierra su sesión de uso y dispara la generación del
-// informe de perfil atencional. Ver ARCHITECTURE.md §9.
+// RF-10
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },

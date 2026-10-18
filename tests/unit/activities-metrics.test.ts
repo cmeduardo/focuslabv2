@@ -31,7 +31,6 @@ import { hasInkRepeat, planWordSprintTrials } from "@/lib/activities/word-sprint
 
 import { trial } from "./helpers";
 
-// ---------------------------------------------------------------- Focus Flow
 describe("Focus Flow (SART)", () => {
   it("plan: 108 ensayos, 12 objetivos (11 %), sin dos 3 seguidos", () => {
     const plan = planFocusFlowTrials(FOCUS_FLOW_CONFIG, "registered", seededRng(3));
@@ -96,7 +95,6 @@ describe("Focus Flow (SART)", () => {
   });
 });
 
-// ------------------------------------------------------------- Memory Matrix
 describe("Memory Matrix (Corsi)", () => {
   it("los bloques no se superponen ni salen del tablero", () => {
     for (const [i, a] of CORSI_BLOCKS.entries()) {
@@ -174,7 +172,6 @@ describe("Memory Matrix (Corsi)", () => {
   });
 });
 
-// --------------------------------------------------------------- Word Sprint
 describe("Word Sprint (Stroop)", () => {
   it("plan: 48 ensayos, 50 % congruentes, sin repetir tinta seguida", () => {
     const plan = planWordSprintTrials(WORD_SPRINT_CONFIG, "registered", seededRng(5));
@@ -221,7 +218,6 @@ describe("Word Sprint (Stroop)", () => {
   });
 });
 
-// -------------------------------------------------------------- Pattern Hunt
 describe("Pattern Hunt (búsqueda visual)", () => {
   it("plan: 48 ensayos balanceados; elementos sin superponerse", () => {
     const plan = planPatternHuntTrials(PATTERN_HUNT_CONFIG, "registered", seededRng(9));
@@ -277,7 +273,6 @@ describe("Pattern Hunt (búsqueda visual)", () => {
   });
 });
 
-// ----------------------------------------------------------------- Deep Read
 describe("Deep Read", () => {
   it("el texto tiene entre 350 y 450 palabras y 8 preguntas", () => {
     expect(countWords(DEEP_READ_PASSAGE)).toBeGreaterThanOrEqual(350);

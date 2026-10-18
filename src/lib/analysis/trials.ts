@@ -1,6 +1,4 @@
-// Detalle por ensayo (página 5 del tablero del investigador), sobre
-// vw_ensayos_analisis. Siempre separado por dispositivo y solo ensayos
-// válidos; en Word Sprint y Pattern Hunt, además, solo respuestas correctas.
+// Solo ensayos válidos, por dispositivo; en Word Sprint y Pattern Hunt, solo aciertos.
 
 import { mean, toNumber } from "@/lib/analysis/participants";
 
@@ -17,9 +15,7 @@ export type TrialRow = {
 
 export const RT_BIN_MS = 50;
 
-// La vista trae todas las corridas completadas; el análisis usa solo el
-// primer intento de cada participante en cada desafío (misma regla que
-// vw_participantes_analisis y el informe de IA).
+// Solo el primer intento de cada participante en cada desafío.
 export function firstRunOnly<T extends Pick<TrialRow, "participante" | "activity_type" | "corrida_inicio">>(
   rows: readonly T[],
 ): T[] {
@@ -36,8 +32,7 @@ const deviceOf = (r: Pick<TrialRow, "device_type">) => r.device_type ?? "sin_dat
 
 export type HistogramBin = { desde: number; etiqueta: string; n: number };
 
-// Histograma de TR de Reaction Test en intervalos de 50 ms, con todos los
-// intervalos intermedios aunque estén vacíos (eje categórico continuo).
+// Intervalos de 50 ms, incluidos los vacíos.
 export function rtHistogram(rows: readonly TrialRow[]): { dispositivo: string; bins: HistogramBin[]; n: number }[] {
   const byDevice = new Map<string, number[]>();
   for (const r of rows) {
@@ -48,7 +43,6 @@ export function rtHistogram(rows: readonly TrialRow[]): { dispositivo: string; b
   }
   const all = [...byDevice.values()].flat();
   if (all.length === 0) return [];
-  // Mismo eje para todos los dispositivos (cada uno en su panel).
   const lo = Math.floor(Math.min(...all) / RT_BIN_MS) * RT_BIN_MS;
   const hi = Math.floor(Math.max(...all) / RT_BIN_MS) * RT_BIN_MS;
   return [...byDevice].map(([dispositivo, rts]) => {
@@ -90,15 +84,13 @@ function meanBy(
   }));
 }
 
-// Word Sprint: TR medio cuando la palabra coincide con la tinta o no.
 export function stroopMeans(rows: readonly TrialRow[]): MeanCell[] {
   return meanBy(rows, "word_sprint", (c) =>
     typeof c.congruent === "boolean" ? (c.congruent ? "congruente" : "incongruente") : null,
   );
 }
 
-// Pattern Hunt: TR medio por tamaño del conjunto y tipo de búsqueda
-// ("feature|6", "conjunction|12", …).
+// Clave "tipo|tamaño", p. ej. "feature|6".
 export function searchMeans(rows: readonly TrialRow[]): (MeanCell & { tipo: string; tamano: number })[] {
   return meanBy(rows, "pattern_hunt", (c) =>
     typeof c.type === "string" && typeof c.setSize === "number" ? `${c.type}|${c.setSize}` : null,

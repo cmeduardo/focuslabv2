@@ -12,7 +12,6 @@ const STATUS_LABEL: Record<string, string> = {
   abandonada: "Sin terminar",
 };
 
-// Página 9 · Recorrido del taller.
 export default async function RecorridoPage() {
   const supabase = await requireResearcher();
   const { participants, dimensions, sessions } = await getJourneyData(supabase);
@@ -40,7 +39,7 @@ export default async function RecorridoPage() {
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="journey-kpis">
         {kpis.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-border bg-card p-4">
+          <div key={k.label} className="rounded-lg border border-border bg-card p-4">
             <p className="text-xs text-muted-foreground">{k.label}</p>
             <p className="font-heading text-3xl font-semibold">{k.value}</p>
           </div>

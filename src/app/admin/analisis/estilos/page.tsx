@@ -6,7 +6,6 @@ import { label } from "@/lib/analysis/points";
 import { deviceLabel } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
 
-// Variables que se promedian por estilo (valores originales, no z).
 const STYLE_TABLE_VARS = [
   "cambios_pestana_por_sesion",
   "inactividad_promedio_s",
@@ -16,9 +15,6 @@ const STYLE_TABLE_VARS = [
   "dr_comprension",
 ];
 
-// Página 8 · Perfiles atencionales (H1): cuatro estilos según el índice de
-// actividad pasiva y el índice de dificultad en desafíos (ambos en z,
-// dentro de cada dispositivo).
 export default async function EstilosPage() {
   const supabase = await requireResearcher();
   const rows = await getParticipantRows(supabase);

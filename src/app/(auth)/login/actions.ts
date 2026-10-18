@@ -6,9 +6,7 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { isStaffRole } from "@/lib/constants/nav";
 import { signInWithPassword } from "@/lib/services/auth";
 
-// `email` vuelve al formulario tras un error: si se envió antes de que
-// cargara el JavaScript (celular lento), la página se vuelve a renderizar
-// en el servidor y sin esto el correo llegaría vacío.
+// `email` vuelve al formulario para no perderlo tras un error.
 export type LoginState = { error: string | null; email?: string };
 
 export async function login(
@@ -28,6 +26,5 @@ export async function login(
     return { error: "Correo o contraseña incorrectos.", email };
   }
 
-  // Sin destino pedido, investigador y autoridad entran directo al panel.
   redirect(safeRedirectPath(requested, isStaffRole(role) ? "/admin" : "/dashboard"));
 }

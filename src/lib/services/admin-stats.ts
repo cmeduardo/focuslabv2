@@ -7,13 +7,8 @@ import type { Database, UserRole } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-13/RF-14: las vistas vw_* ya filtran por rol (can_read_aggregates /
-// can_read_participant_level en la base) y nunca exponen user_id (RS-04),
-// así que se leen con el cliente del usuario. Desde el rediseño v2 solo
-// cuentan participantes y datos v2 (ver 20261004000002_analysis_views.sql).
-//
-// scope "aggregate": investigador y autoridad. scope "participant": solo
-// investigador (una fila por participante o por ensayo, con seudónimo).
+// RF-13/RF-14: las vistas vw_* filtran por rol en la base y nunca exponen user_id (RS-04).
+// aggregate: investigador y autoridad. participant: solo investigador.
 export const EXPORT_DATASETS = {
   dimensiones: {
     view: "vw_actividades_dimensiones",
@@ -114,8 +109,7 @@ export function canExport(dataset: ExportDataset, role: UserRole | null | undefi
   return role === "investigador" || role === "autoridad";
 }
 
-// PostgREST corta cada respuesta en 1000 filas: los ensayos de un taller
-// completo son decenas de miles.
+// PostgREST corta en 1000 filas.
 const PAGE_SIZE = 1000;
 
 async function fetchAllRows(supabase: Client, view: keyof Database["public"]["Views"]) {
@@ -156,7 +150,6 @@ export async function getAdminOverview(supabase: Client) {
 export async function buildDatasetCsv(supabase: Client, dataset: ExportDataset) {
   const { view, columns } = EXPORT_DATASETS[dataset];
   const rows = await fetchAllRows(supabase, view);
-  // participantes: columnas anchas definidas en la vista (no se repiten acá).
   const header: readonly string[] = columns ?? (rows[0] ? Object.keys(rows[0]) : ["participante"]);
   const lines = [
     header.join(","),

@@ -1,9 +1,6 @@
 import type { ActivityType } from "@/lib/types/database";
 
-// "Tu progreso" del dashboard: el participante se compara solo consigo
-// mismo (yo cuantificado, cap. 2.2.3 de la tesis). Nunca contra otros ni
-// con percentiles, y nunca con frases de "empeoraste": si el último intento
-// no es el mejor, solo se recuerda cuál es su mejor marca.
+// Cada quien se compara solo consigo mismo: nunca contra otros ni con frases de retroceso.
 
 export type ProgressRow = {
   activity_type: ActivityType;
@@ -22,8 +19,6 @@ type MetricDef = {
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const ms = (v: number) => `${Math.round(v)} ms`;
 
-// La misma métrica principal que muestra la pantalla de resultado de cada
-// actividad (ActivitySummary.primary), leída de activity_results.metrics.
 export const PROGRESS_METRICS: Record<ActivityType, MetricDef> = {
   reaction_test: {
     label: "Reacción promedio",
@@ -71,8 +66,6 @@ export type ActivityProgress = {
   label: string;
   better: "higher" | "lower";
   attempts: number;
-  // Valores en orden cronológico (los más recientes al final), para la
-  // mini-gráfica. Solo intentos con dato.
   values: number[];
   latest: string | null;
   best: string | null;
@@ -109,13 +102,11 @@ export function buildActivityProgress(
     values: scored.slice(-MAX_POINTS).map((s) => s.value),
     latest: last ? def.format(last.value, last.row) : null,
     best: best ? def.format(best.value, best.row) : null,
-    // Empate con la mejor marca también cuenta como "igualaste tu mejor".
     latestIsBest: last !== null && best !== null && last.value === best.value,
   };
 }
 
-// Días distintos con al menos un desafío completado, en hora de Guatemala
-// (la página se renderiza en el servidor, que corre en UTC).
+// En hora de Guatemala: el servidor corre en UTC.
 export function activeDays(rows: readonly ProgressRow[]): number {
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guatemala" });
   return new Set(rows.map((r) => fmt.format(new Date(r.completed_at)))).size;

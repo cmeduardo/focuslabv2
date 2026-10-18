@@ -30,9 +30,6 @@ type NotificationLog = {
   respondedAt: number | null;
 };
 
-// Deep Read: lectura de un texto con notificaciones simuladas dentro de la
-// app (se pueden cerrar, abrir o ignorar) y luego preguntas de opción
-// múltiple, una por pantalla, sin volver al texto.
 export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
   const passage = mode === "practice" ? DEEP_READ_PRACTICE : DEEP_READ_PASSAGE;
   const [questions] = useState(() =>
@@ -56,7 +53,6 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
 
   const relative = clock.relative;
 
-  // --- Lectura -------------------------------------------------------
   useLayoutEffect(() => {
     clock.begin();
     clock.stampOnset((ts) => {
@@ -99,8 +95,7 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
         correct: null,
         classification: "reading",
         inputType: event?.input ?? null,
-        // La lectura con salidas de pestaña NO se invalida: esas salidas
-        // son justamente parte de lo que se mide aquí (visibilityExits).
+        // Las salidas de pestaña no invalidan la lectura: son parte de lo que se mide.
         valid: true,
         invalidReason: null,
       });
@@ -147,7 +142,6 @@ export function DeepReadRound({ mode, origin, onComplete }: RoundProps) {
     };
   }, [stage, mode, resolveNotification, finishReading]);
 
-  // --- Preguntas -----------------------------------------------------
   useLayoutEffect(() => {
     if (stage !== "question") return;
     clock.begin();

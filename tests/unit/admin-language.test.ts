@@ -3,12 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// Lenguaje no clínico en el panel del investigador y la autoridad: ninguno
-// de estos términos puede aparecer en texto visible (títulos, etiquetas,
-// tooltips, ayudas, mensajes). Se revisan las cadenas y el texto JSX, no
-// los comentarios ni los identificadores (p. ej. "normalizar" en código no
-// cuenta: se comparan palabras completas). El guion cuenta como parte de
-// la palabra, para no confundir clases de Tailwind como "font-normal".
+// Ningún término clínico en texto visible. Palabras completas; el guion cuenta como parte
+// de la palabra (para no confundir "font-normal").
 const FORBIDDEN = [
   "diagnostico",
   "prueba",

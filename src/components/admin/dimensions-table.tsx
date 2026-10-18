@@ -14,9 +14,7 @@ const number = new Intl.NumberFormat("es-GT", { maximumFractionDigits: 1 });
 const fmt = (value: number | null | undefined) =>
   value === null || value === undefined ? "—" : number.format(Number(value));
 
-// Métrica principal de cada dimensión atencional (primer intento v2 de cada
-// participante), separada por dispositivo: los tiempos de reacción en
-// celular no son comparables con los de laptop.
+// Por dispositivo: los tiempos de celular y laptop no son comparables.
 export function DimensionsTable({ rows }: { rows: DimensionRow[] }) {
   const ordered = ACTIVITIES.flatMap((activity) =>
     rows

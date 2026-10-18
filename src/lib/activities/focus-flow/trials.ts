@@ -8,9 +8,7 @@ export type FocusFlowTrialPlan = {
   fontSizeRem: number;
 };
 
-// Secuencia SART: cada dígito del 1 al 9 el mismo número de veces, en orden
-// aleatorio, sin dos objetivos seguidos (dos "3" consecutivos dejarían de
-// ser un evento infrecuente e inesperado).
+// Sin dos objetivos seguidos.
 export function planFocusFlowTrials(
   config: FocusFlowConfig,
   mode: RoundMode,
@@ -20,7 +18,6 @@ export function planFocusFlowTrials(
     config.fontSizesRem[Math.floor(rng() * config.fontSizesRem.length)];
 
   if (mode === "practice") {
-    // Práctica corta con un único objetivo, en una posición intermedia.
     const others = shuffle(
       [1, 2, 4, 5, 6, 7, 8, 9].filter((d) => d !== config.targetDigit),
       rng,

@@ -20,23 +20,13 @@ import type { TrialRecord } from "@/lib/activities/types";
 import { playLevelUp, playMiss, playNote } from "@/lib/audio/beep";
 import { cn } from "@/lib/utils";
 
-// "ready" cubre la pausa previa y la presentación completa: si la
-// presentación cambiara de fase, la limpieza del efecto cancelaría los
-// timers que faltan (bug encontrado por la E2E). El recuerdo empieza en
-// cuanto se apaga el último bloque: antes había 300 ms "muertos" después
-// del último bloque en los que los toques se descartaban sin aviso, y
-// casi todos empezamos a tocar justo ahí (bug del taller 2026-10-04).
-// "checking" es la pausa tras el último toque: el contador queda lleno un
-// momento antes de decir si fue correcto, para ver que el toque contó.
+// "ready" cubre la pausa y toda la presentación: si cambiara de fase, la limpieza del
+// efecto cancelaría los timers pendientes. "checking" deja ver el contador lleno.
 type Phase = "ready" | "recall" | "checking" | "feedback";
 type Tap = { block: number; at: number; input: ResponseEvent<string>["input"] };
 
 const BLOCK_KEYS = CORSI_BLOCKS.map((_, i) => String(i));
 
-// Memory Matrix (bloques de Corsi): los bloques se iluminan en secuencia y
-// hay que repetirla EN ORDEN. En la ronda registrada la longitud sube con
-// cada acierto; dos fallos en un nivel cierran el reto. El avance de nivel
-// es parte del juego, así que aquí sí hay retroalimentación.
 export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
   const [state, setState] = useState<CorsiState>(() => ({
     length: mode === "practice" ? CONFIG.practiceLength : CONFIG.startLength,
@@ -54,8 +44,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
   const [lit, setLit] = useState<number | null>(null);
   const [taps, setTaps] = useState<number[]>([]);
   const [result, setResult] = useState<CorsiClassification | null>(null);
-  // Destello del último bloque tocado; `n` cambia en cada toque para
-  // reiniciar la animación aunque se toque el mismo bloque.
+  // `n` cambia en cada toque para reiniciar la animación.
   const [flash, setFlash] = useState<{ block: number; n: number } | null>(null);
   const [earlyHint, setEarlyHint] = useState(false);
 
@@ -80,7 +69,6 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
     setPhase(next);
   }, []);
 
-  // Presentación: pausa breve y luego cada bloque se enciende por turno.
   useEffect(() => {
     if (phase !== "ready") return;
     const local: ReturnType<typeof setTimeout>[] = [];
@@ -104,7 +92,6 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
     return () => local.forEach(clearTimeout);
   }, [phase, sequence, goTo]);
 
-  // Inicio del recuerdo: frame en que aparece "Tu turno".
   useLayoutEffect(() => {
     if (phase !== "recall") return;
     clock.begin();
@@ -181,11 +168,8 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
 
   const handleTap = useCallback(
     (event: ResponseEvent<string>) => {
-      // Se lee la fase del ref (no del render): un toque que llega en el
-      // mismo frame del cambio a "recall" ya cuenta.
+      // Fase leída del ref: un toque en el mismo frame del cambio a "recall" ya cuenta.
       if (phaseRef.current === "ready") {
-        // Toque durante la presentación: no cuenta, pero se avisa en vez
-        // de ignorarlo en silencio.
         setEarlyHint(true);
         if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
         hintTimerRef.current = setTimeout(() => setEarlyHint(false), 1200);
@@ -238,8 +222,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
             data-testid={`corsi-block-${i}`}
             data-lit={lit === i}
             aria-label={`Bloque ${i + 1}`}
-            // aria-disabled y no disabled: un botón deshabilitado no recibe
-            // el toque y no podríamos avisar que fue antes de tiempo.
+            // aria-disabled: con disabled no llegaría el toque y no se podría avisar.
             aria-disabled={phase !== "recall"}
             {...bind(BLOCK_KEYS[i])}
             style={{
@@ -281,8 +264,6 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
   );
 }
 
-// Un punto por bloque de la secuencia: se llenan con cada toque. Confirma
-// que el toque quedó registrado sin decir si fue el bloque correcto.
 function TapDots({ count, total, active }: { count: number; total: number; active: boolean }) {
   return (
     <div
