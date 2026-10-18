@@ -153,6 +153,13 @@ solo lectura `powerbi_reader`:
 | `vw_participantes_analisis` | Una fila por participante seudonimizado (`P-XXXXXX`); solo investigador |
 | `vw_ensayos_analisis` | Una fila por ensayo con seudónimo; solo investigador |
 
+La tabla `analisis_excluidos` (migración `20261017000001`) lista las
+cuentas que no forman parte de la cohorte del taller, como las que
+probaron la app antes del 10 de octubre. Solo `vw_actividades_dimensiones`
+la descuenta, porque es agregada y no permite filtrar por participante; en
+las vistas con seudónimo el filtro se hace en Power BI. No tiene acceso
+para `anon` ni `authenticated`: la lee la vista, que es `SECURITY DEFINER`.
+
 ## 7. Actividades cognitivas
 
 Cada actividad se basa en un paradigma de psicología cognitiva y mide una

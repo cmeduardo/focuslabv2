@@ -11,6 +11,14 @@ usan las crea la migración `20261004000002_analysis_views.sql`.
 - **Solo participantes.** Las vistas excluyen los perfiles `investigador` y
   `autoridad`, para que las pruebas del investigador nunca contaminen el
   análisis.
+- **Solo la cohorte del taller.** Las cuentas que probaron la app antes
+  del 10 de octubre están en la tabla `analisis_excluidos` (migración
+  `20261017000001`). `vw_actividades_dimensiones`, la vista agregada del
+  tablero de Autoridades, no las cuenta. Las vistas por participante y
+  por ensayo sí las traen, porque tienen seudónimo: en el tablero del
+  investigador se filtran en Power BI (quedan quienes tuvieron su primera
+  sesión el 10 de octubre). Para excluir a alguien más del agregado, se
+  agrega su `user_id` con un `motivo` desde el SQL Editor.
 - **Unidad de análisis: el participante.** Se toma su **primer intento
   completado** de cada desafío. Es el mismo criterio que usa el informe de
   IA: los reintentos tienen efecto de práctica.
@@ -77,7 +85,7 @@ Columnas de `vw_participantes_analisis`:
 - **Contexto:** `dispositivo_principal`, `actividades_completadas`,
   `sesiones`.
 
-## 4. Archivos y tableros propuestos
+## 4. Archivos y tableros
 
 Dos archivos `.pbix`, para cumplir RS-04 y RF-15:
 
@@ -85,6 +93,27 @@ Dos archivos `.pbix`, para cumplir RS-04 y RF-15:
   comparte (o se exporta a PDF) con las autoridades académicas.
 - **`FocusLab-Investigador.pbix`**: incluye además las vistas de
   participante y de ensayo.
+
+Versión final (17 oct 2026, la que va en la tesis, sección 6.10):
+
+- **Investigador, 10 páginas:** 1 Resumen del taller · 2 Dimensiones
+  atencionales · 3 Patrones diferenciados (H1) · 4 Variables pasivas y
+  perfil (H2) · 5 Detalle por ensayo · 6 Distribución por variable (cinco
+  tramos y resumen de cinco números) · 7 Puntaje z por participante ·
+  8 Estilos atencionales · 9 Recorrido del taller · 10 Perfil individual.
+- **Autoridades, 2 páginas:** 1 Resumen del taller · 2 Dimensiones
+  atencionales. Como las vistas agregadas no traen participante, el
+  número de participantes es el de quienes completaron Reaction Test (15
+  de 16), y los grupos de menos de 3 personas (la tableta) se muestran
+  como «Otro» sin promedio.
+- Los visuales de herramientas (uso de herramientas, interrupciones de
+  Pomodoro) se quitaron: en el taller no se usaron y quedaban vacíos.
+
+Cifras de control con la cohorte del taller: 16 participantes, 21
+sesiones, 71,4 % completadas, 5,6 desafíos por persona; 11 celular, 4
+laptop, 1 tableta; Focus Flow 14 y los demás desafíos 15.
+
+Las secciones siguientes describen cómo se armó cada tablero.
 
 ### Tablero 1. Resumen del taller (ambos archivos)
 

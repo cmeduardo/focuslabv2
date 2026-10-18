@@ -26,7 +26,7 @@ Actualizado: octubre de 2026.
 | Sprint 4 | sep 2026 | Informes de IA y panel administrativo |
 | Sprint 5 | oct 2026 | Rediseño de actividades (v2), pruebas, análisis |
 | Taller piloto | 10 oct 2026 | Aplicación con participantes |
-| Ajustes posteriores | oct 2026 | Seguridad, prompt v2.1, cierre de sesiones vacías |
+| Ajustes posteriores | oct 2026 | Seguridad, prompt v2.1, cierre de sesiones vacías, análisis limitado a la cohorte del taller y tableros finales de Power BI |
 
 Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
 `sprint-5`, `taller-piloto`).
