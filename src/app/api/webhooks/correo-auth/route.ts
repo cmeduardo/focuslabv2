@@ -5,7 +5,7 @@ import { enviarConGmail } from "@/lib/email/gmail";
 import { correosParaEvento, type EventoCorreoAuth } from "@/lib/email/plantillas-auth";
 
 // Send Email Hook de Supabase Auth: reemplaza el SMTP de Supabase y envía con Gmail.
-// Supabase espera 200 con cuerpo vacío o {"error": {http_code, message}}.
+// Supabase espera 200 con {} o {"error": {http_code, message}}.
 function errorHook(httpCode: number, message: string) {
   return NextResponse.json({ error: { http_code: httpCode, message } }, { status: httpCode });
 }
@@ -50,5 +50,6 @@ export async function POST(request: NextRequest) {
     return errorHook(502, "No se pudo enviar el correo.");
   }
 
-  return new NextResponse(null, { status: 200 });
+  // Supabase rechaza la respuesta si no trae Content-Type JSON, aunque sea 200.
+  return NextResponse.json({});
 }
