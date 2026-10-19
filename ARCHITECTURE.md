@@ -52,7 +52,8 @@ src/
 └── proxy.ts             Refresco de sesión y protección de rutas
 supabase/
 └── migrations/
-    └── 20261019000000_esquema.sql   Esquema completo: tablas, RLS, vistas y permisos
+    ├── 20261019000000_esquema.sql              Esquema completo: tablas, RLS, vistas y permisos
+    └── 20261020000000_verificacion_staff.sql   Código por correo para el investigador y la autoridad
 ```
 
 Regla de dependencia: `app/` llama a `lib/services/`, que usa
@@ -73,17 +74,32 @@ El control ocurre en tres niveles:
 
 1. **`src/proxy.ts`** refresca la sesión de Supabase en cada request y manda
    a `/login` a quien entre sin sesión a una ruta no pública. Son públicas
-   `/`, `/login`, `/registro`, `/consentimiento`, `/auth/*` y
+   `/`, `/login`, `/registro`, `/olvide-contrasena`, `/consentimiento`, `/auth/*` y
    `/api/webhooks/*` (el webhook se autentica con su propio secreto).
 2. **Layouts y páginas.** `(participante)/layout.tsx` exige sesión y
    consentimiento aceptado. `admin/layout.tsx` exige `investigador` o
-   `autoridad`, y cada página exclusiva del investigador vuelve a validar el
-   rol en el servidor.
+   `autoridad` y una sesión confirmada con código (si no, manda a
+   `/verificacion`), y cada página exclusiva del investigador vuelve a
+   validar el rol en el servidor.
 3. **RLS en Postgres.** Cada tabla filtra por `perfil_id = auth.uid()`. Las
-   vistas `vw_*` se filtran con `puede_leer_agregados()` o
-   `puede_leer_por_participante()` y no exponen columnas
-   identificables. Un trigger impide cambiar `perfiles.rol` desde la API
-   pública (`impedir_cambio_de_rol()`).
+   políticas del investigador (`es_investigador_verificado()`) y las vistas
+   `vw_*` (`puede_leer_agregados()`, `puede_leer_por_participante()`)
+   exigen además `sesion_staff_verificada()`. Las vistas no exponen
+   columnas identificables. Un trigger impide cambiar `perfiles.rol` desde
+   la API pública (`impedir_cambio_de_rol()`).
+
+**Segundo factor del staff.** Al entrar a `/admin`, el investigador y la
+autoridad reciben por correo un código de 6 dígitos (vence en 10 minutos,
+5 intentos, reenvío cada 60 s). La confirmación se guarda en
+`verificaciones_sesion`, ligada al `session_id` del JWT de Supabase Auth:
+vale mientras dure esa sesión y se borra en cascada al cerrarla. La tabla
+no es accesible desde la API; la escribe el servidor con la service role
+(`src/lib/services/verificacion-staff.ts`).
+
+**Correos de autenticación.** Supabase llama al Send Email Hook
+(`/api/webhooks/correo-auth`), que verifica la firma (Standard Webhooks),
+arma el enlace hacia `/auth/confirm` con el dominio de la app y envía con la
+Gmail API desde la cuenta de la UMG (`src/lib/email/`).
 
 ## 5. Rutas
 
@@ -91,6 +107,9 @@ El control ocurre en tres niveles:
 |---|---|---|
 | `/` | público | Página de inicio |
 | `/login`, `/registro`, `/consentimiento` | público | Autenticación y consentimiento informado |
+| `/olvide-contrasena` | público | Pide el enlace para restablecer la contraseña |
+| `/restablecer-contrasena` | con sesión de recuperación | Elegir la contraseña nueva |
+| `/verificacion` | investigador, autoridad | Código por correo antes de entrar a `/admin` |
 | `/dashboard` | participante | Accesos rápidos y progreso propio por actividad |
 | `/actividades`, `/actividades/<actividad>` | participante | Listado y las seis actividades |
 | `/herramientas`, `/herramientas/<herramienta>` | participante | Pomodoro, Kanban, Hábitos y Calendario |

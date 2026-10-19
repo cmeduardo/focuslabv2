@@ -108,21 +108,31 @@ Vercel:
 | `SUPABASE_SERVICE_ROLE_KEY` | Solo en el servidor (webhook de retorno, reintentos, scripts) |
 | `N8N_AI_REPORT_WEBHOOK_URL` | Webhook de n8n. Sin ella, los informes quedan `pendiente` |
 | `AI_REPORT_WEBHOOK_SECRET` | Secreto compartido con n8n para el webhook de retorno |
+| `SEND_EMAIL_HOOK_SECRET` | Secreto del Send Email Hook de Supabase (`v1,whsec_…`) |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` | Cliente OAuth del proyecto de Google Cloud que envía los correos |
+| `GMAIL_REFRESH_TOKEN` | Refresh token de la cuenta remitente, con el permiso `gmail.send` |
+| `GMAIL_REMITENTE` | Cuenta que autorizó el refresh token; es el remitente de los correos |
 
 ### Supabase
 
-1. Pegar [`supabase/migrations/20261019000000_esquema.sql`](./supabase/migrations/20261019000000_esquema.sql) en el SQL Editor
-   de un proyecto nuevo. Crea tipos, tablas, funciones, políticas RLS,
-   vistas de análisis, el rol `lector_powerbi` y los permisos. Un cambio de
-   esquema posterior va en una migración nueva.
-2. En *Authentication → URL Configuration*, poner como Site URL y URL de
-   redirección el dominio donde corre la app. Con la confirmación de
-   correo activada, la plantilla de *Confirm signup* debe apuntar a
-   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`.
-3. En *Authentication → Sign In / Providers → Email*, largo mínimo de
+1. Pegar en el SQL Editor de un proyecto nuevo, en orden, los archivos de
+   [`supabase/migrations/`](./supabase/migrations/):
+   `20261019000000_esquema.sql` (tipos, tablas, funciones, políticas RLS,
+   vistas de análisis, el rol `lector_powerbi` y los permisos) y
+   `20261020000000_verificacion_staff.sql` (código por correo para el
+   staff). Un cambio de esquema posterior va en una migración nueva.
+2. En *Authentication → URL Configuration*, poner como Site URL el dominio
+   donde corre la app.
+3. Correos: en *Authentication → Auth Hooks*, agregar un **Send Email
+   hook** de tipo HTTPS hacia `https://<dominio>/api/webhooks/correo-auth`
+   y copiar su secreto a `SEND_EMAIL_HOOK_SECRET`. La app arma los enlaces y
+   envía con la Gmail API (variables `GMAIL_*`); las plantillas de correo de
+   Supabase no se usan. Luego encender *Confirm email* en
+   *Sign In / Providers → Email*.
+4. En *Authentication → Sign In / Providers → Email*, largo mínimo de
    contraseña 10 y los cuatro tipos de carácter (los mismos requisitos que
    valida el formulario).
-4. Toda cuenta nueva es `participante`. Para asignar otro rol, en el SQL
+5. Toda cuenta nueva es `participante`. Para asignar otro rol, en el SQL
    Editor:
 
    ```sql

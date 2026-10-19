@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { retryAiReport } from "@/lib/services/ai-reports";
+import { sesionStaffVerificada } from "@/lib/services/verificacion-staff";
 import { createClient } from "@/lib/supabase/server";
 
 // RS-04: solo el investigador.
@@ -22,7 +23,8 @@ export async function retryReportAction(sessionId: string) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.rol !== "investigador") {
+  // retryAiReport usa la service role: aquí no hay RLS que pida el código.
+  if (profile?.rol !== "investigador" || !(await sesionStaffVerificada(supabase))) {
     return;
   }
 

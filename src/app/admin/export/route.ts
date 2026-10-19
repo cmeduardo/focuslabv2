@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { buildDatasetCsv, canExport, isExportDataset } from "@/lib/services/admin-stats";
+import { sesionStaffVerificada } from "@/lib/services/verificacion-staff";
 import { createClient } from "@/lib/supabase/server";
 
 // RF-14. Los datasets de nivel participante o ensayo son solo del investigador (RS-04).
@@ -22,6 +23,10 @@ export async function GET(request: NextRequest) {
 
   if (profile?.rol !== "investigador" && profile?.rol !== "autoridad") {
     return NextResponse.json({ error: "Sin permiso." }, { status: 403 });
+  }
+
+  if (!(await sesionStaffVerificada(supabase))) {
+    return NextResponse.json({ error: "Falta confirmar el código de acceso." }, { status: 403 });
   }
 
   const dataset = request.nextUrl.searchParams.get("dataset");

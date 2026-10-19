@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { ADMIN_NAV, PARTICIPANT_VIEW_LINK, ROLE_LABEL, isStaffRole } from "@/lib/constants/nav";
+import { sesionStaffVerificada } from "@/lib/services/verificacion-staff";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AdminLayout({
@@ -27,6 +28,11 @@ export default async function AdminLayout({
   // RS-06: solo investigador y autoridad.
   if (!isStaffRole(profile?.rol)) {
     redirect("/dashboard");
+  }
+
+  // Segundo factor: código por correo en cada inicio de sesión. La base también lo exige.
+  if (!(await sesionStaffVerificada(supabase))) {
+    redirect("/verificacion");
   }
 
   // RS-04: la autoridad solo ve vistas agregadas.

@@ -28,6 +28,20 @@ lógica no queda repartida entre páginas.
 cambio de `perfiles.rol` que no venga del servidor. Así, un participante
 no puede darse el rol de investigador llamando a la API directamente.
 
+**Correos por la Gmail API con un Send Email Hook.** El SMTP de Supabase
+en el plan gratuito limita mucho los envíos. La app recibe el hook, arma el
+correo en español y lo envía desde la cuenta institucional de la UMG con
+OAuth (app interna de Google Workspace, permiso `gmail.send`), sin
+facturación en Google Cloud. El enlace se arma con el dominio de la app
+porque `email_data.site_url` trae la URL de la API de Auth.
+
+**Segundo factor por correo, no con app de autenticación.** El staff no va a
+instalar otra aplicación. Supabase no ofrece el correo como factor de MFA,
+así que la verificación es propia: un código ligado a la sesión que la base
+exige en las políticas, no solo en las páginas. Su límite conocido: quien
+controla el correo también puede restablecer la contraseña, así que protege
+sobre todo contra contraseñas filtradas o reutilizadas.
+
 **Un solo script de esquema.** El proyecto de Supabase no está enlazado al
 CLI, así que el esquema se aplica a mano en el SQL Editor. Las migraciones
 incrementales se consolidaron en una sola,

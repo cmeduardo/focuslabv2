@@ -27,13 +27,45 @@ async function createTestUser(
   return { id: data.user.id, email, password };
 }
 
-async function saveLogin(baseURL: string, user: TestUser, landing: string, file: string) {
+// session_id del JWT guardado en la cookie de @supabase/ssr ("base64-" + sesión, a veces en trozos .0, .1…).
+function sessionIdFromCookies(cookies: { name: string; value: string }[]) {
+  const value = cookies
+    .filter((cookie) => /^sb-.+-auth-token(\.\d+)?$/.test(cookie.name))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true }))
+    .map((cookie) => cookie.value)
+    .join("");
+  const session = JSON.parse(Buffer.from(value.replace(/^base64-/, ""), "base64url").toString("utf8"));
+  const payload = JSON.parse(Buffer.from(session.access_token.split(".")[1], "base64url").toString("utf8"));
+  return payload.session_id as string;
+}
+
+async function saveLogin(
+  baseURL: string,
+  user: TestUser,
+  landing: string,
+  file: string,
+  admin?: SupabaseClient<Database>,
+) {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(`${baseURL}/login`);
   await page.fill("#email", user.email);
   await page.fill("#password", user.password);
   await page.click("button[type=submit]");
+  if (admin) {
+    // Staff: el código llega por correo; aquí se marca la sesión como verificada.
+    await page.waitForURL("**/verificacion");
+    const sesionId = sessionIdFromCookies(await page.context().cookies());
+    const verificada = await admin.from("verificaciones_sesion").upsert({
+      sesion_auth_id: sesionId,
+      perfil_id: user.id,
+      codigo_hash: "e2e",
+      expira_en: new Date(Date.now() + 60 * 60_000).toISOString(),
+      verificada_en: new Date().toISOString(),
+    });
+    if (verificada.error) throw verificada.error;
+    await page.goto(`${baseURL}${landing}`);
+  }
   await page.waitForURL(`**${landing}`);
   await page.context().storageState({ path: file });
   await browser.close();
@@ -60,6 +92,6 @@ export default async function globalSetup(config: FullConfig) {
 
   const baseURL = config.projects[0].use.baseURL as string;
   await saveLogin(baseURL, participant, "/dashboard", `${AUTH_DIR}/participant.json`);
-  await saveLogin(baseURL, researcher, "/admin", `${AUTH_DIR}/researcher.json`);
-  await saveLogin(baseURL, authority, "/admin", `${AUTH_DIR}/authority.json`);
+  await saveLogin(baseURL, researcher, "/admin", `${AUTH_DIR}/researcher.json`, admin);
+  await saveLogin(baseURL, authority, "/admin", `${AUTH_DIR}/authority.json`, admin);
 }

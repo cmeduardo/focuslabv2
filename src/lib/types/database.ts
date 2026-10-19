@@ -1,6 +1,6 @@
 /**
  * Tipos de la base de datos de Supabase, escritos a mano a partir de
- * supabase/migrations/20261019000000_esquema.sql. Si el esquema cambia, actualiza este archivo (y
+ * supabase/migrations/ (20261019000000_esquema.sql y las posteriores). Si el esquema cambia, actualiza este archivo (y
  * ARCHITECTURE.md) en el mismo commit.
  *
  * Cuando el proyecto esté enlazado con el CLI de Supabase, este archivo se
@@ -307,6 +307,30 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["informes_ia"]["Row"]>;
         Relationships: [];
       };
+      // Sin acceso desde la API: la escribe el servidor con la service role.
+      verificaciones_sesion: {
+        Row: {
+          sesion_auth_id: string;
+          perfil_id: string;
+          codigo_hash: string;
+          intentos: number;
+          enviado_en: string;
+          expira_en: string;
+          verificada_en: string | null;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["verificaciones_sesion"]["Row"],
+          "intentos" | "enviado_en" | "verificada_en"
+        > &
+          Partial<
+            Pick<
+              Database["public"]["Tables"]["verificaciones_sesion"]["Row"],
+              "intentos" | "enviado_en" | "verificada_en"
+            >
+          >;
+        Update: Partial<Database["public"]["Tables"]["verificaciones_sesion"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       vw_resumen_resultados_actividad: {
@@ -389,6 +413,8 @@ export interface Database {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      sesion_staff_verificada: { Args: Record<string, never>; Returns: boolean };
+    };
   };
 }

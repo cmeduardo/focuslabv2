@@ -26,7 +26,7 @@ Actualizado: octubre de 2026.
 | Sprint 4 | sep 2026 | Informes de IA y panel administrativo |
 | Sprint 5 | oct 2026 | Rediseño de actividades (v2), pruebas, análisis |
 | Taller piloto | 10 oct 2026 | Aplicación con participantes |
-| Ajustes posteriores | oct 2026 | Seguridad, prompt v2.1, cierre de sesiones vacías, análisis limitado a la cohorte del taller y tableros finales de Power BI |
+| Ajustes posteriores | oct 2026 | Seguridad, prompt v2.1, cierre de sesiones vacías, análisis limitado a la cohorte del taller, tableros finales de Power BI, correos por Gmail, recuperación de contraseña, confirmación de correo y código por correo para el staff |
 
 Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
 `sprint-5`, `taller-piloto`).
@@ -73,7 +73,13 @@ Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
 - `src/lib/types/database.ts` está escrito a mano. Habría que regenerarlo
   con el CLI de Supabase.
 - Las migraciones se aplican a mano en el SQL Editor y la base no tiene
-  una tabla de control de migraciones. El esquema completo está consolidado
-  en `supabase/migrations/20261019000000_esquema.sql`.
+  una tabla de control de migraciones. El esquema base está consolidado
+  en `supabase/migrations/20261019000000_esquema.sql`; lo posterior va en
+  migraciones nuevas.
+- Los correos dependen del refresh token de la cuenta de la UMG. Si se
+  cambia la contraseña de esa cuenta o la UMG revoca el acceso, hay que
+  generar uno nuevo con OAuth Playground y actualizar `GMAIL_REFRESH_TOKEN`.
+- El registro no tiene captcha (Turnstile pendiente). Supabase limita los
+  correos por hora, lo que frena el abuso del envío.
 - Las pruebas E2E crean usuarios reales en el proyecto de Supabase
   configurado.

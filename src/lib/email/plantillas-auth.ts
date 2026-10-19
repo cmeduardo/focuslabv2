@@ -72,11 +72,15 @@ export function enlaceConfirmacion(
 }
 
 function saludo(evento: EventoCorreoAuth) {
-  const nombre = evento.user.user_metadata?.full_name?.trim();
-  return nombre ? `Hola, ${nombre}:` : "Hola:";
+  return saludoPara(evento.user.user_metadata?.full_name);
 }
 
-function maquetar(evento: EventoCorreoAuth, parrafos: string[], boton?: { texto: string; url: string }) {
+function saludoPara(nombre: string | null | undefined) {
+  const limpio = nombre?.trim();
+  return limpio ? `Hola, ${limpio}:` : "Hola:";
+}
+
+function maquetar(saludoTexto: string, parrafos: string[], boton?: { texto: string; url: string }) {
   const cuerpoHtml = parrafos.map((p) => `<p style="margin:0 0 16px">${escaparHtml(p)}</p>`).join("");
   const botonHtml = boton
     ? `<p style="margin:24px 0"><a href="${escaparHtml(boton.url)}" style="background:#4f46e5;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">${escaparHtml(boton.texto)}</a></p>` +
@@ -85,9 +89,9 @@ function maquetar(evento: EventoCorreoAuth, parrafos: string[], boton?: { texto:
   const pie =
     "Recibiste este correo porque alguien usó esta dirección en FocusLab. Si no fuiste tú, puedes ignorarlo.";
 
-  const html = `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;line-height:1.5"><div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px"><p style="margin:0 0 24px;font-size:20px;font-weight:700">FocusLab</p><p style="margin:0 0 16px">${escaparHtml(saludo(evento))}</p>${cuerpoHtml}${botonHtml}<p style="margin:24px 0 0;font-size:12px;color:#71717a">${escaparHtml(pie)}</p></div></body></html>`;
+  const html = `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;line-height:1.5"><div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px"><p style="margin:0 0 24px;font-size:20px;font-weight:700">FocusLab</p><p style="margin:0 0 16px">${escaparHtml(saludoTexto)}</p>${cuerpoHtml}${botonHtml}<p style="margin:24px 0 0;font-size:12px;color:#71717a">${escaparHtml(pie)}</p></div></body></html>`;
 
-  const texto = [saludo(evento), "", ...parrafos, ...(boton ? ["", `${boton.texto}: ${boton.url}`] : []), "", pie].join("\n");
+  const texto = [saludoTexto, "", ...parrafos, ...(boton ? ["", `${boton.texto}: ${boton.url}`] : []), "", pie].join("\n");
 
   return { html, texto };
 }
@@ -107,7 +111,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Confirma tu correo en FocusLab",
-          maquetar(evento, ["Para terminar de crear tu cuenta, confirma tu correo con el botón. El enlace vence en 1 hora."], {
+          maquetar(saludo(evento), ["Para terminar de crear tu cuenta, confirma tu correo con el botón. El enlace vence en 1 hora."], {
             texto: "Confirmar correo",
             url: enlaceConfirmacion(evento, token_hash, "signup", origenApp),
           }),
@@ -118,7 +122,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Te invitaron a FocusLab",
-          maquetar(evento, ["Te invitaron a crear una cuenta en FocusLab."], {
+          maquetar(saludo(evento), ["Te invitaron a crear una cuenta en FocusLab."], {
             texto: "Aceptar invitación",
             url: enlaceConfirmacion(evento, token_hash, "invite", origenApp),
           }),
@@ -129,7 +133,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Tu enlace para entrar a FocusLab",
-          maquetar(evento, ["Usa el botón para entrar a FocusLab. El enlace vence en 1 hora y sirve una sola vez."], {
+          maquetar(saludo(evento), ["Usa el botón para entrar a FocusLab. El enlace vence en 1 hora y sirve una sola vez."], {
             texto: "Entrar",
             url: enlaceConfirmacion(evento, token_hash, "magiclink", origenApp),
           }),
@@ -141,7 +145,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
           email,
           "Restablece tu contraseña de FocusLab",
           maquetar(
-            evento,
+            saludo(evento),
             [
               "Pediste restablecer tu contraseña. Con el botón eliges una nueva. El enlace vence en 1 hora.",
               "Si no lo pediste, ignora este correo: tu contraseña sigue igual.",
@@ -160,7 +164,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
           correo(
             email,
             "Confirma el cambio de correo en FocusLab",
-            maquetar(evento, [`Pediste cambiar tu correo a ${nuevo ?? "otra dirección"}. Confírmalo desde esta dirección.`], {
+            maquetar(saludo(evento), [`Pediste cambiar tu correo a ${nuevo ?? "otra dirección"}. Confírmalo desde esta dirección.`], {
               texto: "Confirmar cambio",
               url: enlaceConfirmacion(evento, token_hash_new, "email_change", origenApp),
             }),
@@ -172,7 +176,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
           correo(
             nuevo,
             "Confirma tu nuevo correo en FocusLab",
-            maquetar(evento, ["Confirma que esta es tu nueva dirección de correo en FocusLab."], {
+            maquetar(saludo(evento), ["Confirma que esta es tu nueva dirección de correo en FocusLab."], {
               texto: "Confirmar nuevo correo",
               url: enlaceConfirmacion(evento, token_hash, "email_change", origenApp),
             }),
@@ -186,7 +190,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Tu código de verificación de FocusLab",
-          maquetar(evento, [`Tu código es ${token || token_new}. Vence en pocos minutos. No lo compartas con nadie.`]),
+          maquetar(saludo(evento), [`Tu código es ${token || token_new}. Vence en pocos minutos. No lo compartas con nadie.`]),
         ),
       ];
     case "password_changed_notification":
@@ -194,7 +198,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Cambiaste tu contraseña de FocusLab",
-          maquetar(evento, ["La contraseña de tu cuenta se cambió. Si no fuiste tú, avísale al investigador cuanto antes."]),
+          maquetar(saludo(evento), ["La contraseña de tu cuenta se cambió. Si no fuiste tú, avísale al investigador cuanto antes."]),
         ),
       ];
     case "mfa_factor_enrolled_notification":
@@ -202,7 +206,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Activaste la verificación en dos pasos",
-          maquetar(evento, ["Se agregó una app de autenticación a tu cuenta de FocusLab. Si no fuiste tú, avísale al investigador cuanto antes."]),
+          maquetar(saludo(evento), ["Se agregó una app de autenticación a tu cuenta de FocusLab. Si no fuiste tú, avísale al investigador cuanto antes."]),
         ),
       ];
     case "mfa_factor_unenrolled_notification":
@@ -210,10 +214,27 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
         correo(
           email,
           "Se quitó la verificación en dos pasos",
-          maquetar(evento, ["Se quitó una app de autenticación de tu cuenta de FocusLab. Si no fuiste tú, avísale al investigador cuanto antes."]),
+          maquetar(saludo(evento), ["Se quitó una app de autenticación de tu cuenta de FocusLab. Si no fuiste tú, avísale al investigador cuanto antes."]),
         ),
       ];
     default:
       return [];
   }
+}
+
+// Segundo factor del staff: no pasa por el hook, lo envía la app al entrar a /admin.
+export function correoCodigoVerificacion(
+  para: string,
+  nombre: string | null,
+  codigo: string,
+  minutosVigencia: number,
+): CorreoSaliente {
+  return correo(
+    para,
+    `${codigo} es tu código para entrar al panel de FocusLab`,
+    maquetar(saludoPara(nombre), [
+      `Tu código para entrar al panel es ${codigo}. Vence en ${minutosVigencia} minutos.`,
+      "Si no intentaste entrar, alguien conoce tu contraseña: cámbiala desde «¿Olvidaste tu contraseña?».",
+    ]),
+  );
 }
