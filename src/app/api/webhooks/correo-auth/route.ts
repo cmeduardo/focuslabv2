@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     return errorHook(400, "Payload inválido.");
   }
 
-  const correos = correosParaEvento(evento);
+  const correos = correosParaEvento(evento, request.nextUrl.origin);
   try {
     for (const correo of correos) {
       await enviarConGmail(correo);

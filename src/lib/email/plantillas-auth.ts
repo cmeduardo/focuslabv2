@@ -43,11 +43,11 @@ function origenDe(url: string) {
   }
 }
 
-// Solo se respeta redirect_to si apunta al mismo sitio; si no, se usa el destino del tipo.
-function destino(evento: EventoCorreoAuth, tipo: string) {
+// Solo se respeta redirect_to si apunta a la app; si no, se usa el destino del tipo.
+function destino(evento: EventoCorreoAuth, tipo: string, origenApp: string) {
   const fallback = DESTINO_POR_TIPO[tipo] ?? "/dashboard";
-  const { redirect_to, site_url } = evento.email_data;
-  if (!redirect_to || origenDe(redirect_to) !== origenDe(site_url)) {
+  const { redirect_to } = evento.email_data;
+  if (!redirect_to || origenDe(redirect_to) !== origenApp) {
     return fallback;
   }
   const url = new URL(redirect_to);
@@ -55,14 +55,20 @@ function destino(evento: EventoCorreoAuth, tipo: string) {
   return safeRedirectPath(ruta, fallback);
 }
 
-export function enlaceConfirmacion(evento: EventoCorreoAuth, tokenHash: string, tipo: string) {
-  const base = evento.email_data.site_url.replace(/\/+$/, "");
+// email_data.site_url es la URL de la API de Auth (…supabase.co/auth/v1), no la de la app:
+// la base del enlace es el origen donde corre el hook, que es la propia app.
+export function enlaceConfirmacion(
+  evento: EventoCorreoAuth,
+  tokenHash: string,
+  tipo: string,
+  origenApp: string,
+) {
   const params = new URLSearchParams({
     token_hash: tokenHash,
     type: tipo,
-    next: destino(evento, tipo),
+    next: destino(evento, tipo, origenApp),
   });
-  return `${base}/auth/confirm?${params.toString()}`;
+  return `${origenApp}/auth/confirm?${params.toString()}`;
 }
 
 function saludo(evento: EventoCorreoAuth) {
@@ -91,7 +97,7 @@ function correo(para: string, asunto: string, contenido: { html: string; texto: 
 }
 
 // Devuelve los correos a enviar para el evento (cero, uno o dos).
-export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
+export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): CorreoSaliente[] {
   const { email_action_type: tipo, token, token_hash, token_new, token_hash_new } = evento.email_data;
   const email = evento.user.email;
 
@@ -103,7 +109,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
           "Confirma tu correo en FocusLab",
           maquetar(evento, ["Para terminar de crear tu cuenta, confirma tu correo con el botón. El enlace vence en 1 hora."], {
             texto: "Confirmar correo",
-            url: enlaceConfirmacion(evento, token_hash, "signup"),
+            url: enlaceConfirmacion(evento, token_hash, "signup", origenApp),
           }),
         ),
       ];
@@ -114,7 +120,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
           "Te invitaron a FocusLab",
           maquetar(evento, ["Te invitaron a crear una cuenta en FocusLab."], {
             texto: "Aceptar invitación",
-            url: enlaceConfirmacion(evento, token_hash, "invite"),
+            url: enlaceConfirmacion(evento, token_hash, "invite", origenApp),
           }),
         ),
       ];
@@ -125,7 +131,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
           "Tu enlace para entrar a FocusLab",
           maquetar(evento, ["Usa el botón para entrar a FocusLab. El enlace vence en 1 hora y sirve una sola vez."], {
             texto: "Entrar",
-            url: enlaceConfirmacion(evento, token_hash, "magiclink"),
+            url: enlaceConfirmacion(evento, token_hash, "magiclink", origenApp),
           }),
         ),
       ];
@@ -140,7 +146,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
               "Pediste restablecer tu contraseña. Con el botón eliges una nueva. El enlace vence en 1 hora.",
               "Si no lo pediste, ignora este correo: tu contraseña sigue igual.",
             ],
-            { texto: "Elegir nueva contraseña", url: enlaceConfirmacion(evento, token_hash, "recovery") },
+            { texto: "Elegir nueva contraseña", url: enlaceConfirmacion(evento, token_hash, "recovery", origenApp) },
           ),
         ),
       ];
@@ -156,7 +162,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
             "Confirma el cambio de correo en FocusLab",
             maquetar(evento, [`Pediste cambiar tu correo a ${nuevo ?? "otra dirección"}. Confírmalo desde esta dirección.`], {
               texto: "Confirmar cambio",
-              url: enlaceConfirmacion(evento, token_hash_new, "email_change"),
+              url: enlaceConfirmacion(evento, token_hash_new, "email_change", origenApp),
             }),
           ),
         );
@@ -168,7 +174,7 @@ export function correosParaEvento(evento: EventoCorreoAuth): CorreoSaliente[] {
             "Confirma tu nuevo correo en FocusLab",
             maquetar(evento, ["Confirma que esta es tu nueva dirección de correo en FocusLab."], {
               texto: "Confirmar nuevo correo",
-              url: enlaceConfirmacion(evento, token_hash, "email_change"),
+              url: enlaceConfirmacion(evento, token_hash, "email_change", origenApp),
             }),
           ),
         );
