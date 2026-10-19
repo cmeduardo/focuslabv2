@@ -15,12 +15,12 @@ export async function startPomodoroSession(
   },
 ) {
   const { data, error } = await supabase
-    .from("pomodoro_sessions")
+    .from("sesiones_pomodoro")
     .insert({
-      user_id: params.userId,
-      session_id: params.sessionId,
-      work_duration_minutes: params.workMinutes,
-      break_duration_minutes: params.breakMinutes,
+      perfil_id: params.userId,
+      sesion_id: params.sessionId,
+      duracion_trabajo_minutos: params.workMinutes,
+      duracion_descanso_minutos: params.breakMinutes,
     })
     .select("id")
     .single();
@@ -37,8 +37,8 @@ export async function incrementPomodoroCycle(
   completedCycles: number,
 ) {
   await supabase
-    .from("pomodoro_sessions")
-    .update({ completed_cycles: completedCycles })
+    .from("sesiones_pomodoro")
+    .update({ ciclos_completados: completedCycles })
     .eq("id", id);
 }
 
@@ -48,12 +48,12 @@ export async function endPomodoroSession(
   params: { interrupted: boolean; pauseCount: number; pausedMs: number },
 ) {
   await supabase
-    .from("pomodoro_sessions")
+    .from("sesiones_pomodoro")
     .update({
-      ended_at: new Date().toISOString(),
-      interrupted: params.interrupted,
-      pause_count: params.pauseCount,
-      paused_ms: params.pausedMs,
+      finalizada_en: new Date().toISOString(),
+      interrumpida: params.interrupted,
+      veces_pausado: params.pauseCount,
+      ms_pausado: params.pausedMs,
     })
     .eq("id", id);
 }

@@ -111,10 +111,10 @@ Vercel:
 
 ### Supabase
 
-1. Aplicar las migraciones de [`supabase/migrations/`](./supabase/migrations)
-   en orden, con `supabase link --project-ref <ref>` y `supabase db push`, o
-   pegando cada archivo en el SQL Editor, del más antiguo al más reciente.
-   Un cambio de esquema siempre va en una migración nueva.
+1. Pegar [`supabase/migrations/20261019000000_esquema.sql`](./supabase/migrations/20261019000000_esquema.sql) en el SQL Editor
+   de un proyecto nuevo. Crea tipos, tablas, funciones, políticas RLS,
+   vistas de análisis, el rol `lector_powerbi` y los permisos. Un cambio de
+   esquema posterior va en una migración nueva.
 2. En *Authentication → URL Configuration*, poner como Site URL y URL de
    redirección el dominio donde corre la app. Con la confirmación de
    correo activada, la plantilla de *Confirm signup* debe apuntar a
@@ -126,7 +126,7 @@ Vercel:
    Editor:
 
    ```sql
-   update public.profiles set role = 'investigador'
+   update public.perfiles set rol = 'investigador'
    where id = (select id from auth.users where email = 'correo@ejemplo.com');
    ```
 

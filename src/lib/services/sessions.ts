@@ -9,11 +9,11 @@ type Client = SupabaseClient<Database>;
 // RF-02: reutiliza la sesión en progreso si ya existe.
 export async function getOrCreateActiveSession(supabase: Client, userId: string) {
   const { data: existing } = await supabase
-    .from("sessions")
+    .from("sesiones")
     .select("id")
-    .eq("user_id", userId)
-    .eq("status", "en_progreso")
-    .order("started_at", { ascending: false })
+    .eq("perfil_id", userId)
+    .eq("estado", "en_progreso")
+    .order("iniciada_en", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -22,8 +22,8 @@ export async function getOrCreateActiveSession(supabase: Client, userId: string)
   }
 
   const { data: created, error } = await supabase
-    .from("sessions")
-    .insert({ user_id: userId })
+    .from("sesiones")
+    .insert({ perfil_id: userId })
     .select("id")
     .single();
 
@@ -36,25 +36,25 @@ export async function getOrCreateActiveSession(supabase: Client, userId: string)
 
 export async function markSessionAbandoned(supabase: Client, sessionId: string) {
   await supabase
-    .from("sessions")
-    .update({ status: "abandonada", ended_at: new Date().toISOString() })
+    .from("sesiones")
+    .update({ estado: "abandonada", finalizada_en: new Date().toISOString() })
     .eq("id", sessionId)
-    .eq("status", "en_progreso");
+    .eq("estado", "en_progreso");
 }
 
-// RF-10. El filtro por user_id y 'en_progreso' evita cerrar una sesión ajena o dos veces.
+// RF-10. El filtro por perfil_id y 'en_progreso' evita cerrar una sesión ajena o dos veces.
 export async function markSessionCompleted(
   supabase: Client,
   sessionId: string,
   userId: string,
 ) {
   const { data, error } = await supabase
-    .from("sessions")
-    .update({ status: "completada", ended_at: new Date().toISOString() })
+    .from("sesiones")
+    .update({ estado: "completada", finalizada_en: new Date().toISOString() })
     .eq("id", sessionId)
-    .eq("user_id", userId)
-    .eq("status", "en_progreso")
-    .select("id, started_at, ended_at")
+    .eq("perfil_id", userId)
+    .eq("estado", "en_progreso")
+    .select("id, iniciada_en, finalizada_en")
     .maybeSingle();
 
   if (error) {

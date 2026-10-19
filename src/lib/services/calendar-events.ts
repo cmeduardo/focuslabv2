@@ -12,12 +12,12 @@ export async function listCalendarEventsForWeek(
   weekEndIso: string,
 ) {
   const { data, error } = await supabase
-    .from("calendar_events")
+    .from("eventos_calendario")
     .select("*")
-    .eq("user_id", userId)
-    .gte("start_at", weekStartIso)
-    .lt("start_at", weekEndIso)
-    .order("start_at", { ascending: true });
+    .eq("perfil_id", userId)
+    .gte("inicio_en", weekStartIso)
+    .lt("inicio_en", weekEndIso)
+    .order("inicio_en", { ascending: true });
 
   if (error) throw new Error("No se pudieron cargar los eventos.");
   return data;
@@ -34,13 +34,13 @@ export async function createCalendarEvent(
   },
 ) {
   const { data, error } = await supabase
-    .from("calendar_events")
+    .from("eventos_calendario")
     .insert({
-      user_id: params.userId,
-      title: params.title,
-      description: params.description,
-      start_at: params.startAt,
-      end_at: params.endAt,
+      perfil_id: params.userId,
+      titulo: params.title,
+      descripcion: params.description,
+      inicio_en: params.startAt,
+      fin_en: params.endAt,
     })
     .select("*")
     .single();
@@ -55,15 +55,15 @@ export async function markCalendarEventCompletion(
   completed: boolean,
 ) {
   const { error } = await supabase
-    .from("calendar_events")
-    .update({ completed })
+    .from("eventos_calendario")
+    .update({ completado: completed })
     .eq("id", id);
   if (error) throw new Error("No se pudo registrar la respuesta.");
 }
 
 export async function deleteCalendarEvent(supabase: Client, id: string) {
   const { error } = await supabase
-    .from("calendar_events")
+    .from("eventos_calendario")
     .delete()
     .eq("id", id);
   if (error) throw new Error("No se pudo borrar el evento.");

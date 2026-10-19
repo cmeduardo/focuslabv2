@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { activeDays, buildActivityProgress, type ProgressRow } from "@/lib/activities/progress";
 
 const row = (
-  activity_type: ProgressRow["activity_type"],
-  completed_at: string,
-  metrics: Record<string, unknown>,
-  level_reached: number | null = null,
-): ProgressRow => ({ activity_type, completed_at, metrics, level_reached });
+  tipo_actividad: ProgressRow["tipo_actividad"],
+  completado_en: string,
+  metricas: Record<string, unknown>,
+  nivel_alcanzado: number | null = null,
+): ProgressRow => ({ tipo_actividad, completado_en, metricas, nivel_alcanzado });
 
 describe("buildActivityProgress", () => {
   it("sin intentos no inventa valores", () => {

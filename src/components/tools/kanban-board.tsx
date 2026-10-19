@@ -35,7 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database, KanbanTaskStatus } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
-type KanbanTask = Database["public"]["Tables"]["kanban_tasks"]["Row"];
+type KanbanTask = Database["public"]["Tables"]["tareas_kanban"]["Row"];
 
 function msSince(iso: string) {
   return Date.now() - new Date(iso).getTime();
@@ -125,17 +125,17 @@ export function KanbanBoard() {
     const previous = (tasks ?? []).find((t) => t.id === id);
     setTasks((prev) =>
       (prev ?? []).map((t) =>
-        t.id === id ? { ...t, status, position: Date.now() } : t,
+        t.id === id ? { ...t, estado: status, posicion: Date.now() } : t,
       ),
     );
-    if (previous && previous.status !== status) {
+    if (previous && previous.estado !== status) {
       logEvent("tool_progress", {
         tool: "kanban",
         type: "status_change",
         taskId: id,
-        from: previous.status,
+        from: previous.estado,
         to: status,
-        msSinceCreated: msSince(previous.created_at),
+        msSinceCreated: msSince(previous.creado_en),
       });
     }
     const supabase = createClient();
@@ -153,8 +153,8 @@ export function KanbanBoard() {
         tool: "kanban",
         type: "task_deleted",
         taskId: id,
-        status: deleted.status,
-        msSinceCreated: msSince(deleted.created_at),
+        status: deleted.estado,
+        msSinceCreated: msSince(deleted.creado_en),
       });
     }
     setTasks((prev) => (prev ?? []).filter((t) => t.id !== id));
@@ -220,8 +220,8 @@ export function KanbanBoard() {
       <div className="grid gap-4 sm:grid-cols-3">
         {COLUMNS.map((column) => {
           const columnTasks = tasks
-            .filter((t) => t.status === column.status)
-            .sort((a, b) => a.position - b.position);
+            .filter((t) => t.estado === column.status)
+            .sort((a, b) => a.posicion - b.posicion);
           return (
             <div
               key={column.status}
@@ -266,7 +266,7 @@ export function KanbanBoard() {
                 </div>
               )}
               {columnTasks.map((task) => {
-                const isDone = task.status === "completado";
+                const isDone = task.estado === "completado";
                 return (
                   <Card
                     key={task.id}
@@ -287,7 +287,7 @@ export function KanbanBoard() {
                           isDone && "text-muted-foreground line-through",
                         )}
                       >
-                        {task.title}
+                        {task.titulo}
                       </p>
                       <button
                         type="button"
@@ -298,18 +298,18 @@ export function KanbanBoard() {
                         <Trash2 className="size-3.5" />
                       </button>
                     </div>
-                    {task.description && (
+                    {task.descripcion && (
                       <p
                         className={cn(
                           "line-clamp-2 text-xs text-muted-foreground",
                           isDone && "line-through",
                         )}
                       >
-                        {task.description}
+                        {task.descripcion}
                       </p>
                     )}
                     <Select
-                      value={task.status}
+                      value={task.estado}
                       onValueChange={(value) =>
                         handleMove(task.id, value as KanbanTaskStatus)
                       }

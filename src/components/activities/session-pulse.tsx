@@ -25,9 +25,9 @@ export function SessionPulseCheck() {
     async function check() {
       const supabase = createClient();
       const { count } = await supabase
-        .from("activity_results")
+        .from("resultados_actividad")
         .select("id", { count: "exact", head: true })
-        .eq("session_id", sessionId);
+        .eq("sesion_id", sessionId);
       if (cancelled || !count) return;
 
       const milestone = Math.floor(count / MILESTONE_INTERVAL);

@@ -4,31 +4,31 @@ import { mean, toNumber } from "@/lib/analysis/participants";
 
 export type TrialRow = {
   participante: string;
-  activity_type: string;
-  device_type: string | null;
+  tipo_actividad: string;
+  tipo_dispositivo: string | null;
   corrida_inicio: string;
-  condition: Record<string, unknown> | null;
-  rt_ms: number | string | null;
-  correct: boolean | null;
-  valid: boolean;
+  condicion: Record<string, unknown> | null;
+  tiempo_reaccion_ms: number | string | null;
+  correcto: boolean | null;
+  valido: boolean;
 };
 
 export const RT_BIN_MS = 50;
 
 // Solo el primer intento de cada participante en cada desafío.
-export function firstRunOnly<T extends Pick<TrialRow, "participante" | "activity_type" | "corrida_inicio">>(
+export function firstRunOnly<T extends Pick<TrialRow, "participante" | "tipo_actividad" | "corrida_inicio">>(
   rows: readonly T[],
 ): T[] {
   const first = new Map<string, string>();
   for (const r of rows) {
-    const key = `${r.participante}|${r.activity_type}`;
+    const key = `${r.participante}|${r.tipo_actividad}`;
     const current = first.get(key);
     if (current === undefined || r.corrida_inicio < current) first.set(key, r.corrida_inicio);
   }
-  return rows.filter((r) => first.get(`${r.participante}|${r.activity_type}`) === r.corrida_inicio);
+  return rows.filter((r) => first.get(`${r.participante}|${r.tipo_actividad}`) === r.corrida_inicio);
 }
 
-const deviceOf = (r: Pick<TrialRow, "device_type">) => r.device_type ?? "sin_dato";
+const deviceOf = (r: Pick<TrialRow, "tipo_dispositivo">) => r.tipo_dispositivo ?? "sin_dato";
 
 export type HistogramBin = { desde: number; etiqueta: string; n: number };
 
@@ -36,8 +36,8 @@ export type HistogramBin = { desde: number; etiqueta: string; n: number };
 export function rtHistogram(rows: readonly TrialRow[]): { dispositivo: string; bins: HistogramBin[]; n: number }[] {
   const byDevice = new Map<string, number[]>();
   for (const r of rows) {
-    if (r.activity_type !== "reaction_test" || !r.valid) continue;
-    const rt = toNumber(r.rt_ms);
+    if (r.tipo_actividad !== "reaction_test" || !r.valido) continue;
+    const rt = toNumber(r.tiempo_reaccion_ms);
     if (rt === null) continue;
     byDevice.set(deviceOf(r), [...(byDevice.get(deviceOf(r)) ?? []), rt]);
   }
@@ -67,9 +67,9 @@ function meanBy(
 ): MeanCell[] {
   const groups = new Map<string, { dispositivo: string; condicion: string; rts: number[] }>();
   for (const r of rows) {
-    if (r.activity_type !== activity || !r.valid || r.correct !== true || !r.condition) continue;
-    const rt = toNumber(r.rt_ms);
-    const cond = condition(r.condition);
+    if (r.tipo_actividad !== activity || !r.valido || r.correcto !== true || !r.condicion) continue;
+    const rt = toNumber(r.tiempo_reaccion_ms);
+    const cond = condition(r.condicion);
     if (rt === null || cond === null) continue;
     const key = `${deviceOf(r)}|${cond}`;
     const g = groups.get(key) ?? { dispositivo: deviceOf(r), condicion: cond, rts: [] };

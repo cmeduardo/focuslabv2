@@ -4,14 +4,14 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-08. Marcar un día es un upsert sobre unique(habit_id, log_date).
+// RF-08. Marcar un día es un upsert sobre unique(habito_id, fecha).
 export async function listHabits(supabase: Client, userId: string) {
   const { data, error } = await supabase
-    .from("habits")
+    .from("habitos")
     .select("*")
-    .eq("user_id", userId)
-    .eq("archived", false)
-    .order("created_at", { ascending: true });
+    .eq("perfil_id", userId)
+    .eq("archivado", false)
+    .order("creado_en", { ascending: true });
 
   if (error) throw new Error("No se pudieron cargar los hábitos.");
   return data;
@@ -22,8 +22,8 @@ export async function createHabit(
   params: { userId: string; name: string },
 ) {
   const { data, error } = await supabase
-    .from("habits")
-    .insert({ user_id: params.userId, name: params.name })
+    .from("habitos")
+    .insert({ perfil_id: params.userId, nombre: params.name })
     .select("*")
     .single();
 
@@ -33,8 +33,8 @@ export async function createHabit(
 
 export async function archiveHabit(supabase: Client, id: string) {
   const { error } = await supabase
-    .from("habits")
-    .update({ archived: true })
+    .from("habitos")
+    .update({ archivado: true })
     .eq("id", id);
   if (error) throw new Error("No se pudo archivar el hábito.");
 }
@@ -46,11 +46,11 @@ export async function listHabitLogs(
   toDate: string,
 ) {
   const { data, error } = await supabase
-    .from("habit_logs")
+    .from("registros_habito")
     .select("*")
-    .eq("user_id", userId)
-    .gte("log_date", fromDate)
-    .lte("log_date", toDate);
+    .eq("perfil_id", userId)
+    .gte("fecha", fromDate)
+    .lte("fecha", toDate);
 
   if (error) throw new Error("No se pudo cargar el historial de hábitos.");
   return data;
@@ -65,14 +65,14 @@ export async function toggleHabitLog(
     completed: boolean;
   },
 ) {
-  const { error } = await supabase.from("habit_logs").upsert(
+  const { error } = await supabase.from("registros_habito").upsert(
     {
-      habit_id: params.habitId,
-      user_id: params.userId,
-      log_date: params.logDate,
-      completed: params.completed,
+      habito_id: params.habitId,
+      perfil_id: params.userId,
+      fecha: params.logDate,
+      completado: params.completed,
     },
-    { onConflict: "habit_id,log_date" },
+    { onConflict: "habito_id,fecha" },
   );
 
   if (error) throw new Error("No se pudo actualizar el hábito.");

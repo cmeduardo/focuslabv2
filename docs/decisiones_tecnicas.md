@@ -25,13 +25,15 @@ el cliente. La misma función sirve en el servidor y en el navegador, y la
 lógica no queda repartida entre páginas.
 
 **El rol no se cambia desde la aplicación.** Un trigger bloquea cualquier
-cambio de `profiles.role` que no venga del servidor. Así, un participante
+cambio de `perfiles.rol` que no venga del servidor. Así, un participante
 no puede darse el rol de investigador llamando a la API directamente.
 
-**Migraciones aplicadas a mano.** El proyecto de Supabase no está enlazado
-al CLI, así que las migraciones se pegan en el SQL Editor en orden. Por
-eso una migración aplicada nunca se edita: cualquier cambio va en un
-archivo nuevo.
+**Un solo script de esquema.** El proyecto de Supabase no está enlazado al
+CLI, así que el esquema se aplica a mano en el SQL Editor. Las migraciones
+incrementales se consolidaron en una sola,
+`supabase/migrations/20261019000000_esquema.sql`, con el estado final
+completo: se lee de una vez y crea un proyecto nuevo idéntico al de
+producción. Un cambio posterior va en una migración nueva.
 
 ## Actividades
 
@@ -42,14 +44,14 @@ Corsi, Stroop, búsqueda visual, lectura con interrupciones). Así cada
 métrica tiene una interpretación conocida y las seis actividades cubren
 dimensiones distintas.
 
-**Datos por ensayo, no solo un puntaje.** `activity_trials` guarda cada
+**Datos por ensayo, no solo un puntaje.** `ensayos_actividad` guarda cada
 estímulo y su respuesta. Con eso se pueden recalcular las métricas, ver
 distribuciones y descartar ensayos inválidos (por ejemplo, cuando la
 pestaña perdió visibilidad) sin depender del resumen que calculó el
 navegador.
 
 **Versión de protocolo en cada resultado.** Las filas de la primera
-versión se conservan con `protocol_version = 'v1'`, pero ninguna vista de
+versión se conservan con `version_protocolo = 'v1'`, pero ninguna vista de
 análisis las cuenta: se miden de otra forma y no son comparables.
 
 **Práctica sin registro y ronda sin retroalimentación.** La práctica sirve
@@ -75,11 +77,11 @@ y una cola local si no hay red. Si la persona cierra la página a mitad,
 
 ## Captura de comportamiento
 
-**Hitos de herramientas en `interaction_events`.** Cada señal nueva de una
+**Hitos de herramientas en `eventos_interaccion`.** Cada señal nueva de una
 herramienta (cambio de columna en Kanban, latencia para retomar un
 Pomodoro, anticipación al agendar) se guarda como un evento `tool_progress`
-con `payload` jsonb, no como una columna nueva. Así no hace falta una
-migración por cada señal, y las tablas de cada herramienta guardan solo
+con `datos` jsonb, no como una columna nueva. Así no hace falta cambiar
+el esquema por cada señal, y las tablas de cada herramienta guardan solo
 el estado final.
 
 **Pomodoro espera a la persona tras el descanso.** El siguiente bloque no
@@ -123,7 +125,7 @@ base de datos. Así Power BI, el panel web y las exportaciones CSV parten
 de los mismos números.
 
 **Seudónimos y un rol de solo lectura.** Power BI se conecta con
-`powerbi_reader`, que solo puede leer vistas. A nivel de participante se
+`lector_powerbi`, que solo puede leer vistas. A nivel de participante se
 expone únicamente `P-XXXXXX`, derivado del id. La autoridad académica no
 ve ninguna vista por participante.
 

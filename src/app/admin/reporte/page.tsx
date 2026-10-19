@@ -31,7 +31,7 @@ export default async function ReportePage() {
     rows.reduce((total, row) => total + Number(pick(row) ?? 0), 0);
   const totalSessions = sum(sessions, (r) => r.total_sesiones);
   const completed = sum(
-    sessions.filter((r) => r.status === "completada"),
+    sessions.filter((r) => r.estado === "completada"),
     (r) => r.total_sesiones,
   );
   const participants = participantsWithResults(dimensions);
@@ -39,7 +39,7 @@ export default async function ReportePage() {
 
   const eventTotals = new Map<string, number>();
   for (const row of events) {
-    eventTotals.set(row.event_type, (eventTotals.get(row.event_type) ?? 0) + Number(row.total_eventos));
+    eventTotals.set(row.tipo_evento, (eventTotals.get(row.tipo_evento) ?? 0) + Number(row.total_eventos));
   }
 
   const generatedAt = new Date().toLocaleString("es-GT", {

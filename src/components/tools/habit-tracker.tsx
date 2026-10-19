@@ -22,8 +22,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
-type Habit = Database["public"]["Tables"]["habits"]["Row"];
-type HabitLog = Database["public"]["Tables"]["habit_logs"]["Row"];
+type Habit = Database["public"]["Tables"]["habitos"]["Row"];
+type HabitLog = Database["public"]["Tables"]["registros_habito"]["Row"];
 
 const WEEKDAY_LETTERS = ["D", "L", "M", "M", "J", "V", "S"];
 const STREAK_MILESTONES = new Set([3, 5, 7]);
@@ -54,7 +54,7 @@ function currentStreak(habitLogs: HabitLog[], days: Date[]) {
   let streak = 0;
   for (let i = days.length - 1; i >= 0; i--) {
     const key = toDateKey(days[i]);
-    const completed = habitLogs.some((l) => l.log_date === key && l.completed);
+    const completed = habitLogs.some((l) => l.fecha === key && l.completado);
     if (!completed) break;
     streak++;
   }
@@ -124,19 +124,19 @@ export function HabitTracker() {
 
   // Solo se marca el día de hoy (ver docs/decisiones_tecnicas.md).
   async function handleToggleToday(habit: Habit) {
-    const habitLogs = logs.filter((l) => l.habit_id === habit.id);
-    const existing = habitLogs.find((l) => l.log_date === todayKey);
-    const nextCompleted = !existing?.completed;
+    const habitLogs = logs.filter((l) => l.habito_id === habit.id);
+    const existing = habitLogs.find((l) => l.fecha === todayKey);
+    const nextCompleted = !existing?.completado;
 
     const optimisticLogs = habitLogs
-      .filter((l) => l.log_date !== todayKey)
+      .filter((l) => l.fecha !== todayKey)
       .concat({
         id: existing?.id ?? `${habit.id}_${todayKey}`,
-        habit_id: habit.id,
-        user_id: userId,
-        log_date: todayKey,
-        completed: nextCompleted,
-        created_at: existing?.created_at ?? new Date().toISOString(),
+        habito_id: habit.id,
+        perfil_id: userId,
+        fecha: todayKey,
+        completado: nextCompleted,
+        creado_en: existing?.creado_en ?? new Date().toISOString(),
       });
 
     if (nextCompleted) {
@@ -150,14 +150,14 @@ export function HabitTracker() {
       });
       if (STREAK_MILESTONES.has(streak) || (streak > 7 && streak % 5 === 0)) {
         playCombo();
-        toast.success(`🔥 ${streak} días seguidos con "${habit.name}"`);
+        toast.success(`🔥 ${streak} días seguidos con "${habit.nombre}"`);
       } else {
         playHit();
       }
     }
 
     setLogs((prev) => [
-      ...prev.filter((l) => !(l.habit_id === habit.id && l.log_date === todayKey)),
+      ...prev.filter((l) => !(l.habito_id === habit.id && l.fecha === todayKey)),
       optimisticLogs[optimisticLogs.length - 1],
     ]);
 
@@ -214,11 +214,11 @@ export function HabitTracker() {
 
       <div className="space-y-3">
         {habits.map((habit) => {
-          const habitLogs = logs.filter((l) => l.habit_id === habit.id);
-          const completedCount = habitLogs.filter((l) => l.completed).length;
+          const habitLogs = logs.filter((l) => l.habito_id === habit.id);
+          const completedCount = habitLogs.filter((l) => l.completado).length;
           const streak = currentStreak(habitLogs, days);
           const todayDone = habitLogs.some(
-            (l) => l.log_date === todayKey && l.completed,
+            (l) => l.fecha === todayKey && l.completado,
           );
           const history = days.slice(0, -1);
 
@@ -227,7 +227,7 @@ export function HabitTracker() {
               <div className="min-w-0 flex-1 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-sm font-medium">{habit.name}</p>
+                    <p className="truncate text-sm font-medium">{habit.nombre}</p>
                     <StreakBadge streak={streak} />
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">
@@ -238,7 +238,7 @@ export function HabitTracker() {
                   {history.map((day) => {
                     const dateKey = toDateKey(day);
                     const isCompleted = habitLogs.some(
-                      (l) => l.log_date === dateKey && l.completed,
+                      (l) => l.fecha === dateKey && l.completado,
                     );
                     return (
                       <span
@@ -260,7 +260,7 @@ export function HabitTracker() {
                     type="button"
                     onClick={() => handleToggleToday(habit)}
                     aria-pressed={todayDone}
-                    aria-label={`Marcar "${habit.name}" como hecho hoy`}
+                    aria-label={`Marcar "${habit.nombre}" como hecho hoy`}
                     className={cn(
                       "flex size-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all",
                       todayDone

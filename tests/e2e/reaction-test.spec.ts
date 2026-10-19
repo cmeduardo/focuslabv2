@@ -55,33 +55,33 @@ test("Reaction Test: práctica sin guardar, ronda registrada y contexto de dispo
   await expectNoHorizontalScroll(page);
   await expectNoForbiddenTerms(page);
 
-  const runWrites = writes.filter((w) => w.table === "activity_runs" && w.method === "POST");
+  const runWrites = writes.filter((w) => w.table === "intentos_actividad" && w.method === "POST");
   const runWithDevice = runWrites
     .map((w) => w.body as Record<string, unknown>)
-    .find((b) => b.device_type !== undefined);
+    .find((b) => b.tipo_dispositivo !== undefined);
   expect(runWithDevice).toBeDefined();
-  expect(runWithDevice?.device_type).toBe(isMobile ? "mobile" : "desktop");
-  expect(runWithDevice?.input_primary).toBe(touch ? "touch" : "keyboard");
-  expect(runWithDevice?.viewport_w).toBe(page.viewportSize()?.width);
-  expect(typeof runWithDevice?.browser).toBe("string");
-  expect(typeof runWithDevice?.os).toBe("string");
-  expect(runWithDevice?.visibility_losses).toBe(0);
+  expect(runWithDevice?.tipo_dispositivo).toBe(isMobile ? "mobile" : "desktop");
+  expect(runWithDevice?.entrada_principal).toBe(touch ? "touch" : "keyboard");
+  expect(runWithDevice?.ancho_ventana).toBe(page.viewportSize()?.width);
+  expect(typeof runWithDevice?.navegador).toBe("string");
+  expect(typeof runWithDevice?.sistema_operativo).toBe("string");
+  expect(runWithDevice?.perdidas_visibilidad).toBe(0);
 
-  const trialWrites = writes.filter((w) => w.table === "activity_trials");
+  const trialWrites = writes.filter((w) => w.table === "ensayos_actividad");
   expect(trialWrites, "ensayos en un solo lote").toHaveLength(1);
   const trials = trialWrites[0].body as Record<string, unknown>[];
   expect(trials).toHaveLength(REACTION_TEST_CONFIG.registeredTrials);
   for (const t of trials) {
-    expect(["valid", "lapse", "anticipation"]).toContain(t.classification);
-    expect(t.input_type).toBe(touch ? "touch" : "keyboard");
-    expect(t.valid).toBe(true);
+    expect(["valid", "lapse", "anticipation"]).toContain(t.clasificacion);
+    expect(t.tipo_entrada).toBe(touch ? "touch" : "keyboard");
+    expect(t.valido).toBe(true);
   }
 
-  const resultWrite = writes.find((w) => w.table === "activity_results");
+  const resultWrite = writes.find((w) => w.table === "resultados_actividad");
   const summary = resultWrite?.body as Record<string, unknown>;
-  expect(summary.protocol_version).toBe("v2");
-  expect(summary.activity_type).toBe("reaction_test");
-  expect((summary.metrics as Record<string, unknown>).report).toBeDefined();
+  expect(summary.version_protocolo).toBe("v2");
+  expect(summary.tipo_actividad).toBe("reaction_test");
+  expect((summary.metricas as Record<string, unknown>).report).toBeDefined();
 });
 
 test("Reaction Test: salir a mitad de la ronda la deja incompleta", async ({ page }) => {
@@ -104,11 +104,11 @@ test("Reaction Test: salir a mitad de la ronda la deja incompleta", async ({ pag
     .poll(() =>
       writes.some(
         (w) =>
-          w.table === "activity_runs" &&
+          w.table === "intentos_actividad" &&
           w.method === "PATCH" &&
-          (w.body as Record<string, unknown>).status === "incompleta",
+          (w.body as Record<string, unknown>).estado === "incompleta",
       ),
     )
     .toBe(true);
-  expect(writes.some((w) => w.table === "activity_trials")).toBe(false);
+  expect(writes.some((w) => w.table === "ensayos_actividad")).toBe(false);
 });

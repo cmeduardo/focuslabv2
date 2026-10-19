@@ -15,8 +15,8 @@ export const requireResearcher = cache(async () => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "investigador") redirect(profile?.role === "autoridad" ? "/admin" : "/dashboard");
+  const { data: profile } = await supabase.from("perfiles").select("rol").eq("id", user.id).single();
+  if (profile?.rol !== "investigador") redirect(profile?.rol === "autoridad" ? "/admin" : "/dashboard");
   return supabase;
 });
 
@@ -39,11 +39,11 @@ export async function getTrialRows(supabase: Client, activities: ActivityType[])
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from("vw_ensayos_analisis")
-      .select("participante, activity_type, device_type, corrida_inicio, condition, rt_ms, correct, valid")
-      .in("activity_type", activities)
+      .select("participante, tipo_actividad, tipo_dispositivo, corrida_inicio, condicion, tiempo_reaccion_ms, correcto, valido")
+      .in("tipo_actividad", activities)
       .order("participante")
       .order("corrida_inicio")
-      .order("trial_index")
+      .order("indice_ensayo")
       .range(from, from + PAGE - 1);
     if (error) throw new Error("No se pudieron cargar los ensayos.");
     rows.push(...((data ?? []) as TrialRow[]));
@@ -55,8 +55,8 @@ export async function getTrialRows(supabase: Client, activities: ActivityType[])
 export async function getJourneyData(supabase: Client) {
   const [participants, dimensions, sessions] = await Promise.all([
     getParticipantRows(supabase),
-    supabase.from("vw_actividades_dimensiones").select("activity_type, device_type, participantes"),
-    supabase.from("vw_sessions_summary").select("status, total_sesiones"),
+    supabase.from("vw_actividades_dimensiones").select("tipo_actividad, tipo_dispositivo, participantes"),
+    supabase.from("vw_resumen_sesiones").select("estado, total_sesiones"),
   ]);
   if (dimensions.error || sessions.error) throw new Error("No se pudo cargar el recorrido del taller.");
   return { participants, dimensions: dimensions.data ?? [], sessions: sessions.data ?? [] };

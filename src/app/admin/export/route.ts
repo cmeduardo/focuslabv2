@@ -15,12 +15,12 @@ export async function GET(request: NextRequest) {
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "investigador" && profile?.role !== "autoridad") {
+  if (profile?.rol !== "investigador" && profile?.rol !== "autoridad") {
     return NextResponse.json({ error: "Sin permiso." }, { status: 403 });
   }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Dataset inválido." }, { status: 400 });
   }
 
-  if (!canExport(dataset, profile.role)) {
+  if (!canExport(dataset, profile.rol)) {
     return NextResponse.json({ error: "Sin permiso." }, { status: 403 });
   }
 

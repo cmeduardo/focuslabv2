@@ -28,7 +28,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
-type CalendarEvent = Database["public"]["Tables"]["calendar_events"]["Row"];
+type CalendarEvent = Database["public"]["Tables"]["eventos_calendario"]["Row"];
 
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -147,7 +147,7 @@ export function WeeklyCalendar() {
   async function handleMarkCompletion(id: string, completed: boolean) {
     if (completed) playHit();
     setEvents((prev) =>
-      (prev ?? []).map((e) => (e.id === id ? { ...e, completed } : e)),
+      (prev ?? []).map((e) => (e.id === id ? { ...e, completado: completed } : e)),
     );
     logEvent("tool_progress", {
       tool: "calendario",
@@ -231,9 +231,9 @@ export function WeeklyCalendar() {
               day.toDateString() === new Date().toDateString();
             const dayEvents = events
               .filter(
-                (e) => new Date(e.start_at).toDateString() === day.toDateString(),
+                (e) => new Date(e.inicio_en).toDateString() === day.toDateString(),
               )
-              .sort((a, b) => a.start_at.localeCompare(b.start_at));
+              .sort((a, b) => a.inicio_en.localeCompare(b.inicio_en));
             return (
               <div
                 key={day.toISOString()}
@@ -267,8 +267,8 @@ export function WeeklyCalendar() {
                     </p>
                   )}
                   {dayEvents.map((event) => {
-                    const isPast = new Date(event.end_at) < new Date();
-                    const needsReflection = isPast && event.completed === null;
+                    const isPast = new Date(event.fin_en) < new Date();
+                    const needsReflection = isPast && event.completado === null;
                     return (
                       <Card
                         key={event.id}
@@ -278,11 +278,11 @@ export function WeeklyCalendar() {
                           <p
                             className={cn(
                               "text-xs font-medium",
-                              event.completed === false &&
+                              event.completado === false &&
                                 "text-muted-foreground line-through",
                             )}
                           >
-                            {event.title}
+                            {event.titulo}
                           </p>
                           <button
                             type="button"
@@ -319,18 +319,18 @@ export function WeeklyCalendar() {
                           <span
                             className={cn(
                               "inline-flex w-fit items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium",
-                              event.completed === true &&
+                              event.completado === true &&
                                 "bg-primary/15 text-primary",
-                              event.completed === false &&
+                              event.completado === false &&
                                 "bg-muted text-muted-foreground",
-                              event.completed === null &&
+                              event.completado === null &&
                                 "bg-muted text-muted-foreground",
                             )}
                           >
-                            {event.completed === true && (
+                            {event.completado === true && (
                               <Check className="size-2.5" />
                             )}
-                            {timeLabel(event.start_at)}–{timeLabel(event.end_at)}
+                            {timeLabel(event.inicio_en)}–{timeLabel(event.fin_en)}
                           </span>
                         )}
                       </Card>

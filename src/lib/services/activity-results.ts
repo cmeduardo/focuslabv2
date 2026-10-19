@@ -17,14 +17,14 @@ export async function saveActivityResult(
     metrics?: Record<string, unknown>;
   },
 ) {
-  const { error } = await supabase.from("activity_results").insert({
-    session_id: params.sessionId,
-    user_id: params.userId,
-    activity_type: params.activityType,
-    duration_ms: params.durationMs,
-    accuracy: params.accuracy ?? null,
-    level_reached: params.levelReached ?? null,
-    metrics: params.metrics ?? {},
+  const { error } = await supabase.from("resultados_actividad").insert({
+    sesion_id: params.sessionId,
+    perfil_id: params.userId,
+    tipo_actividad: params.activityType,
+    duracion_ms: params.durationMs,
+    precision: params.accuracy ?? null,
+    nivel_alcanzado: params.levelReached ?? null,
+    metricas: params.metrics ?? {},
   });
 
   if (error) {

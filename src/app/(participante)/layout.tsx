@@ -28,9 +28,9 @@ export default async function ParticipantLayout({
 
   const [session, { data: profile }] = await Promise.all([
     getOrCreateActiveSession(supabase, user.id),
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
+    supabase.from("perfiles").select("rol").eq("id", user.id).single(),
   ]);
-  const role = profile?.role ?? "participante";
+  const role = profile?.rol ?? "participante";
 
   return (
     <AppShell

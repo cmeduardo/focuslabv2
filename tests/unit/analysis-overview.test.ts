@@ -5,9 +5,9 @@ import { formatDia, participantsByDevice, participantsWithResults } from "@/lib/
 // Forma de vw_actividades_dimensiones con los datos de demostración: 16
 // participantes en celular y 4 en laptop en cada desafío.
 const DEMO = ["reaction_test", "focus_flow", "memory_matrix", "word_sprint", "pattern_hunt", "deep_read"].flatMap(
-  (activity_type) => [
-    { activity_type, device_type: "mobile", participantes: 16 },
-    { activity_type, device_type: "desktop", participantes: "4" },
+  (tipo_actividad) => [
+    { tipo_actividad, tipo_dispositivo: "mobile", participantes: 16 },
+    { tipo_actividad, tipo_dispositivo: "desktop", participantes: "4" },
   ],
 );
 
@@ -19,9 +19,9 @@ describe("participantsWithResults", () => {
   it("toma el desafío con más participantes", () => {
     expect(
       participantsWithResults([
-        { activity_type: "reaction_test", device_type: "mobile", participantes: 3 },
-        { activity_type: "reaction_test", device_type: "desktop", participantes: 2 },
-        { activity_type: "deep_read", device_type: "mobile", participantes: 4 },
+        { tipo_actividad: "reaction_test", tipo_dispositivo: "mobile", participantes: 3 },
+        { tipo_actividad: "reaction_test", tipo_dispositivo: "desktop", participantes: 2 },
+        { tipo_actividad: "deep_read", tipo_dispositivo: "mobile", participantes: 4 },
       ]),
     ).toBe(5);
   });

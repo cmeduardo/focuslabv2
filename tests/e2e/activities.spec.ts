@@ -188,23 +188,23 @@ for (const activity of ACTIVITIES) {
     await expectNoForbiddenTerms(page);
 
     const run = writes
-      .filter((w) => w.table === "activity_runs" && w.method === "POST")
+      .filter((w) => w.table === "intentos_actividad" && w.method === "POST")
       .map((w) => w.body as Record<string, unknown>)
-      .find((b) => b.device_type !== undefined);
-    expect(run?.activity_type).toBe(activity.type);
-    expect(run?.device_type).toBe(isMobile ? "mobile" : "desktop");
-    expect(run?.input_primary).toBe(isMobile ? "touch" : activity.desktopInput);
-    expect(run?.viewport_w).toBe(page.viewportSize()?.width);
+      .find((b) => b.tipo_dispositivo !== undefined);
+    expect(run?.tipo_actividad).toBe(activity.type);
+    expect(run?.tipo_dispositivo).toBe(isMobile ? "mobile" : "desktop");
+    expect(run?.entrada_principal).toBe(isMobile ? "touch" : activity.desktopInput);
+    expect(run?.ancho_ventana).toBe(page.viewportSize()?.width);
 
-    const trialWrites = writes.filter((w) => w.table === "activity_trials");
+    const trialWrites = writes.filter((w) => w.table === "ensayos_actividad");
     expect(trialWrites, "ensayos en un solo lote").toHaveLength(1);
     expect((trialWrites[0].body as unknown[]).length).toBeGreaterThan(0);
 
-    const summary = writes.find((w) => w.table === "activity_results")?.body as Record<
+    const summary = writes.find((w) => w.table === "resultados_actividad")?.body as Record<
       string,
       unknown
     >;
-    expect(summary.protocol_version).toBe("v2");
-    expect(summary.activity_type).toBe(activity.type);
+    expect(summary.version_protocolo).toBe("v2");
+    expect(summary.tipo_actividad).toBe(activity.type);
   });
 }

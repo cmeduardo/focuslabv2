@@ -14,9 +14,9 @@ export async function createPendingAiReport(
   supabase: Client,
   params: { sessionId: string; userId: string },
 ) {
-  const { error } = await supabase.from("ai_reports").insert({
-    session_id: params.sessionId,
-    user_id: params.userId,
+  const { error } = await supabase.from("informes_ia").insert({
+    sesion_id: params.sessionId,
+    perfil_id: params.userId,
   });
 
   if (error) {
@@ -36,30 +36,30 @@ function getCallbackUrl() {
 
 async function buildSessionSummary(
   supabase: Client,
-  session: { id: string; started_at: string; ended_at: string | null },
+  session: { id: string; iniciada_en: string; finalizada_en: string | null },
 ) {
   const [{ data: activityResults }, { data: runs }, { data: events }] = await Promise.all([
     supabase
-      .from("activity_results")
+      .from("resultados_actividad")
       .select(
-        "activity_type, accuracy, level_reached, duration_ms, metrics, protocol_version, run_id",
+        "tipo_actividad, precision, nivel_alcanzado, duracion_ms, metricas, version_protocolo, intento_id",
       )
-      .eq("session_id", session.id)
-      .order("completed_at", { ascending: true }),
+      .eq("sesion_id", session.id)
+      .order("completado_en", { ascending: true }),
     supabase
-      .from("activity_runs")
-      .select("id, activity_type, status, device_type, input_primary")
-      .eq("session_id", session.id),
+      .from("intentos_actividad")
+      .select("id, tipo_actividad, estado, tipo_dispositivo, entrada_principal")
+      .eq("sesion_id", session.id),
     supabase
-      .from("interaction_events")
-      .select("payload")
-      .eq("session_id", session.id)
-      .eq("event_type", "tool_start"),
+      .from("eventos_interaccion")
+      .select("datos")
+      .eq("sesion_id", session.id)
+      .eq("tipo_evento", "tool_start"),
   ]);
 
   const toolCounts = new Map<string, number>();
   for (const event of events ?? []) {
-    const tool = event.payload?.tool;
+    const tool = event.datos?.tool;
     if (typeof tool === "string") {
       toolCounts.set(tool, (toolCounts.get(tool) ?? 0) + 1);
     }
@@ -69,21 +69,21 @@ async function buildSessionSummary(
   const incompleteByActivity = new Map<string, number>();
   const deviceCounts = new Map<string, number>();
   for (const run of runs ?? []) {
-    if (run.status === "incompleta") {
+    if (run.estado === "incompleta") {
       incompleteByActivity.set(
-        run.activity_type,
-        (incompleteByActivity.get(run.activity_type) ?? 0) + 1,
+        run.tipo_actividad,
+        (incompleteByActivity.get(run.tipo_actividad) ?? 0) + 1,
       );
     }
-    if (run.device_type) {
-      deviceCounts.set(run.device_type, (deviceCounts.get(run.device_type) ?? 0) + 1);
+    if (run.tipo_dispositivo) {
+      deviceCounts.set(run.tipo_dispositivo, (deviceCounts.get(run.tipo_dispositivo) ?? 0) + 1);
     }
   }
   const primaryDevice =
     [...deviceCounts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-  const startedAt = new Date(session.started_at).getTime();
-  const endedAt = session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
+  const startedAt = new Date(session.iniciada_en).getTime();
+  const endedAt = session.finalizada_en ? new Date(session.finalizada_en).getTime() : Date.now();
 
   return {
     sessionId: session.id,
@@ -91,18 +91,18 @@ async function buildSessionSummary(
     sessionDurationMs: Math.max(0, endedAt - startedAt),
     deviceType: primaryDevice,
     activities: pickFirstAttempts(activityResults ?? []).map(({ first, attempts }) => {
-      const run = first.run_id ? runById.get(first.run_id) : undefined;
-      const report = first.metrics?.report;
+      const run = first.intento_id ? runById.get(first.intento_id) : undefined;
+      const report = first.metricas?.report;
       return {
-        activityType: first.activity_type,
-        protocolVersion: first.protocol_version,
-        accuracy: first.accuracy,
-        levelReached: first.level_reached,
-        durationMs: first.duration_ms,
+        activityType: first.tipo_actividad,
+        protocolVersion: first.version_protocolo,
+        accuracy: first.precision,
+        levelReached: first.nivel_alcanzado,
+        durationMs: first.duracion_ms,
         attemptsCompleted: attempts,
-        incompleteAttempts: incompleteByActivity.get(first.activity_type) ?? 0,
-        deviceType: run?.device_type ?? null,
-        inputType: run?.input_primary ?? null,
+        incompleteAttempts: incompleteByActivity.get(first.tipo_actividad) ?? 0,
+        deviceType: run?.tipo_dispositivo ?? null,
+        inputType: run?.entrada_principal ?? null,
         ...(report && typeof report === "object" ? { metrics: report } : {}),
       };
     }),
@@ -113,7 +113,7 @@ async function buildSessionSummary(
 // Sin N8N_AI_REPORT_WEBHOOK_URL no hace nada. Un fallo hacia n8n no rompe el cierre de sesión.
 export async function generateAttentionReport(
   supabase: Client,
-  session: { id: string; started_at: string; ended_at: string | null },
+  session: { id: string; iniciada_en: string; finalizada_en: string | null },
 ) {
   const webhookUrl = process.env.N8N_AI_REPORT_WEBHOOK_URL;
 
@@ -149,9 +149,9 @@ export async function completeSessionAndRequestReport(
   params: { sessionId: string; userId: string },
 ) {
   const { count, error } = await supabase
-    .from("activity_results")
+    .from("resultados_actividad")
     .select("id", { count: "exact", head: true })
-    .eq("session_id", params.sessionId);
+    .eq("sesion_id", params.sessionId);
 
   if (error) {
     throw new Error("No se pudo revisar los desafíos de la sesión.");
@@ -173,10 +173,10 @@ export async function completeSessionAndRequestReport(
 
   // Una ronda que quedó abierta ya no se va a completar.
   await supabase
-    .from("activity_runs")
-    .update({ status: "incompleta", ended_at: new Date().toISOString() })
-    .eq("session_id", params.sessionId)
-    .eq("status", "en_curso");
+    .from("intentos_actividad")
+    .update({ estado: "incompleta", finalizado_en: new Date().toISOString() })
+    .eq("sesion_id", params.sessionId)
+    .eq("estado", "en_curso");
 
   const admin = createAdminClient();
   await createPendingAiReport(admin, params);
@@ -191,25 +191,25 @@ export async function retryAiReport(sessionId: string) {
 
   const [{ data: session }, { data: report }] = await Promise.all([
     admin
-      .from("sessions")
-      .select("id, started_at, ended_at")
+      .from("sesiones")
+      .select("id, iniciada_en, finalizada_en")
       .eq("id", sessionId)
       .maybeSingle(),
     admin
-      .from("ai_reports")
-      .select("id, status")
-      .eq("session_id", sessionId)
+      .from("informes_ia")
+      .select("id, estado")
+      .eq("sesion_id", sessionId)
       .maybeSingle(),
   ]);
 
-  if (!session || !report || report.status === "completado") {
+  if (!session || !report || report.estado === "completado") {
     return false;
   }
 
-  if (report.status === "fallido") {
+  if (report.estado === "fallido") {
     await admin
-      .from("ai_reports")
-      .update({ status: "pendiente", completed_at: null })
+      .from("informes_ia")
+      .update({ estado: "pendiente", completado_en: null })
       .eq("id", report.id);
   }
 
@@ -221,10 +221,10 @@ export async function retryAiReport(sessionId: string) {
 // RF-12
 export async function listAiReports(supabase: Client, userId: string) {
   const { data: reports, error } = await supabase
-    .from("ai_reports")
-    .select("id, session_id, status, requested_at, completed_at")
-    .eq("user_id", userId)
-    .order("requested_at", { ascending: false });
+    .from("informes_ia")
+    .select("id, sesion_id, estado, solicitado_en, completado_en")
+    .eq("perfil_id", userId)
+    .order("solicitado_en", { ascending: false });
 
   if (error) {
     throw new Error("No se pudo cargar el historial de informes.");
@@ -235,36 +235,36 @@ export async function listAiReports(supabase: Client, userId: string) {
   }
 
   const { data: sessions } = await supabase
-    .from("sessions")
-    .select("id, started_at")
+    .from("sesiones")
+    .select("id, iniciada_en")
     .in(
       "id",
-      reports.map((report) => report.session_id),
+      reports.map((report) => report.sesion_id),
     );
 
   const startedAtBySession = new Map(
-    (sessions ?? []).map((session) => [session.id, session.started_at]),
+    (sessions ?? []).map((session) => [session.id, session.iniciada_en]),
   );
 
   return reports.map((report) => ({
     ...report,
-    sessionStartedAt: startedAtBySession.get(report.session_id) ?? null,
+    sessionStartedAt: startedAtBySession.get(report.sesion_id) ?? null,
   }));
 }
 
-// RF-11. El filtro por user_id es defensa en profundidad (RLS ya restringe).
+// RF-11. El filtro por perfil_id es defensa en profundidad (RLS ya restringe).
 export async function getAiReport(
   supabase: Client,
   sessionId: string,
   userId: string,
 ) {
   const { data, error } = await supabase
-    .from("ai_reports")
+    .from("informes_ia")
     .select(
-      "status, attentional_profile, strengths, areas_for_improvement, recommendations, requested_at, completed_at",
+      "estado, perfil_atencional, fortalezas, areas_de_mejora, recomendaciones, solicitado_en, completado_en",
     )
-    .eq("session_id", sessionId)
-    .eq("user_id", userId)
+    .eq("sesion_id", sessionId)
+    .eq("perfil_id", userId)
     .maybeSingle();
 
   if (error) {
@@ -288,18 +288,18 @@ export async function applyAiReportResult(
   },
 ) {
   const { data, error } = await supabase
-    .from("ai_reports")
+    .from("informes_ia")
     .update({
-      status: params.status,
-      attentional_profile: params.attentionalProfile,
-      strengths: params.strengths,
-      areas_for_improvement: params.areasForImprovement,
-      recommendations: params.recommendations,
-      raw_response: params.rawResponse,
-      completed_at: new Date().toISOString(),
+      estado: params.status,
+      perfil_atencional: params.attentionalProfile,
+      fortalezas: params.strengths,
+      areas_de_mejora: params.areasForImprovement,
+      recomendaciones: params.recommendations,
+      respuesta_cruda: params.rawResponse,
+      completado_en: new Date().toISOString(),
     })
-    .eq("session_id", params.sessionId)
-    .eq("status", "pendiente")
+    .eq("sesion_id", params.sessionId)
+    .eq("estado", "pendiente")
     .select("id")
     .maybeSingle();
 

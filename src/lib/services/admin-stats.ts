@@ -7,7 +7,7 @@ import type { Database, UserRole } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-13/RF-14: las vistas vw_* filtran por rol en la base y nunca exponen user_id (RS-04).
+// RF-13/RF-14: las vistas vw_* filtran por rol en la base y nunca exponen perfil_id (RS-04).
 // aggregate: investigador y autoridad. participant: solo investigador.
 export const EXPORT_DATASETS = {
   dimensiones: {
@@ -15,10 +15,10 @@ export const EXPORT_DATASETS = {
     scope: "aggregate",
     label: "Dimensiones",
     columns: [
-      "activity_type",
+      "tipo_actividad",
       "dimension",
       "metrica_principal",
-      "device_type",
+      "tipo_dispositivo",
       "participantes",
       "valor_promedio",
       "valor_desv_estandar",
@@ -29,11 +29,11 @@ export const EXPORT_DATASETS = {
     ],
   },
   actividades: {
-    view: "vw_activity_results_summary",
+    view: "vw_resumen_resultados_actividad",
     scope: "aggregate",
     label: "Actividades",
     columns: [
-      "activity_type",
+      "tipo_actividad",
       "total_resultados",
       "duracion_ms_promedio",
       "precision_promedio",
@@ -42,19 +42,19 @@ export const EXPORT_DATASETS = {
     ],
   },
   eventos: {
-    view: "vw_interaction_events_summary",
+    view: "vw_resumen_eventos_interaccion",
     scope: "aggregate",
     label: "Eventos",
-    columns: ["event_type", "dia", "total_eventos"],
+    columns: ["tipo_evento", "dia", "total_eventos"],
   },
   sesiones: {
-    view: "vw_sessions_summary",
+    view: "vw_resumen_sesiones",
     scope: "aggregate",
     label: "Sesiones",
-    columns: ["dia", "status", "total_sesiones", "duracion_segundos_promedio"],
+    columns: ["dia", "estado", "total_sesiones", "duracion_segundos_promedio"],
   },
   herramientas: {
-    view: "vw_tool_usage_summary",
+    view: "vw_resumen_uso_herramientas",
     scope: "aggregate",
     label: "Herramientas",
     columns: ["herramienta", "dia", "total_usos", "total_interrupciones"],
@@ -71,21 +71,21 @@ export const EXPORT_DATASETS = {
     label: "Ensayos (seudónimo)",
     columns: [
       "participante",
-      "activity_type",
-      "device_type",
+      "tipo_actividad",
+      "tipo_dispositivo",
       "entrada_principal",
-      "refresh_hz_est",
+      "frecuencia_refresco_est",
       "corrida_inicio",
-      "trial_index",
-      "condition",
-      "stimulus_onset_ms",
-      "rt_ms",
-      "response",
-      "correct",
-      "classification",
-      "input_type",
-      "valid",
-      "invalid_reason",
+      "indice_ensayo",
+      "condicion",
+      "inicio_estimulo_ms",
+      "tiempo_reaccion_ms",
+      "respuesta",
+      "correcto",
+      "clasificacion",
+      "tipo_entrada",
+      "valido",
+      "motivo_invalidez",
     ],
   },
 } as const satisfies Record<
@@ -128,10 +128,10 @@ async function fetchAllRows(supabase: Client, view: keyof Database["public"]["Vi
 export async function getAdminOverview(supabase: Client) {
   const [dimensions, activities, events, sessions, tools] = await Promise.all([
     supabase.from("vw_actividades_dimensiones").select("*"),
-    supabase.from("vw_activity_results_summary").select("*"),
-    supabase.from("vw_interaction_events_summary").select("*"),
-    supabase.from("vw_sessions_summary").select("*").order("dia"),
-    supabase.from("vw_tool_usage_summary").select("*").order("dia"),
+    supabase.from("vw_resumen_resultados_actividad").select("*"),
+    supabase.from("vw_resumen_eventos_interaccion").select("*"),
+    supabase.from("vw_resumen_sesiones").select("*").order("dia"),
+    supabase.from("vw_resumen_uso_herramientas").select("*").order("dia"),
   ]);
 
   if (dimensions.error || activities.error || events.error || sessions.error || tools.error) {

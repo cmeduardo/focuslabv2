@@ -51,8 +51,8 @@ src/
 │   └── types/           Tipos del esquema de la base
 └── proxy.ts             Refresco de sesión y protección de rutas
 supabase/
-├── migrations/          Esquema, RLS y vistas, en orden
-└── scripts/             Scripts manuales (no son migraciones)
+└── migrations/
+    └── 20261019000000_esquema.sql   Esquema completo: tablas, RLS, vistas y permisos
 ```
 
 Regla de dependencia: `app/` llama a `lib/services/`, que usa
@@ -79,10 +79,11 @@ El control ocurre en tres niveles:
    consentimiento aceptado. `admin/layout.tsx` exige `investigador` o
    `autoridad`, y cada página exclusiva del investigador vuelve a validar el
    rol en el servidor.
-3. **RLS en Postgres.** Cada tabla filtra por `user_id = auth.uid()`. Las
-   vistas `vw_*` se filtran con `current_user_role()` y no exponen columnas
-   identificables. Un trigger impide cambiar `profiles.role` desde la API
-   pública (migración `20261013000001`).
+3. **RLS en Postgres.** Cada tabla filtra por `perfil_id = auth.uid()`. Las
+   vistas `vw_*` se filtran con `puede_leer_agregados()` o
+   `puede_leer_por_participante()` y no exponen columnas
+   identificables. Un trigger impide cambiar `perfiles.rol` desde la API
+   pública (`impedir_cambio_de_rol()`).
 
 ## 5. Rutas
 
@@ -110,50 +111,50 @@ El control ocurre en tres niveles:
 
 ```
 auth.users (Supabase Auth)
-   └─ 1:1 ─ profiles (id, full_name, role)
-                 ├─ 1:N ─ consents (consent_version, accepted_at)
-                 ├─ 1:N ─ sessions (status, started_at, ended_at)
-                 │           ├─ 1:N ─ interaction_events (event_type, payload, occurred_at)
-                 │           ├─ 1:N ─ activity_runs (activity_type, protocol_version, status, contexto de dispositivo)
-                 │           │           ├─ 1:N ─ activity_trials (trial_index, condition, stimulus_onset_ms, rt_ms, response, correct, input_type, valid)
-                 │           │           └─ 1:0..1 ─ activity_results (run_id)
-                 │           ├─ 1:N ─ activity_results (activity_type, duration_ms, accuracy, level_reached, metrics, protocol_version)
-                 │           └─ 1:1 ─ ai_reports (status, attentional_profile, strengths, areas_for_improvement, recommendations, raw_response)
-                 ├─ 1:N ─ pomodoro_sessions (work/break minutes, completed_cycles, interrupted, pause_count, paused_ms)
-                 ├─ 1:N ─ kanban_tasks (title, status, position)
-                 ├─ 1:N ─ habits (name, archived)
-                 │           └─ 1:N ─ habit_logs (log_date, completed)
-                 └─ 1:N ─ calendar_events (title, start_at, end_at, completed)
+   └─ 1:1 ─ perfiles (id, nombre_completo, rol)
+                 ├─ 1:N ─ consentimientos (version_consentimiento, aceptado_en)
+                 ├─ 1:N ─ sesiones (estado, iniciada_en, finalizada_en)
+                 │           ├─ 1:N ─ eventos_interaccion (tipo_evento, datos, ocurrido_en)
+                 │           ├─ 1:N ─ intentos_actividad (tipo_actividad, version_protocolo, estado, contexto de dispositivo)
+                 │           │           ├─ 1:N ─ ensayos_actividad (indice_ensayo, condicion, inicio_estimulo_ms, tiempo_reaccion_ms, respuesta, correcto, tipo_entrada, valido)
+                 │           │           └─ 1:0..1 ─ resultados_actividad (intento_id)
+                 │           ├─ 1:N ─ resultados_actividad (tipo_actividad, duracion_ms, precision, nivel_alcanzado, metricas, version_protocolo)
+                 │           └─ 1:1 ─ informes_ia (estado, perfil_atencional, fortalezas, areas_de_mejora, recomendaciones, respuesta_cruda)
+                 ├─ 1:N ─ sesiones_pomodoro (duracion_trabajo/descanso_minutos, ciclos_completados, interrumpida, veces_pausado, ms_pausado)
+                 ├─ 1:N ─ tareas_kanban (titulo, estado, posicion)
+                 ├─ 1:N ─ habitos (nombre, archivado)
+                 │           └─ 1:N ─ registros_habito (fecha, completado)
+                 └─ 1:N ─ eventos_calendario (titulo, inicio_en, fin_en, completado)
 ```
 
-- **`sessions`**: `en_progreso`, `completada` o `abandonada`. El layout del
+- **`sesiones`**: `en_progreso`, `completada` o `abandonada`. El layout del
   participante reutiliza la sesión `en_progreso` más reciente o crea una.
-- **`activity_runs`**: un intento registrado de una actividad, con estado
+- **`intentos_actividad`**: un intento registrado de una actividad, con estado
   `en_curso`, `completada` o `incompleta`, la copia de los parámetros
   usados (`config`) y el contexto del dispositivo (tipo, entrada
   predominante, viewport, navegador, sistema, pérdidas de visibilidad).
-- **`activity_trials`**: un ensayo de un intento, con su condición,
+- **`ensayos_actividad`**: un ensayo de un intento, con su condición,
   tiempos relativos al inicio de la ronda, respuesta y validez.
-- **`activity_results`**: el resumen de un intento. `protocol_version`
+- **`resultados_actividad`**: el resumen de un intento. `version_protocolo`
   distingue las mecánicas actuales (`v2`) de las anteriores (`v1`).
-- **`interaction_events`**: eventos de captura pasiva (§8) con `payload`
+- **`eventos_interaccion`**: eventos de captura pasiva (§8) con `datos`
   jsonb.
 
-Las vistas de análisis (migraciones `20261004000002` en adelante) cuentan
+Las vistas de análisis (sección 6 de `supabase/migrations/20261019000000_esquema.sql`) cuentan
 solo perfiles `participante` y solo datos `v2`, y las puede leer el rol de
-solo lectura `powerbi_reader`:
+solo lectura `lector_powerbi`:
 
 | Vista | Nivel |
 |---|---|
-| `vw_activity_results_summary` | Por actividad |
-| `vw_sessions_summary` | Por día y estado |
-| `vw_interaction_events_summary` | Por día y tipo de evento |
-| `vw_tool_usage_summary` | Por día y herramienta |
+| `vw_resumen_resultados_actividad` | Por actividad |
+| `vw_resumen_sesiones` | Por día y estado |
+| `vw_resumen_eventos_interaccion` | Por día y tipo de evento |
+| `vw_resumen_uso_herramientas` | Por día y herramienta |
 | `vw_actividades_dimensiones` | Métrica principal por actividad y dispositivo |
 | `vw_participantes_analisis` | Una fila por participante seudonimizado (`P-XXXXXX`); solo investigador |
 | `vw_ensayos_analisis` | Una fila por ensayo con seudónimo; solo investigador |
 
-La tabla `analisis_excluidos` (migración `20261017000001`) lista las
+La tabla `analisis_excluidos` lista las
 cuentas que no forman parte de la cohorte del taller, como las que
 probaron la app antes del 10 de octubre. Solo `vw_actividades_dimensiones`
 la descuenta, porque es agregada y no permite filtrar por participante; en
@@ -192,7 +193,7 @@ Componentes:
    (métrica principal, todas las métricas, el subconjunto que va al
    informe y una frase descriptiva).
 5. **Persistencia** (`src/lib/services/activity-runs.ts`): la fila de
-   `activity_runs` se crea al empezar la ronda. Al terminar, intento,
+   `intentos_actividad` se crea al empezar la ronda. Al terminar, intento,
    ensayos y resumen se guardan en un lote idempotente con 3 reintentos; si
    falla, quedan en una cola de `localStorage` que `PendingRunsFlusher`
    vacía al volver a `/actividades`.
@@ -216,7 +217,7 @@ es parte de la dinámica.
 `EventTrackerProvider` monta `useEventTracker` en toda el área del
 participante. Registra clics, cambios de visibilidad e inactividad (60 s
 sin clic, tecla ni movimiento), los agrupa y los inserta en
-`interaction_events` cada 5 s. Las actividades y herramientas reportan sus
+`eventos_interaccion` cada 5 s. Las actividades y herramientas reportan sus
 propios eventos con `useEventLogger()`:
 
 | Evento | Origen |
@@ -228,10 +229,10 @@ propios eventos con `useEventLogger()`:
 
 | Herramienta | Qué guarda | Hitos de `tool_progress` |
 |---|---|---|
-| Pomodoro | `pomodoro_sessions`: duración, ciclos completados, interrupción, pausas y tiempo pausado. Tras cada descanso espera a que la persona reanude. | `work_complete`, `break_complete`, `cycle_resume` (latencia de reanudación) |
-| Kanban | `kanban_tasks`, en tres columnas | `task_created`, `status_change`, `task_deleted` |
-| Hábitos | `habits` y `habit_logs`. Solo se marca el día de hoy. | `habit_created`, `checkin` |
-| Calendario | `calendar_events`; los eventos pasados preguntan "¿Lo hiciste?" | `event_created` (anticipación), `week_navigated`, `reflection` |
+| Pomodoro | `sesiones_pomodoro`: duración, ciclos completados, interrupción, pausas y tiempo pausado. Tras cada descanso espera a que la persona reanude. | `work_complete`, `break_complete`, `cycle_resume` (latencia de reanudación) |
+| Kanban | `tareas_kanban`, en tres columnas | `task_created`, `status_change`, `task_deleted` |
+| Hábitos | `habitos` y `registros_habito`. Solo se marca el día de hoy. | `habit_created`, `checkin` |
+| Calendario | `eventos_calendario`; los eventos pasados preguntan "¿Lo hiciste?" | `event_created` (anticipación), `week_navigated`, `reflection` |
 
 ## 9. Informe de IA
 
@@ -240,11 +241,11 @@ Participante          Next.js (Vercel)                 n8n Cloud            Open
      │  Terminar sesión     │                               │                   │
      │─────────────────────>│ ¿hay desafíos? si no: aviso   │                   │
      │                      │ sesión → completada           │                   │
-     │                      │ ai_reports → pendiente        │                   │
+     │                      │ informes_ia → pendiente        │                   │
      │                      │── POST webhook (resumen) ────>│                   │
      │<── /informes/[id] ───│                               │── chat/completions>│
      │   (refresca c/3 s)   │<── POST /api/webhooks/ai-report (X-Webhook-Secret)│
-     │                      │ ai_reports → completado       │                   │
+     │                      │ informes_ia → completado       │                   │
 ```
 
 1. El botón **"Terminar sesión"** (Server Action) y

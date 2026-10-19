@@ -3,10 +3,10 @@ import type { ActivityType } from "@/lib/types/database";
 // Cada quien se compara solo consigo mismo: nunca contra otros ni con frases de retroceso.
 
 export type ProgressRow = {
-  activity_type: ActivityType;
-  completed_at: string;
-  level_reached: number | null;
-  metrics: Record<string, unknown>;
+  tipo_actividad: ActivityType;
+  completado_en: string;
+  nivel_alcanzado: number | null;
+  metricas: Record<string, unknown>;
 };
 
 type MetricDef = {
@@ -23,39 +23,39 @@ export const PROGRESS_METRICS: Record<ActivityType, MetricDef> = {
   reaction_test: {
     label: "Reacción promedio",
     better: "lower",
-    read: (r) => num(r.metrics.rtMeanMs),
+    read: (r) => num(r.metricas.rtMeanMs),
     format: ms,
   },
   focus_flow: {
     label: "Respuestas al 3",
     better: "lower",
-    read: (r) => num(r.metrics.commissionRatePct),
+    read: (r) => num(r.metricas.commissionRatePct),
     format: (v) => `${Math.round(v)}%`,
   },
   memory_matrix: {
     label: "Nivel máximo",
     better: "higher",
-    read: (r) => num(r.level_reached) ?? num(r.metrics.span),
+    read: (r) => num(r.nivel_alcanzado) ?? num(r.metricas.span),
     format: (v) => `${v} bloques`,
   },
   word_sprint: {
     label: "Precisión",
     better: "higher",
-    read: (r) => num(r.metrics.accuracyPct),
+    read: (r) => num(r.metricas.accuracyPct),
     format: (v) => `${Math.round(v)}%`,
   },
   pattern_hunt: {
     label: "Velocidad de detección",
     better: "lower",
-    read: (r) => num(r.metrics.detectionSpeedMs),
+    read: (r) => num(r.metricas.detectionSpeedMs),
     format: ms,
   },
   deep_read: {
     label: "Comprensión",
     better: "higher",
-    read: (r) => num(r.metrics.comprehensionScore),
+    read: (r) => num(r.metricas.comprehensionScore),
     format: (v, r) => {
-      const total = num(r.metrics.questions);
+      const total = num(r.metricas.questions);
       return total ? `${v} de ${total}` : `${v}`;
     },
   },
@@ -80,8 +80,8 @@ export function buildActivityProgress(
 ): ActivityProgress {
   const def = PROGRESS_METRICS[activity];
   const own = rows
-    .filter((r) => r.activity_type === activity)
-    .sort((a, b) => a.completed_at.localeCompare(b.completed_at));
+    .filter((r) => r.tipo_actividad === activity)
+    .sort((a, b) => a.completado_en.localeCompare(b.completado_en));
   const scored = own
     .map((row) => ({ row, value: def.read(row) }))
     .filter((s): s is { row: ProgressRow; value: number } => s.value !== null);
@@ -109,5 +109,5 @@ export function buildActivityProgress(
 // En hora de Guatemala: el servidor corre en UTC.
 export function activeDays(rows: readonly ProgressRow[]): number {
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guatemala" });
-  return new Set(rows.map((r) => fmt.format(new Date(r.completed_at)))).size;
+  return new Set(rows.map((r) => fmt.format(new Date(r.completado_en)))).size;
 }

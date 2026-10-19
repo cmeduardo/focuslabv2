@@ -19,11 +19,11 @@ export async function POST(
   }
 
   await supabase
-    .from("activity_runs")
-    .update({ status: "incompleta", ended_at: new Date().toISOString() })
+    .from("intentos_actividad")
+    .update({ estado: "incompleta", finalizado_en: new Date().toISOString() })
     .eq("id", runId)
-    .eq("user_id", user.id)
-    .eq("status", "en_curso");
+    .eq("perfil_id", user.id)
+    .eq("estado", "en_curso");
 
   return new NextResponse(null, { status: 204 });
 }

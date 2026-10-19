@@ -392,13 +392,13 @@ async function seed(count: number) {
 
     const sessionStart = workshopStart + Math.round(rng() * 40) * 60_000;
     const iso = (ms: number) => new Date(ms).toISOString();
-    await must(admin.from("consents").insert({ user_id: userId, accepted_at: iso(sessionStart - 120_000) }));
+    await must(admin.from("consentimientos").insert({ perfil_id: userId, aceptado_en: iso(sessionStart - 120_000) }));
 
     let clock = sessionStart + 90_000;
-    const events: Database["public"]["Tables"]["interaction_events"]["Insert"][] = [];
+    const events: Database["public"]["Tables"]["eventos_interaccion"]["Insert"][] = [];
     const runs: { type: ActivityType; start: number; end: number }[] = [];
     const sessionId = crypto.randomUUID();
-    await must(admin.from("sessions").insert({ id: sessionId, user_id: userId, status: "en_progreso", started_at: iso(sessionStart) }));
+    await must(admin.from("sesiones").insert({ id: sessionId, perfil_id: userId, estado: "en_progreso", iniciada_en: iso(sessionStart) }));
 
     for (const [k, activity] of ACTIVITIES.entries()) {
       const trials = activity.generate({ rng, traits, input });
@@ -411,73 +411,73 @@ async function seed(count: number) {
       const runId = crypto.randomUUID();
       const { counts, primary } = countInputs(trials);
       await must(
-        admin.from("activity_runs").insert({
+        admin.from("intentos_actividad").insert({
           id: runId,
-          session_id: sessionId,
-          user_id: userId,
-          activity_type: activity.type,
-          protocol_version: PROTOCOL_VERSION,
-          status: "completada",
-          started_at: iso(start),
-          ended_at: iso(end),
-          practice_rounds: chance(rng, 0.2) ? 2 : 1,
-          config: { ...activity.config, demo: true },
-          device_type: device.deviceType,
-          input_primary: primary,
-          input_counts: counts,
-          viewport_w: device.viewportW,
-          viewport_h: device.viewportH,
-          device_pixel_ratio: device.devicePixelRatio,
-          orientation: device.orientation,
-          browser: device.browser,
-          os: device.os,
-          refresh_hz_est: device.refreshHzEst,
-          visibility_losses: activity.type === "deep_read" ? Number(summary.metrics.visibilityExits ?? 0) : 0,
+          sesion_id: sessionId,
+          perfil_id: userId,
+          tipo_actividad: activity.type,
+          version_protocolo: PROTOCOL_VERSION,
+          estado: "completada",
+          iniciado_en: iso(start),
+          finalizado_en: iso(end),
+          rondas_practica: chance(rng, 0.2) ? 2 : 1,
+          configuracion: { ...activity.config, demo: true },
+          tipo_dispositivo: device.deviceType,
+          entrada_principal: primary,
+          conteo_entradas: counts,
+          ancho_ventana: device.viewportW,
+          alto_ventana: device.viewportH,
+          proporcion_pixeles: device.devicePixelRatio,
+          orientacion: device.orientation,
+          navegador: device.browser,
+          sistema_operativo: device.os,
+          frecuencia_refresco_est: device.refreshHzEst,
+          perdidas_visibilidad: activity.type === "deep_read" ? Number(summary.metrics.visibilityExits ?? 0) : 0,
         }),
       );
       await must(
-        admin.from("activity_trials").insert(
+        admin.from("ensayos_actividad").insert(
           trials.map((t) => ({
-            run_id: runId,
-            user_id: userId,
-            trial_index: t.trialIndex,
-            condition: t.condition,
-            stimulus_onset_ms: t.stimulusOnsetMs,
-            response_at_ms: t.responseAtMs,
-            rt_ms: t.rtMs,
-            response: t.response,
-            response_detail: t.detail ?? null,
-            correct: t.correct,
-            classification: t.classification,
-            input_type: t.inputType,
-            valid: t.valid,
-            invalid_reason: t.invalidReason,
+            intento_id: runId,
+            perfil_id: userId,
+            indice_ensayo: t.trialIndex,
+            condicion: t.condition,
+            inicio_estimulo_ms: t.stimulusOnsetMs,
+            respuesta_en_ms: t.responseAtMs,
+            tiempo_reaccion_ms: t.rtMs,
+            respuesta: t.response,
+            detalle_respuesta: t.detail ?? null,
+            correcto: t.correct,
+            clasificacion: t.classification,
+            tipo_entrada: t.inputType,
+            valido: t.valid,
+            motivo_invalidez: t.invalidReason,
           })),
         ),
       );
       await must(
-        admin.from("activity_results").insert({
-          run_id: runId,
-          session_id: sessionId,
-          user_id: userId,
-          activity_type: activity.type,
-          protocol_version: PROTOCOL_VERSION,
-          duration_ms: Math.round(durationMs),
-          accuracy: summary.accuracy,
-          level_reached: summary.levelReached,
-          metrics: { ...summary.metrics, report: summary.report, demo: true },
-          completed_at: iso(end),
+        admin.from("resultados_actividad").insert({
+          intento_id: runId,
+          sesion_id: sessionId,
+          perfil_id: userId,
+          tipo_actividad: activity.type,
+          version_protocolo: PROTOCOL_VERSION,
+          duracion_ms: Math.round(durationMs),
+          precision: summary.accuracy,
+          nivel_alcanzado: summary.levelReached,
+          metricas: { ...summary.metrics, report: summary.report, demo: true },
+          completado_en: iso(end),
         }),
       );
       events.push(
-        { session_id: sessionId, user_id: userId, event_type: "activity_start", payload: { activity_type: activity.type, run_id: runId }, occurred_at: iso(start) },
-        { session_id: sessionId, user_id: userId, event_type: "activity_end", payload: { activity_type: activity.type, run_id: runId, status: "completada" }, occurred_at: iso(end) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "activity_start", datos: { activity_type: activity.type, run_id: runId }, ocurrido_en: iso(start) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "activity_end", datos: { activity_type: activity.type, run_id: runId, status: "completada" }, ocurrido_en: iso(end) },
       );
       runs.push({ type: activity.type, start, end });
       clock = end + 20_000 + rng() * 40_000;
       if (k === 2 || k === 5) {
         const rating = clamp(Math.round(normal(rng, 3.6 - 0.6 * traits.distraction, 0.7)), 1, 5);
-        events.push({ session_id: sessionId, user_id: userId, event_type: "session_pulse", payload: { rating, milestone: k === 2 ? 1 : 2 }, occurred_at: iso(clock) });
+        events.push({ sesion_id: sessionId, perfil_id: userId, tipo_evento: "session_pulse", datos: { rating, milestone: k === 2 ? 1 : 2 }, ocurrido_en: iso(clock) });
       }
     }
 
@@ -487,38 +487,38 @@ async function seed(count: number) {
       const interrupted = chance(rng, sigmoid(-1.1 + 1.1 * traits.distraction));
       const pauses = interrupted ? 1 + Math.floor(rng() * 3) : chance(rng, 0.3) ? 1 : 0;
       await must(
-        admin.from("pomodoro_sessions").insert({
-          user_id: userId,
-          session_id: sessionId,
-          work_duration_minutes: 5,
-          break_duration_minutes: 1,
-          started_at: iso(start),
-          completed_cycles: interrupted ? 0 : 1,
-          interrupted,
-          pause_count: pauses,
-          paused_ms: pauses * Math.round(15_000 + rng() * 45_000),
-        } as Database["public"]["Tables"]["pomodoro_sessions"]["Insert"]),
+        admin.from("sesiones_pomodoro").insert({
+          perfil_id: userId,
+          sesion_id: sessionId,
+          duracion_trabajo_minutos: 5,
+          duracion_descanso_minutos: 1,
+          iniciada_en: iso(start),
+          ciclos_completados: interrupted ? 0 : 1,
+          interrumpida: interrupted,
+          veces_pausado: pauses,
+          ms_pausado: pauses * Math.round(15_000 + rng() * 45_000),
+        } as Database["public"]["Tables"]["sesiones_pomodoro"]["Insert"]),
       );
-      events.push({ session_id: sessionId, user_id: userId, event_type: "tool_start", payload: { tool: "pomodoro" }, occurred_at: iso(start) });
+      events.push({ sesion_id: sessionId, perfil_id: userId, tipo_evento: "tool_start", datos: { tool: "pomodoro" }, ocurrido_en: iso(start) });
       if (interrupted) {
-        events.push({ session_id: sessionId, user_id: userId, event_type: "tool_interrupt", payload: { tool: "pomodoro" }, occurred_at: iso(start + 120_000) });
+        events.push({ sesion_id: sessionId, perfil_id: userId, tipo_evento: "tool_interrupt", datos: { tool: "pomodoro" }, ocurrido_en: iso(start + 120_000) });
       }
     }
     if (chance(rng, 0.6)) {
       const titles = ["Leer capítulo 3", "Entregar informe", "Repasar para el parcial", "Reunión de grupo"];
       const tasks = 1 + Math.floor(rng() * 3);
       await must(
-        admin.from("kanban_tasks").insert(
+        admin.from("tareas_kanban").insert(
           Array.from({ length: tasks }, (_, i) => ({
-            user_id: userId,
-            title: titles[i % titles.length],
-            status: (["pendiente", "en_progreso", "completado"] as const)[Math.floor(rng() * 3)],
-            position: i,
-            created_at: iso(clock + i * 30_000),
-          })) as Database["public"]["Tables"]["kanban_tasks"]["Insert"][],
+            perfil_id: userId,
+            titulo: titles[i % titles.length],
+            estado: (["pendiente", "en_progreso", "completado"] as const)[Math.floor(rng() * 3)],
+            posicion: i,
+            creado_en: iso(clock + i * 30_000),
+          })) as Database["public"]["Tables"]["tareas_kanban"]["Insert"][],
         ),
       );
-      events.push({ session_id: sessionId, user_id: userId, event_type: "tool_start", payload: { tool: "kanban" }, occurred_at: iso(clock) });
+      events.push({ sesion_id: sessionId, perfil_id: userId, tipo_evento: "tool_start", datos: { tool: "kanban" }, ocurrido_en: iso(clock) });
     }
     const sessionEnd = clock + (pomodoros + 1) * 6 * 60_000;
 
@@ -528,27 +528,27 @@ async function seed(count: number) {
     for (let k = 0; k < tabSwitches; k++) {
       const hiddenAt = at();
       events.push(
-        { session_id: sessionId, user_id: userId, event_type: "visibility_change", payload: { state: "hidden" }, occurred_at: iso(hiddenAt) },
-        { session_id: sessionId, user_id: userId, event_type: "visibility_change", payload: { state: "visible" }, occurred_at: iso(hiddenAt + 3000 + rng() * 40_000) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "visibility_change", datos: { state: "hidden" }, ocurrido_en: iso(hiddenAt) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "visibility_change", datos: { state: "visible" }, ocurrido_en: iso(hiddenAt + 3000 + rng() * 40_000) },
       );
     }
     const idles = Math.max(0, Math.round(normal(rng, 1 + 1.1 * traits.distraction, 0.8)));
     for (let k = 0; k < idles; k++) {
       const idleAt = at();
       events.push(
-        { session_id: sessionId, user_id: userId, event_type: "idle_start", payload: {}, occurred_at: iso(idleAt) },
-        { session_id: sessionId, user_id: userId, event_type: "idle_end", payload: {}, occurred_at: iso(idleAt + 10_000 + Math.abs(normal(rng, 50_000, 40_000))) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "idle_start", datos: {}, ocurrido_en: iso(idleAt) },
+        { sesion_id: sessionId, perfil_id: userId, tipo_evento: "idle_end", datos: {}, ocurrido_en: iso(idleAt + 10_000 + Math.abs(normal(rng, 50_000, 40_000))) },
       );
     }
     const clicks = Math.round(clamp(normal(rng, 260 + 40 * traits.distraction, 60), 120, 480));
     for (let k = 0; k < clicks; k++) {
-      events.push({ session_id: sessionId, user_id: userId, event_type: "click", payload: { tag: "BUTTON" }, occurred_at: iso(at()) });
+      events.push({ sesion_id: sessionId, perfil_id: userId, tipo_evento: "click", datos: { tag: "BUTTON" }, ocurrido_en: iso(at()) });
     }
     for (let k = 0; k < events.length; k += 500) {
-      await must(admin.from("interaction_events").insert(events.slice(k, k + 500)));
+      await must(admin.from("eventos_interaccion").insert(events.slice(k, k + 500)));
     }
 
-    await must(admin.from("sessions").update({ status: "completada", ended_at: iso(sessionEnd) }).eq("id", sessionId));
+    await must(admin.from("sesiones").update({ estado: "completada", finalizada_en: iso(sessionEnd) }).eq("id", sessionId));
     console.log(
       `demo-${code}: ${traits.mobile ? "celular" : "laptop"} · distracción ${traits.distraction.toFixed(2)} · ${runs.length} desafíos · ${events.length} eventos`,
     );

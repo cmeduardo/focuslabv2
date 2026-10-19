@@ -277,16 +277,8 @@
      "perfil_id"
     ],
     [
-     "run_id",
-     "intento_id"
-    ],
-    [
      "activity_type",
      "tipo_actividad"
-    ],
-    [
-     "protocol_version",
-     "version_protocolo"
     ],
     [
      "duration_ms",
@@ -307,6 +299,14 @@
     [
      "completed_at",
      "completado_en"
+    ],
+    [
+     "run_id",
+     "intento_id"
+    ],
+    [
+     "protocol_version",
+     "version_protocolo"
     ]
    ]
   },
@@ -533,12 +533,12 @@
      "fin_en"
     ],
     [
-     "completed",
-     "completado"
-    ],
-    [
      "created_at",
      "creado_en"
+    ],
+    [
+     "completed",
+     "completado"
     ]
    ]
   },

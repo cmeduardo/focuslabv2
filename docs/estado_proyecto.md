@@ -72,7 +72,8 @@ Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
   probarlos hay que usar el despliegue.
 - `src/lib/types/database.ts` está escrito a mano. Habría que regenerarlo
   con el CLI de Supabase.
-- Las migraciones se aplican a mano y la base no tiene una tabla de
-  control de migraciones.
+- Las migraciones se aplican a mano en el SQL Editor y la base no tiene
+  una tabla de control de migraciones. El esquema completo está consolidado
+  en `supabase/migrations/20261019000000_esquema.sql`.
 - Las pruebas E2E crean usuarios reales en el proyecto de Supabase
   configurado.

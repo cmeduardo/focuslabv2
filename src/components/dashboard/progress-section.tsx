@@ -14,7 +14,7 @@ export function ProgressSection({
   rows,
   hrefs,
 }: {
-  rows: readonly (ProgressRow & { session_id: string })[];
+  rows: readonly (ProgressRow & { sesion_id: string })[];
   hrefs: Record<string, string>;
 }) {
   if (rows.length === 0) {
@@ -32,7 +32,7 @@ export function ProgressSection({
     );
   }
 
-  const sessions = new Set(rows.map((r) => r.session_id)).size;
+  const sessions = new Set(rows.map((r) => r.sesion_id)).size;
   const days = activeDays(rows);
   const all = ACTIVITIES.map((activity) => ({
     activity,

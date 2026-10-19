@@ -22,7 +22,7 @@ async function createTestUser(
     email_confirm: true,
   });
   if (error || !data.user) throw error ?? new Error("No se creó el usuario de prueba");
-  const consent = await admin.from("consents").insert({ user_id: data.user.id });
+  const consent = await admin.from("consentimientos").insert({ perfil_id: data.user.id });
   if (consent.error) throw consent.error;
   return { id: data.user.id, email, password };
 }
@@ -53,9 +53,9 @@ export default async function globalSetup(config: FullConfig) {
   // Se guardan antes de cualquier otro paso: si algo falla, el teardown
   // igual los borra.
   fs.writeFileSync(USER_FILE, JSON.stringify({ ids: [participant.id, researcher.id, authority.id] }));
-  const role = await admin.from("profiles").update({ role: "investigador" }).eq("id", researcher.id);
+  const role = await admin.from("perfiles").update({ rol: "investigador" }).eq("id", researcher.id);
   if (role.error) throw role.error;
-  const authorityRole = await admin.from("profiles").update({ role: "autoridad" }).eq("id", authority.id);
+  const authorityRole = await admin.from("perfiles").update({ rol: "autoridad" }).eq("id", authority.id);
   if (authorityRole.error) throw authorityRole.error;
 
   const baseURL = config.projects[0].use.baseURL as string;

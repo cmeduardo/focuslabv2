@@ -16,11 +16,11 @@ const STATUS_LABEL: Record<AiReportStatus, string> = {
   fallido: "Falló",
 };
 
-function isStuck(report: { status: AiReportStatus; requested_at: string }) {
+function isStuck(report: { estado: AiReportStatus; solicitado_en: string }) {
   return (
-    report.status === "fallido" ||
-    (report.status === "pendiente" &&
-      Date.now() - new Date(report.requested_at).getTime() > STUCK_AFTER_MS)
+    report.estado === "fallido" ||
+    (report.estado === "pendiente" &&
+      Date.now() - new Date(report.solicitado_en).getTime() > STUCK_AFTER_MS)
   );
 }
 
@@ -42,51 +42,51 @@ export default async function ParticipantesPage() {
   } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", user!.id)
     .single();
 
   // RS-04: datos identificables, solo para el investigador.
-  if (profile?.role !== "investigador") {
+  if (profile?.rol !== "investigador") {
     redirect("/admin");
   }
 
   const [profiles, consents, sessions, reports] = await Promise.all([
     supabase
-      .from("profiles")
-      .select("id, full_name, created_at")
-      .eq("role", "participante")
-      .order("created_at"),
-    supabase.from("consents").select("user_id, accepted_at"),
-    supabase.from("sessions").select("id, user_id, status, started_at"),
+      .from("perfiles")
+      .select("id, nombre_completo, creado_en")
+      .eq("rol", "participante")
+      .order("creado_en"),
+    supabase.from("consentimientos").select("perfil_id, aceptado_en"),
+    supabase.from("sesiones").select("id, perfil_id, estado, iniciada_en"),
     supabase
-      .from("ai_reports")
-      .select("session_id, user_id, status, requested_at")
-      .order("requested_at", { ascending: false }),
+      .from("informes_ia")
+      .select("sesion_id, perfil_id, estado, solicitado_en")
+      .order("solicitado_en", { ascending: false }),
   ]);
 
   if (profiles.error || consents.error || sessions.error || reports.error) {
     throw new Error("No se pudo cargar el listado de participantes.");
   }
 
-  const consented = new Set((consents.data ?? []).map((row) => row.user_id));
+  const consented = new Set((consents.data ?? []).map((row) => row.perfil_id));
 
   const participants = (profiles.data ?? []).map((participant, index) => {
     const userSessions = (sessions.data ?? []).filter(
-      (row) => row.user_id === participant.id,
+      (row) => row.perfil_id === participant.id,
     );
     const lastReport = (reports.data ?? []).find(
-      (row) => row.user_id === participant.id,
+      (row) => row.perfil_id === participant.id,
     );
     const stuck = lastReport !== undefined && isStuck(lastReport);
 
     return {
       id: participant.id,
-      label: participant.full_name?.trim() || `Participante ${index + 1}`,
+      label: participant.nombre_completo?.trim() || `Participante ${index + 1}`,
       hasConsent: consented.has(participant.id),
       totalSessions: userSessions.length,
-      completedSessions: userSessions.filter((row) => row.status === "completada")
+      completedSessions: userSessions.filter((row) => row.estado === "completada")
         .length,
       lastReport,
       stuck,
@@ -157,9 +157,9 @@ export default async function ParticipantesPage() {
                     <td className="py-2 pr-4">
                       {p.lastReport ? (
                         <span>
-                          {STATUS_LABEL[p.lastReport.status]}{" "}
+                          {STATUS_LABEL[p.lastReport.estado]}{" "}
                           <span className="text-muted-foreground">
-                            · {formatDate(p.lastReport.requested_at)}
+                            · {formatDate(p.lastReport.solicitado_en)}
                           </span>
                         </span>
                       ) : (
@@ -168,7 +168,7 @@ export default async function ParticipantesPage() {
                     </td>
                     <td className="py-2 text-right">
                       {p.stuck && p.lastReport ? (
-                        <RetryReportButton sessionId={p.lastReport.session_id} />
+                        <RetryReportButton sessionId={p.lastReport.sesion_id} />
                       ) : null}
                     </td>
                   </tr>

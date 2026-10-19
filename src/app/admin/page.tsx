@@ -42,18 +42,18 @@ export default async function AdminDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", user?.id ?? "")
     .single();
   const exports = (Object.keys(EXPORT_DATASETS) as ExportDataset[]).filter((dataset) =>
-    canExport(dataset, profile?.role),
+    canExport(dataset, profile?.rol),
   );
   const { dimensions, activities, events, sessions, tools } = await getAdminOverview(supabase);
 
   const totalSessions = sumBy(sessions, (row) => row.total_sesiones);
   const completedSessions = sumBy(
-    sessions.filter((row) => row.status === "completada"),
+    sessions.filter((row) => row.estado === "completada"),
     (row) => row.total_sesiones,
   );
   const totalResults = sumBy(activities, (row) => row.total_resultados);
@@ -72,8 +72,8 @@ export default async function AdminDashboardPage() {
   const eventsByType = new Map<string, number>();
   for (const row of events) {
     eventsByType.set(
-      row.event_type,
-      (eventsByType.get(row.event_type) ?? 0) + Number(row.total_eventos),
+      row.tipo_evento,
+      (eventsByType.get(row.tipo_evento) ?? 0) + Number(row.total_eventos),
     );
   }
   const eventRows = Array.from(eventsByType).sort((a, b) => b[1] - a[1]);

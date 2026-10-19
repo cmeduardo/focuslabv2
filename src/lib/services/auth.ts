@@ -10,11 +10,11 @@ export async function signInWithPassword(email: string, password: string) {
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", data.user.id)
     .single();
-  return { error: null, role: profile?.role ?? null };
+  return { error: null, role: profile?.rol ?? null };
 }
 
 export async function signUpWithPassword(

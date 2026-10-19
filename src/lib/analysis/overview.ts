@@ -1,6 +1,6 @@
 type DimensionRow = {
-  activity_type: string;
-  device_type: string;
+  tipo_actividad: string;
+  tipo_dispositivo: string;
   participantes: number | string | null;
 };
 
@@ -9,8 +9,8 @@ export function participantsWithResults(rows: readonly DimensionRow[]): number {
   const byActivity = new Map<string, number>();
   for (const row of rows) {
     byActivity.set(
-      row.activity_type,
-      (byActivity.get(row.activity_type) ?? 0) + Number(row.participantes ?? 0),
+      row.tipo_actividad,
+      (byActivity.get(row.tipo_actividad) ?? 0) + Number(row.participantes ?? 0),
     );
   }
   return Math.max(0, ...byActivity.values());
@@ -23,8 +23,8 @@ export function participantsByDevice(
 ): Map<string, number> {
   const byDevice = new Map<string, number>();
   for (const row of rows) {
-    if (row.activity_type !== activityType) continue;
-    byDevice.set(row.device_type, (byDevice.get(row.device_type) ?? 0) + Number(row.participantes ?? 0));
+    if (row.tipo_actividad !== activityType) continue;
+    byDevice.set(row.tipo_dispositivo, (byDevice.get(row.tipo_dispositivo) ?? 0) + Number(row.participantes ?? 0));
   }
   return byDevice;
 }
@@ -40,12 +40,12 @@ export function formatDia(value: string | null | undefined): string {
   return `${dd}/${mm}/${date.getUTCFullYear()}`;
 }
 
-type SessionRow = { status: string; total_sesiones: number | string | null };
+type SessionRow = { estado: string; total_sesiones: number | string | null };
 
 export function sessionTotals(rows: readonly SessionRow[]) {
   const byStatus = new Map<string, number>();
   for (const row of rows) {
-    byStatus.set(row.status, (byStatus.get(row.status) ?? 0) + Number(row.total_sesiones ?? 0));
+    byStatus.set(row.estado, (byStatus.get(row.estado) ?? 0) + Number(row.total_sesiones ?? 0));
   }
   const total = [...byStatus.values()].reduce((s, v) => s + v, 0);
   const completadas = byStatus.get("completada") ?? 0;
@@ -61,8 +61,8 @@ export function participantsPerActivity(rows: readonly DimensionRow[]): Map<stri
   const byActivity = new Map<string, number>();
   for (const row of rows) {
     byActivity.set(
-      row.activity_type,
-      (byActivity.get(row.activity_type) ?? 0) + Number(row.participantes ?? 0),
+      row.tipo_actividad,
+      (byActivity.get(row.tipo_actividad) ?? 0) + Number(row.participantes ?? 0),
     );
   }
   return byActivity;

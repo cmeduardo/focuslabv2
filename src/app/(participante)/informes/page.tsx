@@ -69,7 +69,7 @@ export default async function InformesPage() {
       ) : (
         <div className="space-y-3">
           {reports.map((report) => (
-            <Link key={report.id} href={`/informes/${report.session_id}`}>
+            <Link key={report.id} href={`/informes/${report.sesion_id}`}>
               <Card className="transition-colors hover:border-primary/30">
                 <CardContent className="flex items-center justify-between gap-4">
                   <div>
@@ -79,12 +79,12 @@ export default async function InformesPage() {
                         : "Sesión"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Solicitado {formatDate(report.requested_at)}
+                      Solicitado {formatDate(report.solicitado_en)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant={STATUS_VARIANT[report.status]}>
-                      {STATUS_LABEL[report.status]}
+                    <Badge variant={STATUS_VARIANT[report.estado]}>
+                      {STATUS_LABEL[report.estado]}
                     </Badge>
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </div>

@@ -35,7 +35,7 @@ export type CapturedWrite = { table: string; method: string; body: unknown };
 export function captureActivityWrites(page: Page) {
   const writes: CapturedWrite[] = [];
   page.on("request", (request: Request) => {
-    const match = request.url().match(/\/rest\/v1\/(activity_\w+)/);
+    const match = request.url().match(/\/rest\/v1\/(\w+_actividad)\b/);
     if (!match || request.method() === "GET") return;
     writes.push({
       table: match[1],

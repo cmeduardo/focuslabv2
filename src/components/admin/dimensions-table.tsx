@@ -18,8 +18,8 @@ const fmt = (value: number | null | undefined) =>
 export function DimensionsTable({ rows }: { rows: DimensionRow[] }) {
   const ordered = ACTIVITIES.flatMap((activity) =>
     rows
-      .filter((row) => row.activity_type === activity.slug)
-      .sort((a, b) => a.device_type.localeCompare(b.device_type))
+      .filter((row) => row.tipo_actividad === activity.slug)
+      .sort((a, b) => a.tipo_dispositivo.localeCompare(b.tipo_dispositivo))
       .map((row) => ({ ...row, name: activity.name })),
   );
 
@@ -48,11 +48,11 @@ export function DimensionsTable({ rows }: { rows: DimensionRow[] }) {
       </thead>
       <tbody>
         {ordered.map((row) => (
-          <tr key={`${row.activity_type}-${row.device_type}`} className="border-t break-inside-avoid">
+          <tr key={`${row.tipo_actividad}-${row.tipo_dispositivo}`} className="border-t break-inside-avoid">
             <td className="py-2 pr-3 font-medium">{row.name}</td>
             <td className="py-2 pr-3">{row.dimension}</td>
             <td className="py-2 pr-3">{row.metrica_principal}</td>
-            <td className="py-2 pr-3">{DEVICE_LABEL[row.device_type] ?? row.device_type}</td>
+            <td className="py-2 pr-3">{DEVICE_LABEL[row.tipo_dispositivo] ?? row.tipo_dispositivo}</td>
             <td className="py-2 pr-3 text-right">{fmt(row.participantes)}</td>
             <td className="py-2 pr-3 text-right">{fmt(row.valor_promedio)}</td>
             <td className="py-2 pr-3 text-right">{fmt(row.valor_desv_estandar)}</td>

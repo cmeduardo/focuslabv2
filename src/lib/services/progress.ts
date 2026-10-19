@@ -9,16 +9,16 @@ type Client = SupabaseClient<Database>;
 export async function listProgressRows(
   supabase: Client,
   userId: string,
-): Promise<(ProgressRow & { session_id: string })[]> {
+): Promise<(ProgressRow & { sesion_id: string })[]> {
   const { data, error } = await supabase
-    .from("activity_results")
-    .select("activity_type, completed_at, level_reached, metrics, session_id")
-    .eq("user_id", userId)
-    .eq("protocol_version", "v2")
-    .order("completed_at", { ascending: true });
+    .from("resultados_actividad")
+    .select("tipo_actividad, completado_en, nivel_alcanzado, metricas, sesion_id")
+    .eq("perfil_id", userId)
+    .eq("version_protocolo", "v2")
+    .order("completado_en", { ascending: true });
   if (error) throw new Error(`No se pudo cargar tu progreso: ${error.message}`);
   return (data ?? []).map((row) => ({
     ...row,
-    metrics: (row.metrics ?? {}) as Record<string, unknown>,
+    metricas: (row.metricas ?? {}) as Record<string, unknown>,
   }));
 }

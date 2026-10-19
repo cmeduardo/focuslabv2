@@ -25,7 +25,7 @@ test.beforeAll(async () => {
   });
   if (error || !data.user) throw error ?? new Error("No se creó el usuario de prueba");
   user = { id: data.user.id, email, password };
-  const consent = await admin.from("consents").insert({ user_id: user.id });
+  const consent = await admin.from("consentimientos").insert({ perfil_id: user.id });
   if (consent.error) throw consent.error;
 });
 
@@ -35,21 +35,21 @@ test.afterAll(async () => {
 
 async function seedHistory() {
   const sessions = await admin
-    .from("sessions")
+    .from("sesiones")
     .insert([
-      { user_id: user.id, status: "completada", started_at: "2026-10-01T16:00:00Z" },
-      { user_id: user.id, status: "completada", started_at: "2026-10-03T16:00:00Z" },
+      { perfil_id: user.id, estado: "completada", iniciada_en: "2026-10-01T16:00:00Z" },
+      { perfil_id: user.id, estado: "completada", iniciada_en: "2026-10-03T16:00:00Z" },
     ])
     .select("id");
   if (sessions.error) throw sessions.error;
   const [s1, s2] = sessions.data.map((s) => s.id);
-  const base = { user_id: user.id, protocol_version: "v2", duration_ms: 60_000 };
-  const results = await admin.from("activity_results").insert([
-    { ...base, session_id: s1, activity_type: "reaction_test", completed_at: "2026-10-01T16:05:00Z", metrics: { rtMeanMs: 320 } },
-    { ...base, session_id: s2, activity_type: "reaction_test", completed_at: "2026-10-03T16:05:00Z", metrics: { rtMeanMs: 290 } },
-    { ...base, session_id: s1, activity_type: "memory_matrix", completed_at: "2026-10-01T16:10:00Z", level_reached: 6, metrics: {} },
-    { ...base, session_id: s2, activity_type: "memory_matrix", completed_at: "2026-10-03T16:10:00Z", level_reached: 5, metrics: {} },
-    { ...base, session_id: s2, activity_type: "deep_read", completed_at: "2026-10-03T16:20:00Z", metrics: { comprehensionScore: 7, questions: 8 } },
+  const base = { perfil_id: user.id, version_protocolo: "v2", duracion_ms: 60_000 };
+  const results = await admin.from("resultados_actividad").insert([
+    { ...base, sesion_id: s1, tipo_actividad: "reaction_test", completado_en: "2026-10-01T16:05:00Z", metricas: { rtMeanMs: 320 } },
+    { ...base, sesion_id: s2, tipo_actividad: "reaction_test", completado_en: "2026-10-03T16:05:00Z", metricas: { rtMeanMs: 290 } },
+    { ...base, sesion_id: s1, tipo_actividad: "memory_matrix", completado_en: "2026-10-01T16:10:00Z", nivel_alcanzado: 6, metricas: {} },
+    { ...base, sesion_id: s2, tipo_actividad: "memory_matrix", completado_en: "2026-10-03T16:10:00Z", nivel_alcanzado: 5, metricas: {} },
+    { ...base, sesion_id: s2, tipo_actividad: "deep_read", completado_en: "2026-10-03T16:20:00Z", metricas: { comprehensionScore: 7, questions: 8 } },
   ]);
   if (results.error) throw results.error;
 }

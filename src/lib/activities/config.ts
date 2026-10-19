@@ -1,4 +1,4 @@
-// Todo número que afecta la medición vive aquí y se copia a activity_runs.config.
+// Todo número que afecta la medición vive aquí y se copia a intentos_actividad.configuracion.
 // NEXT_PUBLIC_ACTIVITY_FAST=1 (solo E2E) acorta las esperas.
 const FAST = process.env.NEXT_PUBLIC_ACTIVITY_FAST === "1";
 

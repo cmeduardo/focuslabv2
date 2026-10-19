@@ -11,9 +11,9 @@ type Client = SupabaseClient<Database>;
 // RS-05
 export async function hasAcceptedConsent(supabase: Client, userId: string) {
   const { data } = await supabase
-    .from("consents")
+    .from("consentimientos")
     .select("id")
-    .eq("user_id", userId)
+    .eq("perfil_id", userId)
     .limit(1)
     .maybeSingle();
 
@@ -22,8 +22,8 @@ export async function hasAcceptedConsent(supabase: Client, userId: string) {
 
 export async function acceptConsent(supabase: Client, userId: string) {
   const { error } = await supabase
-    .from("consents")
-    .insert({ user_id: userId, consent_version: CURRENT_CONSENT_VERSION });
+    .from("consentimientos")
+    .insert({ perfil_id: userId, version_consentimiento: CURRENT_CONSENT_VERSION });
 
   if (error) {
     throw new Error("No se pudo registrar el consentimiento.");

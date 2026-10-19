@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../src/lib/types/database";
 
-// Ataques directos a Supabase con la clave pública. Requiere 20261013000001_profiles_role_lock.sql.
+// Ataques directos a Supabase con la clave pública. Cubre los permisos por columna y impedir_cambio_de_rol() de supabase/migrations/20261019000000_esquema.sql.
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -23,17 +23,17 @@ test("un participante no puede cambiarse el rol desde la API", async () => {
     expect(login.error).toBeNull();
 
     const escalation = await attacker
-      .from("profiles")
-      .update({ role: "investigador" })
+      .from("perfiles")
+      .update({ rol: "investigador" })
       .eq("id", userId);
     expect(escalation.error, "la base aceptó un cambio de rol hecho por el propio usuario").not.toBeNull();
 
     // El nombre sí se puede editar: el bloqueo es solo sobre el rol.
-    const rename = await attacker.from("profiles").update({ full_name: "Nombre nuevo" }).eq("id", userId);
+    const rename = await attacker.from("perfiles").update({ nombre_completo: "Nombre nuevo" }).eq("id", userId);
     expect(rename.error).toBeNull();
 
-    const { data: profile } = await admin.from("profiles").select("role").eq("id", userId).single();
-    expect(profile?.role).toBe("participante");
+    const { data: profile } = await admin.from("perfiles").select("rol").eq("id", userId).single();
+    expect(profile?.rol).toBe("participante");
   } finally {
     await admin.auth.admin.deleteUser(userId);
   }

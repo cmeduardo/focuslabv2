@@ -17,12 +17,12 @@ export async function retryReportAction(sessionId: string) {
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "investigador") {
+  if (profile?.rol !== "investigador") {
     return;
   }
 

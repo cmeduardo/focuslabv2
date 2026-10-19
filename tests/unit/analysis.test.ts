@@ -133,9 +133,9 @@ describe("índices y estilos atencionales", () => {
 describe("recorrido del taller", () => {
   it("sesiones por estado y porcentaje completado", () => {
     const totals = sessionTotals([
-      { status: "completada", total_sesiones: 18 },
-      { status: "completada", total_sesiones: "2" },
-      { status: "abandonada", total_sesiones: 5 },
+      { estado: "completada", total_sesiones: 18 },
+      { estado: "completada", total_sesiones: "2" },
+      { estado: "abandonada", total_sesiones: 5 },
     ]);
     expect(totals).toMatchObject({ total: 25, completadas: 20, pctCompletadas: 80 });
   });
@@ -143,8 +143,8 @@ describe("recorrido del taller", () => {
   it("participantes por desafío y desafíos por persona", () => {
     expect(
       participantsPerActivity([
-        { activity_type: "deep_read", device_type: "mobile", participantes: 16 },
-        { activity_type: "deep_read", device_type: "desktop", participantes: 4 },
+        { tipo_actividad: "deep_read", tipo_dispositivo: "mobile", participantes: 16 },
+        { tipo_actividad: "deep_read", tipo_dispositivo: "desktop", participantes: 4 },
       ]).get("deep_read"),
     ).toBe(20);
     expect(completedPerPerson([{ actividades_completadas: 6 }, { actividades_completadas: 6 }, { actividades_completadas: 2 }])).toEqual([
@@ -161,27 +161,27 @@ describe("recorrido del taller", () => {
 describe("detalle por ensayo", () => {
   const trial = (over: Partial<TrialRow>): TrialRow => ({
     participante: "P-AAAAAA",
-    activity_type: "reaction_test",
-    device_type: "mobile",
+    tipo_actividad: "reaction_test",
+    tipo_dispositivo: "mobile",
     corrida_inicio: "2026-10-04T10:00:00Z",
-    condition: {},
-    rt_ms: 300,
-    correct: true,
-    valid: true,
+    condicion: {},
+    tiempo_reaccion_ms: 300,
+    correcto: true,
+    valido: true,
     ...over,
   });
 
   it("usa solo el primer intento de cada desafío", () => {
-    const rows = [trial({}), trial({ corrida_inicio: "2026-10-04T11:00:00Z", rt_ms: 999 })];
-    expect(firstRunOnly(rows).map((r) => r.rt_ms)).toEqual([300]);
+    const rows = [trial({}), trial({ corrida_inicio: "2026-10-04T11:00:00Z", tiempo_reaccion_ms: 999 })];
+    expect(firstRunOnly(rows).map((r) => r.tiempo_reaccion_ms)).toEqual([300]);
   });
 
   it("histograma de 50 ms con intervalos vacíos y solo ensayos válidos", () => {
     const [mobile] = rtHistogram([
-      trial({ rt_ms: 260 }),
-      trial({ rt_ms: 401 }),
-      trial({ rt_ms: 999, valid: false }),
-      trial({ rt_ms: null }),
+      trial({ tiempo_reaccion_ms: 260 }),
+      trial({ tiempo_reaccion_ms: 401 }),
+      trial({ tiempo_reaccion_ms: 999, valido: false }),
+      trial({ tiempo_reaccion_ms: null }),
     ]);
     expect(mobile.n).toBe(2);
     expect(mobile.bins.map((b) => [b.etiqueta, b.n])).toEqual([
@@ -194,15 +194,15 @@ describe("detalle por ensayo", () => {
 
   it("Word Sprint y Pattern Hunt: solo respuestas correctas, por condición", () => {
     const ws = stroopMeans([
-      trial({ activity_type: "word_sprint", condition: { congruent: true }, rt_ms: 500 }),
-      trial({ activity_type: "word_sprint", condition: { congruent: false }, rt_ms: 600 }),
-      trial({ activity_type: "word_sprint", condition: { congruent: false }, rt_ms: 700 }),
-      trial({ activity_type: "word_sprint", condition: { congruent: false }, rt_ms: 100, correct: false }),
+      trial({ tipo_actividad: "word_sprint", condicion: { congruent: true }, tiempo_reaccion_ms: 500 }),
+      trial({ tipo_actividad: "word_sprint", condicion: { congruent: false }, tiempo_reaccion_ms: 600 }),
+      trial({ tipo_actividad: "word_sprint", condicion: { congruent: false }, tiempo_reaccion_ms: 700 }),
+      trial({ tipo_actividad: "word_sprint", condicion: { congruent: false }, tiempo_reaccion_ms: 100, correcto: false }),
     ]);
     expect(ws.find((c) => c.condicion === "incongruente")).toMatchObject({ promedio: 650, n: 2 });
     const ph = searchMeans([
-      trial({ activity_type: "pattern_hunt", condition: { type: "conjunction", setSize: 12 }, rt_ms: 900 }),
-      trial({ activity_type: "pattern_hunt", condition: { type: "conjunction", setSize: 6 }, rt_ms: 700 }),
+      trial({ tipo_actividad: "pattern_hunt", condicion: { type: "conjunction", setSize: 12 }, tiempo_reaccion_ms: 900 }),
+      trial({ tipo_actividad: "pattern_hunt", condicion: { type: "conjunction", setSize: 6 }, tiempo_reaccion_ms: 700 }),
     ]);
     expect(ph.map((c) => c.tamano)).toEqual([6, 12]);
   });

@@ -19,26 +19,26 @@ export default async function AdminLayout({
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("perfiles")
+    .select("rol")
     .eq("id", user.id)
     .single();
 
   // RS-06: solo investigador y autoridad.
-  if (!isStaffRole(profile?.role)) {
+  if (!isStaffRole(profile?.rol)) {
     redirect("/dashboard");
   }
 
   // RS-04: la autoridad solo ve vistas agregadas.
   const nav = [
-    ...(profile.role === "investigador"
+    ...(profile.rol === "investigador"
       ? ADMIN_NAV
       : ADMIN_NAV.filter((item) => item.href === "/admin")),
     PARTICIPANT_VIEW_LINK,
   ];
 
   return (
-    <AppShell nav={nav} roleLabel={ROLE_LABEL[profile.role]} userEmail={user.email ?? ""}>
+    <AppShell nav={nav} roleLabel={ROLE_LABEL[profile.rol]} userEmail={user.email ?? ""}>
       {children}
     </AppShell>
   );

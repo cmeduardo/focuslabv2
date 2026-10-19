@@ -1,6 +1,6 @@
 /**
  * Tipos de la base de datos de Supabase, escritos a mano a partir de
- * supabase/migrations/. Si el esquema cambia, actualiza este archivo (y
+ * supabase/migrations/20261019000000_esquema.sql. Si el esquema cambia, actualiza este archivo (y
  * ARCHITECTURE.md) en el mismo commit.
  *
  * Cuando el proyecto esté enlazado con el CLI de Supabase, este archivo se
@@ -38,295 +38,295 @@ export type InputType = "touch" | "mouse" | "keyboard";
 export interface Database {
   public: {
     Tables: {
-      profiles: {
+      perfiles: {
         Row: {
           id: string;
-          full_name: string | null;
-          role: UserRole;
-          created_at: string;
-          updated_at: string;
+          nombre_completo: string | null;
+          rol: UserRole;
+          creado_en: string;
+          actualizado_en: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & {
+        Insert: Partial<Database["public"]["Tables"]["perfiles"]["Row"]> & {
           id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["perfiles"]["Row"]>;
         Relationships: [];
       };
-      consents: {
+      consentimientos: {
         Row: {
           id: string;
-          user_id: string;
-          consent_version: string;
-          accepted_at: string;
+          perfil_id: string;
+          version_consentimiento: string;
+          aceptado_en: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["consents"]["Row"]> & {
-          user_id: string;
+        Insert: Partial<Database["public"]["Tables"]["consentimientos"]["Row"]> & {
+          perfil_id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["consents"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["consentimientos"]["Row"]>;
         Relationships: [];
       };
-      sessions: {
+      sesiones: {
         Row: {
           id: string;
-          user_id: string;
-          status: SessionStatus;
-          started_at: string;
-          ended_at: string | null;
+          perfil_id: string;
+          estado: SessionStatus;
+          iniciada_en: string;
+          finalizada_en: string | null;
         };
-        Insert: Partial<Database["public"]["Tables"]["sessions"]["Row"]> & {
-          user_id: string;
+        Insert: Partial<Database["public"]["Tables"]["sesiones"]["Row"]> & {
+          perfil_id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["sessions"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["sesiones"]["Row"]>;
         Relationships: [];
       };
-      interaction_events: {
+      eventos_interaccion: {
         Row: {
           id: string;
-          session_id: string;
-          user_id: string;
-          event_type: InteractionEventType;
-          payload: Record<string, unknown>;
-          occurred_at: string;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_evento: InteractionEventType;
+          datos: Record<string, unknown>;
+          ocurrido_en: string;
         };
         Insert: Partial<
-          Database["public"]["Tables"]["interaction_events"]["Row"]
+          Database["public"]["Tables"]["eventos_interaccion"]["Row"]
         > & {
-          session_id: string;
-          user_id: string;
-          event_type: InteractionEventType;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_evento: InteractionEventType;
         };
         Update: Partial<
-          Database["public"]["Tables"]["interaction_events"]["Row"]
+          Database["public"]["Tables"]["eventos_interaccion"]["Row"]
         >;
         Relationships: [];
       };
-      activity_results: {
+      resultados_actividad: {
         Row: {
           id: string;
-          session_id: string;
-          user_id: string;
-          activity_type: ActivityType;
-          duration_ms: number;
-          accuracy: number | null;
-          level_reached: number | null;
-          metrics: Record<string, unknown>;
-          completed_at: string;
-          run_id: string | null;
-          protocol_version: string;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_actividad: ActivityType;
+          duracion_ms: number;
+          precision: number | null;
+          nivel_alcanzado: number | null;
+          metricas: Record<string, unknown>;
+          completado_en: string;
+          intento_id: string | null;
+          version_protocolo: string;
         };
         Insert: Partial<
-          Database["public"]["Tables"]["activity_results"]["Row"]
+          Database["public"]["Tables"]["resultados_actividad"]["Row"]
         > & {
-          session_id: string;
-          user_id: string;
-          activity_type: ActivityType;
-          duration_ms: number;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_actividad: ActivityType;
+          duracion_ms: number;
         };
-        Update: Partial<Database["public"]["Tables"]["activity_results"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["resultados_actividad"]["Row"]>;
         Relationships: [];
       };
-      activity_runs: {
+      intentos_actividad: {
         Row: {
           id: string;
-          session_id: string;
-          user_id: string;
-          activity_type: ActivityType;
-          protocol_version: string;
-          status: ActivityRunStatus;
-          started_at: string;
-          ended_at: string | null;
-          practice_rounds: number;
-          config: Record<string, unknown>;
-          device_type: DeviceType | null;
-          input_primary: InputType | null;
-          input_counts: Partial<Record<InputType, number>>;
-          viewport_w: number | null;
-          viewport_h: number | null;
-          device_pixel_ratio: number | null;
-          orientation: "portrait" | "landscape" | null;
-          browser: string | null;
-          os: string | null;
-          refresh_hz_est: number | null;
-          visibility_losses: number;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_actividad: ActivityType;
+          version_protocolo: string;
+          estado: ActivityRunStatus;
+          iniciado_en: string;
+          finalizado_en: string | null;
+          rondas_practica: number;
+          configuracion: Record<string, unknown>;
+          tipo_dispositivo: DeviceType | null;
+          entrada_principal: InputType | null;
+          conteo_entradas: Partial<Record<InputType, number>>;
+          ancho_ventana: number | null;
+          alto_ventana: number | null;
+          proporcion_pixeles: number | null;
+          orientacion: "portrait" | "landscape" | null;
+          navegador: string | null;
+          sistema_operativo: string | null;
+          frecuencia_refresco_est: number | null;
+          perdidas_visibilidad: number;
         };
-        Insert: Partial<Database["public"]["Tables"]["activity_runs"]["Row"]> & {
+        Insert: Partial<Database["public"]["Tables"]["intentos_actividad"]["Row"]> & {
           id: string;
-          session_id: string;
-          user_id: string;
-          activity_type: ActivityType;
+          sesion_id: string;
+          perfil_id: string;
+          tipo_actividad: ActivityType;
         };
-        Update: Partial<Database["public"]["Tables"]["activity_runs"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["intentos_actividad"]["Row"]>;
         Relationships: [];
       };
-      activity_trials: {
+      ensayos_actividad: {
         Row: {
           id: number;
-          run_id: string;
-          user_id: string;
-          trial_index: number;
-          condition: Record<string, unknown>;
-          stimulus_onset_ms: number | null;
-          response_at_ms: number | null;
-          rt_ms: number | null;
-          response: string | null;
-          response_detail: Record<string, unknown> | null;
-          correct: boolean | null;
-          classification: string | null;
-          input_type: InputType | null;
-          valid: boolean;
-          invalid_reason: string | null;
+          intento_id: string;
+          perfil_id: string;
+          indice_ensayo: number;
+          condicion: Record<string, unknown>;
+          inicio_estimulo_ms: number | null;
+          respuesta_en_ms: number | null;
+          tiempo_reaccion_ms: number | null;
+          respuesta: string | null;
+          detalle_respuesta: Record<string, unknown> | null;
+          correcto: boolean | null;
+          clasificacion: string | null;
+          tipo_entrada: InputType | null;
+          valido: boolean;
+          motivo_invalidez: string | null;
         };
         Insert: Partial<
-          Omit<Database["public"]["Tables"]["activity_trials"]["Row"], "id">
+          Omit<Database["public"]["Tables"]["ensayos_actividad"]["Row"], "id">
         > & {
-          run_id: string;
-          user_id: string;
-          trial_index: number;
+          intento_id: string;
+          perfil_id: string;
+          indice_ensayo: number;
         };
         Update: Partial<
-          Omit<Database["public"]["Tables"]["activity_trials"]["Row"], "id">
+          Omit<Database["public"]["Tables"]["ensayos_actividad"]["Row"], "id">
         >;
         Relationships: [];
       };
-      pomodoro_sessions: {
+      sesiones_pomodoro: {
         Row: {
           id: string;
-          user_id: string;
-          session_id: string | null;
-          work_duration_minutes: number;
-          break_duration_minutes: number;
-          started_at: string;
-          ended_at: string | null;
-          completed_cycles: number;
-          interrupted: boolean;
-          pause_count: number;
-          paused_ms: number;
+          perfil_id: string;
+          sesion_id: string | null;
+          duracion_trabajo_minutos: number;
+          duracion_descanso_minutos: number;
+          iniciada_en: string;
+          finalizada_en: string | null;
+          ciclos_completados: number;
+          interrumpida: boolean;
+          veces_pausado: number;
+          ms_pausado: number;
         };
         Insert: Partial<
-          Database["public"]["Tables"]["pomodoro_sessions"]["Row"]
+          Database["public"]["Tables"]["sesiones_pomodoro"]["Row"]
         > & {
-          user_id: string;
-          work_duration_minutes: number;
-          break_duration_minutes: number;
+          perfil_id: string;
+          duracion_trabajo_minutos: number;
+          duracion_descanso_minutos: number;
         };
         Update: Partial<
-          Database["public"]["Tables"]["pomodoro_sessions"]["Row"]
+          Database["public"]["Tables"]["sesiones_pomodoro"]["Row"]
         >;
         Relationships: [];
       };
-      kanban_tasks: {
+      tareas_kanban: {
         Row: {
           id: string;
-          user_id: string;
-          title: string;
-          description: string | null;
-          status: KanbanTaskStatus;
-          position: number;
-          created_at: string;
-          updated_at: string;
+          perfil_id: string;
+          titulo: string;
+          descripcion: string | null;
+          estado: KanbanTaskStatus;
+          posicion: number;
+          creado_en: string;
+          actualizado_en: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["kanban_tasks"]["Row"]> & {
-          user_id: string;
-          title: string;
+        Insert: Partial<Database["public"]["Tables"]["tareas_kanban"]["Row"]> & {
+          perfil_id: string;
+          titulo: string;
         };
-        Update: Partial<Database["public"]["Tables"]["kanban_tasks"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["tareas_kanban"]["Row"]>;
         Relationships: [];
       };
-      habits: {
+      habitos: {
         Row: {
           id: string;
-          user_id: string;
-          name: string;
-          archived: boolean;
-          created_at: string;
+          perfil_id: string;
+          nombre: string;
+          archivado: boolean;
+          creado_en: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["habits"]["Row"]> & {
-          user_id: string;
-          name: string;
+        Insert: Partial<Database["public"]["Tables"]["habitos"]["Row"]> & {
+          perfil_id: string;
+          nombre: string;
         };
-        Update: Partial<Database["public"]["Tables"]["habits"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["habitos"]["Row"]>;
         Relationships: [];
       };
-      habit_logs: {
+      registros_habito: {
         Row: {
           id: string;
-          habit_id: string;
-          user_id: string;
-          log_date: string;
-          completed: boolean;
-          created_at: string;
+          habito_id: string;
+          perfil_id: string;
+          fecha: string;
+          completado: boolean;
+          creado_en: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["habit_logs"]["Row"]> & {
-          habit_id: string;
-          user_id: string;
-          log_date: string;
+        Insert: Partial<Database["public"]["Tables"]["registros_habito"]["Row"]> & {
+          habito_id: string;
+          perfil_id: string;
+          fecha: string;
         };
-        Update: Partial<Database["public"]["Tables"]["habit_logs"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["registros_habito"]["Row"]>;
         Relationships: [];
       };
-      calendar_events: {
+      eventos_calendario: {
         Row: {
           id: string;
-          user_id: string;
-          title: string;
-          description: string | null;
-          start_at: string;
-          end_at: string;
-          created_at: string;
-          completed: boolean | null;
+          perfil_id: string;
+          titulo: string;
+          descripcion: string | null;
+          inicio_en: string;
+          fin_en: string;
+          creado_en: string;
+          completado: boolean | null;
         };
         Insert: Partial<
-          Database["public"]["Tables"]["calendar_events"]["Row"]
+          Database["public"]["Tables"]["eventos_calendario"]["Row"]
         > & {
-          user_id: string;
-          title: string;
-          start_at: string;
-          end_at: string;
+          perfil_id: string;
+          titulo: string;
+          inicio_en: string;
+          fin_en: string;
         };
-        Update: Partial<Database["public"]["Tables"]["calendar_events"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["eventos_calendario"]["Row"]>;
         Relationships: [];
       };
-      ai_reports: {
+      informes_ia: {
         Row: {
           id: string;
-          session_id: string;
-          user_id: string;
-          status: AiReportStatus;
-          attentional_profile: string | null;
-          strengths: string[];
-          areas_for_improvement: string[];
-          recommendations: string[];
-          raw_response: Record<string, unknown> | null;
-          requested_at: string;
-          completed_at: string | null;
+          sesion_id: string;
+          perfil_id: string;
+          estado: AiReportStatus;
+          perfil_atencional: string | null;
+          fortalezas: string[];
+          areas_de_mejora: string[];
+          recomendaciones: string[];
+          respuesta_cruda: Record<string, unknown> | null;
+          solicitado_en: string;
+          completado_en: string | null;
         };
-        Insert: Partial<Database["public"]["Tables"]["ai_reports"]["Row"]> & {
-          session_id: string;
-          user_id: string;
+        Insert: Partial<Database["public"]["Tables"]["informes_ia"]["Row"]> & {
+          sesion_id: string;
+          perfil_id: string;
         };
-        Update: Partial<Database["public"]["Tables"]["ai_reports"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["informes_ia"]["Row"]>;
         Relationships: [];
       };
     };
     Views: {
-      vw_activity_results_summary: {
+      vw_resumen_resultados_actividad: {
         Row: {
-          activity_type: ActivityType;
+          tipo_actividad: ActivityType;
           total_resultados: number;
           duracion_ms_promedio: number | null;
           precision_promedio: number | null;
           nivel_promedio: number | null;
           precision_desv_estandar: number | null;
-          protocol_version: string;
+          version_protocolo: string;
         };
         Relationships: [];
       };
       vw_actividades_dimensiones: {
         Row: {
-          activity_type: ActivityType;
+          tipo_actividad: ActivityType;
           dimension: string;
           metrica_principal: string;
-          device_type: string;
+          tipo_dispositivo: string;
           participantes: number;
           valor_promedio: number | null;
           valor_desv_estandar: number | null;
@@ -344,42 +344,42 @@ export interface Database {
       vw_ensayos_analisis: {
         Row: {
           participante: string;
-          activity_type: ActivityType;
-          device_type: string | null;
+          tipo_actividad: ActivityType;
+          tipo_dispositivo: string | null;
           entrada_principal: string | null;
-          refresh_hz_est: number | null;
+          frecuencia_refresco_est: number | null;
           corrida_inicio: string;
-          trial_index: number;
-          condition: Record<string, unknown>;
-          stimulus_onset_ms: number | null;
-          rt_ms: number | null;
-          response: string | null;
-          correct: boolean | null;
-          classification: string | null;
-          input_type: string | null;
-          valid: boolean;
-          invalid_reason: string | null;
+          indice_ensayo: number;
+          condicion: Record<string, unknown>;
+          inicio_estimulo_ms: number | null;
+          tiempo_reaccion_ms: number | null;
+          respuesta: string | null;
+          correcto: boolean | null;
+          clasificacion: string | null;
+          tipo_entrada: string | null;
+          valido: boolean;
+          motivo_invalidez: string | null;
         };
         Relationships: [];
       };
-      vw_interaction_events_summary: {
+      vw_resumen_eventos_interaccion: {
         Row: {
-          event_type: InteractionEventType;
+          tipo_evento: InteractionEventType;
           dia: string;
           total_eventos: number;
         };
         Relationships: [];
       };
-      vw_sessions_summary: {
+      vw_resumen_sesiones: {
         Row: {
           dia: string;
-          status: SessionStatus;
+          estado: SessionStatus;
           total_sesiones: number;
           duracion_segundos_promedio: number | null;
         };
         Relationships: [];
       };
-      vw_tool_usage_summary: {
+      vw_resumen_uso_herramientas: {
         Row: {
           herramienta: "pomodoro" | "kanban";
           dia: string;

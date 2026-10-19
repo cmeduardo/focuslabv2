@@ -73,7 +73,7 @@ export default async function InformeDetallePage({
         ← Mis informes
       </Link>
 
-      {report.status === "pendiente" && (
+      {report.estado === "pendiente" && (
         <>
           <PendingAutoRefresh />
           <Card className="border-dashed">
@@ -90,7 +90,7 @@ export default async function InformeDetallePage({
         </>
       )}
 
-      {report.status === "fallido" && (
+      {report.estado === "fallido" && (
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <XCircle className="size-6 text-destructive" />
@@ -104,7 +104,7 @@ export default async function InformeDetallePage({
         </Card>
       )}
 
-      {report.status === "completado" && (
+      {report.estado === "completado" && (
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -117,28 +117,28 @@ export default async function InformeDetallePage({
                   Completado
                 </Badge>
               </div>
-              {report.completed_at && (
+              {report.completado_en && (
                 <CardDescription>
-                  Generado el {formatDate(report.completed_at)}
+                  Generado el {formatDate(report.completado_en)}
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent>
               <p className="leading-relaxed text-foreground">
-                {report.attentional_profile}
+                {report.perfil_atencional}
               </p>
             </CardContent>
           </Card>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <ReportList title="Fortalezas" items={report.strengths} />
+            <ReportList title="Fortalezas" items={report.fortalezas} />
             <ReportList
               title="Áreas de mejora"
-              items={report.areas_for_improvement}
+              items={report.areas_de_mejora}
             />
           </div>
 
-          <ReportList title="Recomendaciones" items={report.recommendations} />
+          <ReportList title="Recomendaciones" items={report.recomendaciones} />
         </div>
       )}
     </div>

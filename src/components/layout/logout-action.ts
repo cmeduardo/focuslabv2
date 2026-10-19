@@ -13,10 +13,10 @@ export async function logoutAction() {
 
   if (user) {
     const { data: activeSession } = await supabase
-      .from("sessions")
+      .from("sesiones")
       .select("id")
-      .eq("user_id", user.id)
-      .eq("status", "en_progreso")
+      .eq("perfil_id", user.id)
+      .eq("estado", "en_progreso")
       .limit(1)
       .maybeSingle();
 

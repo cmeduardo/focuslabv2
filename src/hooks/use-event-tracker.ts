@@ -10,9 +10,9 @@ const FLUSH_INTERVAL_MS = 5_000;
 const MAX_QUEUE_SIZE = 20;
 
 type PendingEvent = {
-  event_type: InteractionEventType;
-  payload: Record<string, unknown>;
-  occurred_at: string;
+  tipo_evento: InteractionEventType;
+  datos: Record<string, unknown>;
+  ocurrido_en: string;
 };
 
 // RF-03: clics, cambios de pestaña e inactividad, enviados en lote.
@@ -32,11 +32,11 @@ export function useEventTracker({
     const batch = queueRef.current.splice(0, queueRef.current.length);
     const supabase = createClient();
     void supabase
-      .from("interaction_events")
+      .from("eventos_interaccion")
       .insert(
         batch.map((event) => ({
-          session_id: sessionId,
-          user_id: userId,
+          sesion_id: sessionId,
+          perfil_id: userId,
           ...event,
         })),
       )
@@ -53,9 +53,9 @@ export function useEventTracker({
   const logEvent = useCallback(
     (eventType: InteractionEventType, payload: Record<string, unknown> = {}) => {
       queueRef.current.push({
-        event_type: eventType,
-        payload,
-        occurred_at: new Date().toISOString(),
+        tipo_evento: eventType,
+        datos: payload,
+        ocurrido_en: new Date().toISOString(),
       });
       if (queueRef.current.length >= MAX_QUEUE_SIZE) {
         flush();

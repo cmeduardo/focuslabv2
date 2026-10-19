@@ -1,20 +1,18 @@
 # Esquema de la base de datos en español
 
-Contrato de nombres para la migración del esquema al español. El diagrama
-entidad-relación de la tesis (sección 5.13, entregada el 17 de octubre de 2026)
-ya usa estos nombres; la migración debe producir **exactamente** estos nombres
-para que el sistema en vivo coincida con el documento.
+Contrato de nombres del esquema en español. El diagrama entidad-relación de la
+tesis (sección 5.13, entregada el 17 de octubre de 2026) usa estos nombres, y
+`supabase/migrations/20261019000000_esquema.sql` los produce **exactamente**, para que el sistema en vivo
+coincida con el documento.
 
-Reglas de la migración:
+Cómo pasó producción del esquema en inglés a este:
 
-- Solo `ALTER TABLE … RENAME`, `ALTER TABLE … RENAME COLUMN`, `ALTER TYPE … RENAME`,
-  `ALTER VIEW … RENAME` y `ALTER ROLE … RENAME`: no se copian ni se borran filas.
-  Se conservan todos los datos, llaves, índices y políticas RLS.
-- Las migraciones anteriores no se modifican; el cambio va en una migración nueva.
-- Los **valores** de los tipos enumerados no cambian, ni el contenido de las
+- Tablas, columnas, tipos, restricciones, índices y el rol: solo `RENAME`. No se
+  copió ni se borró ninguna fila.
+- Funciones, disparadores, políticas RLS y vistas se volvieron a crear con el
+  texto de `supabase/migrations/20261019000000_esquema.sql`, también con nombres en español.
+- Los **valores** de los tipos enumerados no cambiaron, ni el contenido de las
   columnas `jsonb` (`metricas`, `datos`, `configuracion`, `condicion`…).
-- Las funciones y disparadores que nombran tablas en su cuerpo se reescriben en la
-  misma migración.
 
 ## Tablas y columnas
 
@@ -111,14 +109,14 @@ Reglas de la migración:
 | `id` | `id` | uuid | PK |
 | `sesion_id` | `session_id` | uuid | FK → sesiones.id |
 | `perfil_id` | `user_id` | uuid | FK → perfiles.id |
-| `intento_id` | `run_id` | uuid | FK → intentos_actividad.id |
 | `tipo_actividad` | `activity_type` | tipo_actividad |  |
-| `version_protocolo` | `protocol_version` | text |  |
 | `duracion_ms` | `duration_ms` | integer |  |
 | `precision` | `accuracy` | numeric |  |
 | `nivel_alcanzado` | `level_reached` | integer |  |
 | `metricas` | `metrics` | jsonb |  |
 | `completado_en` | `completed_at` | timestamptz |  |
+| `intento_id` | `run_id` | uuid | FK → intentos_actividad.id |
+| `version_protocolo` | `protocol_version` | text |  |
 
 ### `informes_ia` (antes `ai_reports`)
 
@@ -196,8 +194,8 @@ Reglas de la migración:
 | `descripcion` | `description` | text |  |
 | `inicio_en` | `start_at` | timestamptz |  |
 | `fin_en` | `end_at` | timestamptz |  |
-| `completado` | `completed` | boolean |  |
 | `creado_en` | `created_at` | timestamptz |  |
+| `completado` | `completed` | boolean |  |
 
 ### `analisis_excluidos` (antes `analisis_excluidos`)
 
@@ -234,7 +232,7 @@ Reglas de la migración:
 | `vw_ensayos_analisis` | `vw_ensayos_analisis` |
 
 Las columnas de las vistas que provienen de columnas renombradas toman el
-nombre nuevo; los tableros de Power BI se vuelven a enlazar después de la migración.
+nombre nuevo; los tableros de Power BI se vuelven a enlazar después del cambio.
 
 ## Rol de solo lectura
 

@@ -4,13 +4,13 @@ import type { Database, KanbanTaskStatus } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-07. `position` en segundos: la columna es integer y Date.now() en ms se sale de rango.
+// RF-07. `posicion` en segundos: la columna es integer y Date.now() en ms se sale de rango.
 export async function listKanbanTasks(supabase: Client, userId: string) {
   const { data, error } = await supabase
-    .from("kanban_tasks")
+    .from("tareas_kanban")
     .select("*")
-    .eq("user_id", userId)
-    .order("position", { ascending: true });
+    .eq("perfil_id", userId)
+    .order("posicion", { ascending: true });
 
   if (error) throw new Error("No se pudieron cargar las tareas del tablero.");
   return data;
@@ -21,12 +21,12 @@ export async function createKanbanTask(
   params: { userId: string; title: string; description: string | null },
 ) {
   const { data, error } = await supabase
-    .from("kanban_tasks")
+    .from("tareas_kanban")
     .insert({
-      user_id: params.userId,
-      title: params.title,
-      description: params.description,
-      position: Math.floor(Date.now() / 1000),
+      perfil_id: params.userId,
+      titulo: params.title,
+      descripcion: params.description,
+      posicion: Math.floor(Date.now() / 1000),
     })
     .select("*")
     .single();
@@ -41,14 +41,14 @@ export async function moveKanbanTask(
   status: KanbanTaskStatus,
 ) {
   const { error } = await supabase
-    .from("kanban_tasks")
-    .update({ status, position: Math.floor(Date.now() / 1000) })
+    .from("tareas_kanban")
+    .update({ estado: status, posicion: Math.floor(Date.now() / 1000) })
     .eq("id", id);
 
   if (error) throw new Error("No se pudo mover la tarea.");
 }
 
 export async function deleteKanbanTask(supabase: Client, id: string) {
-  const { error } = await supabase.from("kanban_tasks").delete().eq("id", id);
+  const { error } = await supabase.from("tareas_kanban").delete().eq("id", id);
   if (error) throw new Error("No se pudo borrar la tarea.");
 }

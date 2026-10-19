@@ -2,7 +2,7 @@
 
 Guía para armar en Power BI Desktop los tableros del análisis, conectados
 directo a Supabase con el conector nativo de PostgreSQL. Las vistas que se
-usan las crea la migración `20261004000002_analysis_views.sql`.
+usan están en la sección 6 de `supabase/migrations/20261019000000_esquema.sql`.
 
 ## 1. Criterios del análisis
 
@@ -12,13 +12,12 @@ usan las crea la migración `20261004000002_analysis_views.sql`.
   `autoridad`, para que las pruebas del investigador nunca contaminen el
   análisis.
 - **Solo la cohorte del taller.** Las cuentas que probaron la app antes
-  del 10 de octubre están en la tabla `analisis_excluidos` (migración
-  `20261017000001`). `vw_actividades_dimensiones`, la vista agregada del
+  del 10 de octubre están en la tabla `analisis_excluidos`. `vw_actividades_dimensiones`, la vista agregada del
   tablero de Autoridades, no las cuenta. Las vistas por participante y
   por ensayo sí las traen, porque tienen seudónimo: en el tablero del
   investigador se filtran en Power BI (quedan quienes tuvieron su primera
   sesión el 10 de octubre). Para excluir a alguien más del agregado, se
-  agrega su `user_id` con un `motivo` desde el SQL Editor.
+  agrega su `perfil_id` con un `motivo` desde el SQL Editor.
 - **Unidad de análisis: el participante.** Se toma su **primer intento
   completado** de cada desafío. Es el mismo criterio que usa el informe de
   IA: los reintentos tienen efecto de práctica.
@@ -34,7 +33,7 @@ usan las crea la migración `20261004000002_analysis_views.sql`.
 solo lectura con una contraseña que elijas. No la guardes en el repo.
 
 ```sql
-alter role powerbi_reader with login password 'UNA-CONTRASEÑA-LARGA';
+alter role lector_powerbi with login password 'UNA-CONTRASEÑA-LARGA';
 ```
 
 **Paso 2 (en Power BI Desktop).** Ve a Obtener datos → Base de datos
@@ -47,7 +46,7 @@ PostgreSQL y completa:
 - **Base de datos:** `postgres`.
 - **Modo:** Importar. Las vistas son livianas; se actualiza con "Actualizar".
 - **Credenciales (pestaña "Base de datos"):** usuario
-  `powerbi_reader.<ref>` (el pooler exige el sufijo con el ref del
+  `lector_powerbi.<ref>` (el pooler exige el sufijo con el ref del
   proyecto) y la contraseña del paso 1.
 - **Si pregunta por cifrado:** dejar SSL activado.
 
@@ -58,10 +57,10 @@ PostgreSQL y completa:
 | Vista | Nivel | Quién la ve | Para qué |
 |---|---|---|---|
 | `vw_actividades_dimensiones` | Agregado por desafío × dispositivo | Investigador, autoridad, Power BI | Media, DE, rango de la métrica principal y precisión |
-| `vw_activity_results_summary` | Agregado por desafío | Investigador, autoridad, Power BI | Conteos y precisión media |
-| `vw_sessions_summary` | Agregado por día × estado | Investigador, autoridad, Power BI | Asistencia y duración de sesiones |
-| `vw_interaction_events_summary` | Agregado por día × tipo de evento | Investigador, autoridad, Power BI | Volumen de eventos pasivos |
-| `vw_tool_usage_summary` | Agregado por día × herramienta | Investigador, autoridad, Power BI | Uso de Pomodoro y Kanban |
+| `vw_resumen_resultados_actividad` | Agregado por desafío | Investigador, autoridad, Power BI | Conteos y precisión media |
+| `vw_resumen_sesiones` | Agregado por día × estado | Investigador, autoridad, Power BI | Asistencia y duración de sesiones |
+| `vw_resumen_eventos_interaccion` | Agregado por día × tipo de evento | Investigador, autoridad, Power BI | Volumen de eventos pasivos |
+| `vw_resumen_uso_herramientas` | Agregado por día × herramienta | Investigador, autoridad, Power BI | Uso de Pomodoro y Kanban |
 | `vw_participantes_analisis` | Una fila por participante | Investigador, Power BI | Hipótesis H1 y H2: métricas cognitivas y variables pasivas |
 | `vw_ensayos_analisis` | Una fila por ensayo | Investigador, Power BI | Distribuciones de TR, efecto por condición |
 
@@ -119,18 +118,18 @@ Las secciones siguientes describen cómo se armó cada tablero.
 
 - **Tarjetas:** participantes con resultados, sesiones, % de sesiones
   completadas y participantes por dispositivo.
-- **Gráfico de columnas:** sesiones por día (`vw_sessions_summary`).
+- **Gráfico de columnas:** sesiones por día (`vw_resumen_sesiones`).
 - **Gráfico de anillo:** participantes por dispositivo
   (`vw_actividades_dimensiones`, filtrado a `reaction_test`).
-- **Tabla:** uso de herramientas (`vw_tool_usage_summary`).
+- **Tabla:** uso de herramientas (`vw_resumen_uso_herramientas`).
 
 ### Tablero 2. Dimensiones atencionales (ambos archivos)
 
 - **Una tarjeta múltiple por dimensión:** `valor_promedio` ±
   `valor_desv_estandar`, con su `metrica_principal`.
-- **Columnas agrupadas:** `valor_promedio` por `activity_type`, con leyenda
-  `device_type` y barras de error con la DE (Análisis → Barras de error).
-- **Segmentador:** `device_type`.
+- **Columnas agrupadas:** `valor_promedio` por `tipo_actividad`, con leyenda
+  `tipo_dispositivo` y barras de error con la DE (Análisis → Barras de error).
+- **Segmentador:** `tipo_dispositivo`.
 
 ### Tablero 3. Patrones diferenciados (H1, solo investigador)
 
@@ -156,14 +155,14 @@ Las secciones siguientes describen cómo se armó cada tablero.
 
 ### Tablero 5. Detalle por ensayo (solo investigador)
 
-- **Histograma de `rt_ms`** (`vw_ensayos_analisis`, filtrado a
-  `activity_type = reaction_test` y `valid = true`), con segmentador por
-  `device_type`.
-- **Word Sprint:** promedio de `rt_ms` por condición. Columna personalizada
+- **Histograma de `tiempo_reaccion_ms`** (`vw_ensayos_analisis`, filtrado a
+  `tipo_actividad = reaction_test` y `valido = true`), con segmentador por
+  `tipo_dispositivo`.
+- **Word Sprint:** promedio de `tiempo_reaccion_ms` por condición. Columna personalizada
   en Power Query:
-  `congruente = Record.Field(Json.Document([condition]), "congruent")`.
-- **Pattern Hunt:** líneas de `rt_ms` promedio vs. `setSize` (extraído de
-  `condition`), con leyenda por `type`. Muestra la pendiente de búsqueda.
+  `congruente = Record.Field(Json.Document([condicion]), "congruent")`.
+- **Pattern Hunt:** líneas de `tiempo_reaccion_ms` promedio vs. `setSize` (extraído de
+  `condicion`), con leyenda por `type`. Muestra la pendiente de búsqueda.
 
 ## 5. Medidas DAX
 
