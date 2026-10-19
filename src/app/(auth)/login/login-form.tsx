@@ -19,7 +19,13 @@ import { Label } from "@/components/ui/label";
 
 const initialState: LoginState = { error: null };
 
-export function LoginForm({ redirectTo }: { redirectTo: string }) {
+export function LoginForm({
+  redirectTo,
+  notice,
+}: {
+  redirectTo: string;
+  notice: string | null;
+}) {
   const [state, formAction, isPending] = useActionState(login, initialState);
   // React vacía el formulario tras cada acción: el correo vuelve desde la acción.
   // No es controlado para no perder lo escrito antes de hidratar.
@@ -58,10 +64,18 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="gap-1.5">
-              <Lock className="size-3.5 text-muted-foreground" />
-              Contraseña
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="gap-1.5">
+                <Lock className="size-3.5 text-muted-foreground" />
+                Contraseña
+              </Label>
+              <Link
+                href="/olvide-contrasena"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
@@ -73,6 +87,8 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           </div>
           {state.error ? (
             <p className="text-sm text-destructive">{state.error}</p>
+          ) : notice ? (
+            <p className="text-sm text-destructive">{notice}</p>
           ) : null}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">

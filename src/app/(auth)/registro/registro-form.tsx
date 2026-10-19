@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Circle, Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import { registro, type RegistroState } from "@/app/(auth)/registro/actions";
@@ -16,11 +16,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  PASSWORD_RULES,
-} from "@/lib/auth/password-policy";
+import { PasswordChecklist } from "@/components/auth/password-checklist";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth/password-policy";
 
 function StepBadge({ step }: { step: 1 | 2 }) {
   return (
@@ -31,27 +28,6 @@ function StepBadge({ step }: { step: 1 | 2 }) {
 }
 
 const initialState: RegistroState = { error: null, needsEmailConfirmation: false };
-
-// El servidor vuelve a validar con las mismas reglas.
-function PasswordChecklist({ password }: { password: string }) {
-  return (
-    <ul id="password-rules" className="space-y-1 text-xs" aria-live="polite">
-      {PASSWORD_RULES.map((rule) => {
-        const ok = rule.test(password);
-        return (
-          <li
-            key={rule.id}
-            className={`flex items-center gap-1.5 ${ok ? "text-primary" : "text-muted-foreground"}`}
-          >
-            {ok ? <Check className="size-3.5" /> : <Circle className="size-3" />}
-            {rule.label}
-            <span className="sr-only">{ok ? " (cumplido)" : " (pendiente)"}</span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 export function RegistroForm() {
   const [state, formAction, isPending] = useActionState(registro, initialState);

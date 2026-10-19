@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/registro",
+  "/olvide-contrasena",
   "/consentimiento",
   "/auth",
   "/api/webhooks",

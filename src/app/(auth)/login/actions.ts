@@ -21,7 +21,13 @@ export async function login(
     return { error: "Completa tu correo y contraseña.", email };
   }
 
-  const { error, role } = await signInWithPassword(email, password);
+  const { error, errorCode, role } = await signInWithPassword(email, password);
+  if (errorCode === "email_not_confirmed") {
+    return {
+      error: "Todavía no confirmas tu correo. Abre el enlace que te enviamos al registrarte.",
+      email,
+    };
+  }
   if (error) {
     return { error: "Correo o contraseña incorrectos.", email };
   }
