@@ -16,6 +16,7 @@ type TurnstileApi = {
     options: {
       sitekey: string;
       language?: string;
+      theme?: "light" | "dark" | "auto";
       callback: (token: string) => void;
       "expired-callback": () => void;
       "error-callback": () => void;
@@ -46,6 +47,7 @@ export function Turnstile({ resetKey }: { resetKey: unknown }) {
     const widgetId = window.turnstile.render(containerRef.current, {
       sitekey: SITE_KEY,
       language: "es",
+      theme: "light",
       callback: setToken,
       "expired-callback": () => setToken(""),
       "error-callback": () => setToken(""),
