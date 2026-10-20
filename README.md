@@ -129,10 +129,16 @@ Vercel:
    envía con la Gmail API (variables `GMAIL_*`); las plantillas de correo de
    Supabase no se usan. Luego encender *Confirm email* en
    *Sign In / Providers → Email*.
-4. En *Authentication → Sign In / Providers → Email*, largo mínimo de
+4. Captcha: crear un widget de Turnstile en Cloudflare para el dominio, poner
+   su *secret key* en *Authentication → Attack Protection → Captcha* y su
+   *site key* en `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (sin ella se usa la de
+   producción, escrita en `src/components/auth/turnstile.tsx`). Encender el
+   captcha solo después de desplegar el widget: Supabase lo exige en el
+   login, el registro y la recuperación.
+5. En *Authentication → Sign In / Providers → Email*, largo mínimo de
    contraseña 10 y los cuatro tipos de carácter (los mismos requisitos que
    valida el formulario).
-5. Toda cuenta nueva es `participante`. Para asignar otro rol, en el SQL
+6. Toda cuenta nueva es `participante`. Para asignar otro rol, en el SQL
    Editor:
 
    ```sql

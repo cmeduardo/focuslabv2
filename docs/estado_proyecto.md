@@ -79,7 +79,9 @@ Cada etapa tiene un tag en el repositorio (`prototipo-v1`, `sprint-0` …
 - Los correos dependen del refresh token de la cuenta de la UMG. Si se
   cambia la contraseña de esa cuenta o la UMG revoca el acceso, hay que
   generar uno nuevo con OAuth Playground y actualizar `GMAIL_REFRESH_TOKEN`.
-- El registro no tiene captcha (Turnstile pendiente). Supabase limita los
-  correos por hora, lo que frena el abuso del envío.
+- Login, registro y recuperación piden Turnstile (Cloudflare), validado por
+  Supabase Auth. Con el captcha encendido, las pruebas E2E no pueden iniciar
+  sesión por la interfaz: hay que apagarlo mientras corren o usar un
+  proyecto de Supabase aparte.
 - Las pruebas E2E crean usuarios reales en el proyecto de Supabase
   configurado.

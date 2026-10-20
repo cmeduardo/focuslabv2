@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { isStaffRole } from "@/lib/constants/nav";
-import { signInWithPassword } from "@/lib/services/auth";
+import { CAPTCHA_FIELD } from "@/components/auth/turnstile-field";
+import { CAPTCHA_ERROR, signInWithPassword } from "@/lib/services/auth";
 
 // `email` vuelve al formulario para no perderlo tras un error.
 export type LoginState = { error: string | null; email?: string };
@@ -16,12 +17,16 @@ export async function login(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const requested = String(formData.get("redirect") ?? "");
+  const captchaToken = String(formData.get(CAPTCHA_FIELD) ?? "");
 
   if (!email || !password) {
     return { error: "Completa tu correo y contraseña.", email };
   }
 
-  const { error, errorCode, role } = await signInWithPassword(email, password);
+  const { error, errorCode, role } = await signInWithPassword(email, password, captchaToken);
+  if (errorCode === "captcha_failed") {
+    return { error: CAPTCHA_ERROR, email };
+  }
   if (errorCode === "email_not_confirmed") {
     return {
       error: "Todavía no confirmas tu correo. Abre el enlace que te enviamos al registrarte.",

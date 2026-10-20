@@ -5,6 +5,7 @@ import { Lock, Mail } from "lucide-react";
 import { useActionState, useEffect, useRef } from "react";
 
 import { login, type LoginState } from "@/app/(auth)/login/actions";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -85,6 +86,7 @@ export function LoginForm({
               required
             />
           </div>
+          <Turnstile resetKey={state} />
           {state.error ? (
             <p className="text-sm text-destructive">{state.error}</p>
           ) : notice ? (

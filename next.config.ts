@@ -7,14 +7,18 @@ const isDev = process.env.NODE_ENV === "development";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseWs = supabaseUrl.replace(/^http/, "ws");
 
+// Turnstile (captcha de login y registro) carga su script y un iframe desde Cloudflare.
+const TURNSTILE = "https://challenges.cloudflare.com";
+
 // CSP sin nonces; 'unsafe-eval' solo en desarrollo (recarga en vivo).
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' ${TURNSTILE}${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
-  `connect-src 'self' ${supabaseUrl} ${supabaseWs}`.trim(),
+  `connect-src 'self' ${supabaseUrl} ${supabaseWs} ${TURNSTILE}`.trim(),
+  `frame-src ${TURNSTILE}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

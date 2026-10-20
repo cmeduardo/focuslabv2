@@ -5,6 +5,7 @@ import { Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import { registro, type RegistroState } from "@/app/(auth)/registro/actions";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -146,6 +147,7 @@ export function RegistroForm() {
               required
             />
           </div>
+          <Turnstile resetKey={state} />
           {state.error ? (
             <p className="text-sm text-destructive">{state.error}</p>
           ) : null}

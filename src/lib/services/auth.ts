@@ -2,9 +2,13 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-export async function signInWithPassword(email: string, password: string) {
+export async function signInWithPassword(email: string, password: string, captchaToken: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken },
+  });
   if (error || !data.user) {
     return { error: error?.message ?? "Sin usuario", errorCode: error?.code ?? null, role: null };
   }
@@ -21,12 +25,14 @@ export async function signUpWithPassword(
   email: string,
   password: string,
   fullName: string,
+  captchaToken: string,
 ) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      captchaToken,
       data: { full_name: fullName },
       emailRedirectTo: undefined,
     },
@@ -40,9 +46,9 @@ export async function signUpWithPassword(
 }
 
 // El enlace del correo lo arma el Send Email Hook (lleva a /restablecer-contrasena).
-export async function requestPasswordReset(email: string) {
+export async function requestPasswordReset(email: string, captchaToken: string) {
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { captchaToken });
   return { errorCode: error?.code ?? null };
 }
 
@@ -82,6 +88,8 @@ function updatePasswordErrorMessage(code: string | undefined) {
   }
 }
 
+export const CAPTCHA_ERROR = "No pudimos comprobar que no eres un robot. Espera a que aparezca la palomita e intenta de nuevo.";
+
 // Los mensajes de Supabase Auth vienen en inglés.
 function signUpErrorMessage(code: string | undefined) {
   switch (code) {
@@ -95,6 +103,8 @@ function signUpErrorMessage(code: string | undefined) {
     case "over_email_send_rate_limit":
     case "over_request_rate_limit":
       return "Hubo muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.";
+    case "captcha_failed":
+      return CAPTCHA_ERROR;
     default:
       return "No se pudo crear la cuenta. Intenta de nuevo en un momento.";
   }

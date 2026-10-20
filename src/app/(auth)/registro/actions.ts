@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { validatePassword } from "@/lib/auth/password-policy";
+import { CAPTCHA_FIELD } from "@/components/auth/turnstile-field";
 import { signUpWithPassword } from "@/lib/services/auth";
 
 export type RegistroState = {
@@ -20,6 +21,7 @@ export async function registro(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const passwordConfirmation = String(formData.get("password_confirmation") ?? "");
+  const captchaToken = String(formData.get(CAPTCHA_FIELD) ?? "");
 
   if (!fullName || !email || !password || !passwordConfirmation) {
     return { error: "Completa todos los campos.", needsEmailConfirmation: false, fullName, email };
@@ -38,6 +40,7 @@ export async function registro(
     email,
     password,
     fullName,
+    captchaToken,
   );
 
   if (error) {

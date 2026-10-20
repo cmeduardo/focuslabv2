@@ -5,6 +5,7 @@ import { Mail, MailCheck } from "lucide-react";
 import { useActionState } from "react";
 
 import { olvideContrasena, type OlvideState } from "@/app/(auth)/olvide-contrasena/actions";
+import { Turnstile } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,6 +72,7 @@ export function OlvideForm() {
               required
             />
           </div>
+          <Turnstile resetKey={state} />
           {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
