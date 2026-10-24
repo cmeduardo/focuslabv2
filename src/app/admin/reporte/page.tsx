@@ -77,9 +77,9 @@ export default async function ReportePage() {
           { label: "Sesiones", value: totalSessions },
           { label: "Sesiones completadas", value: completed },
           {
-            label: "Celular / laptop (Reaction Test)",
+            label: "Celular y laptop en Reaction Test",
             value: null,
-            text: `${fmt(byDevice.get("mobile") ?? 0)} / ${fmt(byDevice.get("desktop") ?? 0)}`,
+            text: `${fmt(byDevice.get("mobile") ?? 0)} y ${fmt(byDevice.get("desktop") ?? 0)}`,
           },
         ].map((kpi) => (
           <div key={kpi.label} className="rounded-lg border p-3 break-inside-avoid">
