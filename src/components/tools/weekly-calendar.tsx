@@ -352,7 +352,7 @@ export function WeeklyCalendar() {
             <DialogTitle>
               Nuevo evento
               {dialogDay &&
-                ` — ${dialogDay.toLocaleDateString("es-GT", { weekday: "long", day: "numeric", month: "short" })}`}
+                ` para el ${dialogDay.toLocaleDateString("es-GT", { weekday: "long", day: "numeric", month: "short" })}`}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">

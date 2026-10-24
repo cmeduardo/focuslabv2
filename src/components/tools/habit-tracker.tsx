@@ -242,7 +242,7 @@ export function HabitTracker() {
                     return (
                       <span
                         key={dateKey}
-                        title={`${dateKey} — ${isCompleted ? "cumplido" : "sin marcar"} (historial, no editable)`}
+                        title={`${dateKey}: ${isCompleted ? "cumplido" : "sin marcar"}`}
                         className={cn(
                           "flex size-6 items-center justify-center rounded-md text-[9px] font-medium",
                           isCompleted

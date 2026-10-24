@@ -296,7 +296,7 @@ export function PomodoroTimer() {
           </CardTitle>
           <CardDescription>
             Hiciste {cycles} {cycles === 1 ? "ciclo" : "ciclos"} de{" "}
-            {workMinutes} minutos de trabajo y {breakMinutes} de descanso.
+            {workMinutes} min de trabajo y {breakMinutes} de descanso.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -332,9 +332,9 @@ export function PomodoroTimer() {
           </dl>
           {pauseCount > 0 && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Pausaste {pauseCount} {pauseCount === 1 ? "vez" : "veces"} (
-              {Math.max(1, Math.round(pausedMs / 60000))} min en pausa) — no
-              se cuenta como tiempo enfocado.
+              Pausaste {pauseCount} {pauseCount === 1 ? "vez" : "veces"} y
+              estuviste {Math.max(1, Math.round(pausedMs / 60000))} min en
+              pausa. Ese tiempo no cuenta como tiempo enfocado.
             </p>
           )}
         </CardContent>
