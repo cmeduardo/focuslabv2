@@ -4,7 +4,6 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-06
 export async function startPomodoroSession(
   supabase: Client,
   params: {

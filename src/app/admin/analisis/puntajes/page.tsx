@@ -1,4 +1,4 @@
-import { DivergingKey, divergingCell, ScatterChart } from "@/components/analysis/charts";
+import { divergingTone, ScatterChart } from "@/components/analysis/charts";
 import { SelectNav } from "@/components/analysis/select-nav";
 import {
   AnalysisHeader,
@@ -14,6 +14,7 @@ import { deviceOf, toLong } from "@/lib/analysis/participants";
 import { filterByDevice, H1_PAIRS, label, scatterPoints } from "@/lib/analysis/points";
 import { deviceLabel, VARIABLES } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
+import { cn } from "@/lib/utils";
 
 // El z se calcula con todos los participantes; el filtro solo elige qué filas se muestran.
 export default async function PuntajesPage({
@@ -35,7 +36,7 @@ export default async function PuntajesPage({
       <AnalysisHeader
         current="/admin/analisis/puntajes"
         title="Puntajes por dispositivo"
-        description="Cada valor convertido en puntaje z frente al grupo del mismo dispositivo: 0 es el promedio del grupo, ±1 una desviación. Así celular y laptop se leen en la misma escala sin mezclarse."
+        description="Cada valor como puntaje z frente a su grupo de dispositivo: 0 es el promedio y ±1 una desviación."
       >
         <SelectNav param="dispositivo" label="Dispositivo" value={device} options={DEVICE_FILTER_OPTIONS} />
       </AnalysisHeader>
@@ -43,8 +44,10 @@ export default async function PuntajesPage({
         Un grupo con menos de 3 personas o sin variación no tiene puntaje (“—”).
       </ExploratoryNote>
 
-      <Panel title="Participante × variable" description="Violeta: por encima del promedio de su grupo. Ámbar: por debajo.">
-        <DivergingKey low="−2" high="+2" />
+      <Panel
+        title="Puntajes por participante"
+        description="Se resaltan los valores a más de una desviación del promedio: en violeta por encima y en ámbar por debajo."
+      >
         <div className="max-h-[34rem] overflow-auto rounded-lg border border-border">
           <table className="w-max min-w-full text-xs" data-testid="z-matrix">
             <thead className="sticky top-0 z-10 bg-card">
@@ -59,22 +62,20 @@ export default async function PuntajesPage({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.participante}>
-                  <th className="sticky left-0 bg-card px-2 py-1 text-left font-medium whitespace-nowrap">
+                <tr key={r.participante} className="border-t border-border">
+                  <th className="sticky left-0 bg-card px-2 py-1.5 text-left font-medium whitespace-nowrap">
                     {r.participante}
                     <span className="block text-[10px] font-normal text-muted-foreground">{deviceLabel(deviceOf(r))}</span>
                   </th>
                   {VARIABLES.map((v) => {
                     const value = zOf(r, v.key);
                     return (
-                      <td key={v.key} className="p-0.5">
-                        <div
-                          className="flex h-9 min-w-14 items-center justify-center rounded-md tabular-nums"
-                          style={divergingCell(value, 2)}
-                          title={`${r.participante} · ${v.label}: z = ${fmtSigned(value)}`}
-                        >
-                          {fmtSigned(value)}
-                        </div>
+                      <td
+                        key={v.key}
+                        className={cn("min-w-14 px-1 py-1.5 text-center text-sm tabular-nums", divergingTone(value, 1))}
+                        title={`${r.participante}, ${v.label}: z = ${fmtSigned(value)}`}
+                      >
+                        {fmtSigned(value)}
                       </td>
                     );
                   })}
@@ -89,7 +90,7 @@ export default async function PuntajesPage({
         {H1_PAIRS.map(({ x, y }) => {
           const points = scatterPoints(rows, x, y, zOf, 2);
           return (
-            <Panel key={`${x}-${y}`} title={`${label(x)} y ${label(y)}`} description={`Puntajes z · n = ${points.length}`}>
+            <Panel key={`${x}-${y}`} title={`${label(x)} y ${label(y)}`} description={`Puntajes z, n = ${points.length}`}>
               <ScatterChart
                 zeroLines
                 points={points}

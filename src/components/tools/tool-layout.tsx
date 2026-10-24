@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import { ChevronLeft, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,10 @@ export function ToolLayout({
     <div className="space-y-6">
       <Link
         href={backHref}
-        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        ← Herramientas
+        <ChevronLeft className="size-4" />
+        Herramientas
       </Link>
       <div className="flex items-center gap-3">
         <span className="inline-flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">

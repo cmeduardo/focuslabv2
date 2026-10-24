@@ -80,10 +80,10 @@ function Marker({
   return <circle cx={cx} cy={cy} r={r} {...common} />;
 }
 
-// Etiquetas largas: queda la parte tras el "·" (el título del panel ya nombra el desafío).
+// Etiquetas largas: queda la parte tras los dos puntos (el título del panel ya nombra el desafío).
 function axisLabel(text: string, max: number) {
   if (text.length <= max) return text;
-  const tail = text.split(" · ").at(-1) ?? text;
+  const tail = text.split(": ").at(-1) ?? text;
   return tail.length <= max ? tail : `${tail.slice(0, max - 1)}…`;
 }
 
@@ -450,42 +450,10 @@ export function HBarChart({
   );
 }
 
-// Violeta para positivos, ámbar para negativos, en cuatro tonos fijos.
-const HEAT_STEPS = [0, 25, 45, 65, 85];
-
-function heatColor(step: number, positive: boolean) {
-  if (step === 0) return "var(--muted)";
-  const hue = positive ? "var(--viz-1)" : "var(--viz-3)";
-  return `color-mix(in oklab, ${hue} ${HEAT_STEPS[step]}%, var(--muted))`;
-}
-
-export function divergingCell(value: number | null, maxAbs: number) {
-  if (value === null) return { backgroundColor: "transparent" };
-  const t = Math.min(1, Math.abs(value) / (maxAbs || 1));
-  const step = t < 0.1 ? 0 : Math.min(4, Math.ceil(t * 4));
-  return {
-    backgroundColor: heatColor(step, value >= 0),
-    color: step >= 4 ? "#ffffff" : undefined,
-  };
-}
-
-export function DivergingKey({ low, high }: { low: string; high: string }) {
-  const steps = [
-    ...[4, 3, 2, 1].map((step) => heatColor(step, false)),
-    heatColor(0, true),
-    ...[1, 2, 3, 4].map((step) => heatColor(step, true)),
-  ];
-  return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-hidden>
-      <span>{low}</span>
-      <span className="flex gap-px">
-        {steps.map((color, i) => (
-          <span key={i} className="h-3 w-3.5" style={{ backgroundColor: color }} />
-        ))}
-      </span>
-      <span>{high}</span>
-    </div>
-  );
+// Solo se resaltan los valores que pasan el umbral: violeta si es positivo, ámbar si es negativo.
+export function divergingTone(value: number | null, strong: number) {
+  if (value === null || Math.abs(value) < strong) return "text-muted-foreground";
+  return value > 0 ? "font-semibold text-viz-1" : "font-semibold text-viz-3";
 }
 
 export function EmptyChart() {

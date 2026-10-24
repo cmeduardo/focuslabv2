@@ -4,7 +4,7 @@ import { buildDatasetCsv, canExport, isExportDataset } from "@/lib/services/admi
 import { sesionStaffVerificada } from "@/lib/services/verificacion-staff";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-14. Los datasets de nivel participante o ensayo son solo del investigador (RS-04).
+// Los datasets por participante o por ensayo son solo del investigador.
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {

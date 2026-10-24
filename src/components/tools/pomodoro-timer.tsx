@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Sparkles, Square } from "lucide-react";
+import { CircleCheck, Pause, Play, Square } from "lucide-react";
 
 import { useEventLogger } from "@/components/tracking/event-tracker-provider";
 import { Button } from "@/components/ui/button";
@@ -227,9 +227,8 @@ export function PomodoroTimer() {
         <CardHeader>
           <CardTitle className="font-heading text-xl">Pomodoro</CardTitle>
           <CardDescription>
-            Programa cuántos ciclos de trabajo/descanso quieres hacer — se
-            cierra solo al completarlos y te muestra el resumen (o detenlo
-            cuando quieras antes).
+            Elige cuántos ciclos de trabajo y descanso quieres hacer. Al
+            completarlos verás un resumen, y puedes detenerlo cuando quieras.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-3">
@@ -290,14 +289,14 @@ export function PomodoroTimer() {
       <Card className="mx-auto max-w-md text-center">
         <CardHeader>
           <span className="mx-auto mb-1 flex size-10 items-center justify-center rounded-full bg-secondary text-primary">
-            <Sparkles className="size-5" />
+            <CircleCheck className="size-5" />
           </span>
           <CardTitle className="font-heading text-xl">
             ¡Pomodoro completado!
           </CardTitle>
           <CardDescription>
             Hiciste {cycles} {cycles === 1 ? "ciclo" : "ciclos"} de{" "}
-            {workMinutes}/{breakMinutes} minutos, tal como lo programaste.
+            {workMinutes} minutos de trabajo y {breakMinutes} de descanso.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -364,7 +363,7 @@ export function PomodoroTimer() {
           </CardTitle>
           <CardDescription>
             ¿Listo para el ciclo {cycles + 1} de {targetCycles}? Arranca
-            cuando quieras — no hay apuro.
+            cuando quieras, no hay apuro.
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex gap-2">

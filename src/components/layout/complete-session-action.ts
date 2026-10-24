@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { completeSessionAndRequestReport } from "@/lib/services/ai-reports";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-10: misma lógica que POST /api/sessions/[sessionId]/complete, como Server Action.
+// Misma lógica que POST /api/sessions/[sessionId]/complete, como Server Action.
 export async function completeSessionAction(sessionId: string) {
   const supabase = await createClient();
   const {

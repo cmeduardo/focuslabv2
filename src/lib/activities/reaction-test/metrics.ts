@@ -62,7 +62,7 @@ export function summarizeReactionTest(
   };
 
   return {
-    // RF-05: proporción de respuestas válidas (100–500 ms) sobre los
+    // Proporción de respuestas válidas (100–500 ms) sobre los
     // ensayos medibles.
     accuracy: percentage(valid.length, scored.length),
     levelReached: null,

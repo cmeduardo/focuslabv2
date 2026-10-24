@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { TrendingUp, Trophy } from "lucide-react";
 
 import {
   activeDays,
@@ -46,8 +46,8 @@ export function ProgressSection({
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="font-heading text-lg font-semibold">Tu progreso</h2>
         <p className="text-sm text-muted-foreground">
-          {rows.length} {rows.length === 1 ? "desafío completado" : "desafíos completados"} ·{" "}
-          {sessions} {sessions === 1 ? "sesión" : "sesiones"} · {days}{" "}
+          {rows.length} {rows.length === 1 ? "desafío completado" : "desafíos completados"},{" "}
+          {sessions} {sessions === 1 ? "sesión" : "sesiones"} y {days}{" "}
           {days === 1 ? "día activo" : "días activos"}
         </p>
       </div>
@@ -80,8 +80,7 @@ export function ProgressSection({
         </p>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
-        Este resumen se va enriqueciendo con cada sesión: con más intentos, las tendencias dicen
-        más. Un resultado aislado depende de muchas cosas (el sueño, el lugar, el dispositivo).
+        Con más intentos, las tendencias dicen más que un resultado aislado.
       </p>
     </section>
   );
@@ -123,7 +122,7 @@ function ProgressCard({
           <p className="text-xs text-muted-foreground">Punto de partida</p>
         ) : latestIsBest ? (
           <p className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-            <Sparkles className="size-3 shrink-0" />
+            <Trophy className="size-3 shrink-0" />
             ¡Tu mejor marca!
           </p>
         ) : (

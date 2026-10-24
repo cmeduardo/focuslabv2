@@ -25,17 +25,15 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single();
 
-  // RS-06: solo investigador y autoridad.
   if (!isStaffRole(profile?.rol)) {
     redirect("/dashboard");
   }
 
-  // Segundo factor: código por correo en cada inicio de sesión. La base también lo exige.
   if (!(await sesionStaffVerificada(supabase))) {
     redirect("/verificacion");
   }
 
-  // RS-04: la autoridad solo ve vistas agregadas.
+  // La autoridad solo ve vistas agregadas.
   const nav = [
     ...(profile.rol === "investigador"
       ? ADMIN_NAV

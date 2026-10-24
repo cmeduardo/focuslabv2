@@ -4,7 +4,7 @@ import type { Database, KanbanTaskStatus } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-07. `posicion` en segundos: la columna es integer y Date.now() en ms se sale de rango.
+// `posicion` en segundos: la columna es integer y Date.now() en ms se sale de rango.
 export async function listKanbanTasks(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("tareas_kanban")

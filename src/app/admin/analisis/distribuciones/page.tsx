@@ -25,7 +25,7 @@ export default async function DistribucionesPage({
       <AnalysisHeader
         current="/admin/analisis/distribuciones"
         title="Distribuciones"
-        description="Cómo se reparte una variable entre las personas. Los tramos se calculan dentro de cada dispositivo: el tramo 1 de celular y el de laptop no son el mismo rango."
+        description="Cómo se reparte una variable entre las personas. Los tramos se calculan dentro de cada dispositivo."
       >
         <SelectNav
           param="variable"
@@ -42,7 +42,7 @@ export default async function DistribucionesPage({
           const range = (i: number) =>
             width === 0 ? fmtNum(g.min) : `${fmtNum(g.min + width * i)}–${fmtNum(g.min + width * (i + 1))}`;
           return (
-            <Panel key={d} title={deviceLabel(d)} description={`${def.label} · n = ${g.n}`}>
+            <Panel key={d} title={deviceLabel(d)} description={`${def.label}, n = ${g.n}`}>
               <ColumnChart
                 title={`${def.label} por tramo en ${deviceLabel(d)}`}
                 color={deviceColor(d)}

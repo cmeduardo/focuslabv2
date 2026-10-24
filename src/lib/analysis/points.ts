@@ -23,7 +23,7 @@ export function scatterPoints(
         x,
         y,
         series: device,
-        tip: `${row.participante} · ${deviceLabel(device)}\n${label(xKey)}: ${fmtNum(x, digits)}\n${label(yKey)}: ${fmtNum(y, digits)}`,
+        tip: `${row.participante} (${deviceLabel(device)})\n${label(xKey)}: ${fmtNum(x, digits)}\n${label(yKey)}: ${fmtNum(y, digits)}`,
       },
     ];
   });

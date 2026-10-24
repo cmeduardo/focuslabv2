@@ -99,7 +99,7 @@ export const TOOLS: {
   {
     slug: "kanban",
     name: "Kanban",
-    description: "Tablero personal: pendiente / en progreso / completado.",
+    description: "Tablero personal con tareas pendientes, en progreso y completadas.",
     icon: KanbanSquare,
   },
   {

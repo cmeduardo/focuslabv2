@@ -257,7 +257,7 @@ export function MemoryMatrixRound({ mode, origin, onComplete }: RoundProps) {
         label={
           mode === "practice"
             ? `Práctica ${trialIndex + 1} de ${CONFIG.practiceSequences}`
-            : `Nivel ${state.length - CONFIG.startLength + 1} · ${state.length} bloques · intento ${state.attempt}`
+            : `Nivel ${state.length - CONFIG.startLength + 1}, ${state.length} bloques, intento ${state.attempt}`
         }
       />
     </div>

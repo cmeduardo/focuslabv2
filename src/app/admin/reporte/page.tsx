@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 import { DimensionsTable } from "@/components/admin/dimensions-table";
 import { participantsByDevice, participantsWithResults } from "@/lib/analysis/overview";
@@ -22,7 +23,7 @@ const EVENT_LABEL: Record<string, string> = {
   session_pulse: "Pulsos de sesión",
 };
 
-// RF-14: reporte agregado (RS-04), para imprimir o guardar como PDF.
+// Reporte agregado para imprimir o guardar como PDF.
 export default async function ReportePage() {
   const supabase = await createClient();
   const { dimensions, events, sessions, tools } = await getAdminOverview(supabase);
@@ -51,14 +52,15 @@ export default async function ReportePage() {
   return (
     <article className="mx-auto max-w-4xl space-y-8 print:max-w-none print:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Panel agregado
+        <Link href="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="size-4" />
+          Panel agregado
         </Link>
         <PrintButton />
       </div>
 
       <header className="border-b pb-4">
-        <p className="text-sm text-muted-foreground">FocusLab · Taller piloto</p>
+        <p className="text-sm text-muted-foreground">Taller piloto de FocusLab</p>
         <h1 className="font-heading text-3xl font-semibold tracking-tight">
           Reporte agregado del taller
         </h1>

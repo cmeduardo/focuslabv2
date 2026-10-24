@@ -26,12 +26,12 @@ export default async function EnsayosPage() {
       <AnalysisHeader
         current="/admin/analisis/ensayos"
         title="Detalle por ensayo"
-        description="Primer intento de cada participante, solo ensayos válidos (sin salir de la pestaña). En Word Sprint y Pattern Hunt, solo respuestas correctas."
+        description="Primer intento de cada participante y solo ensayos válidos. En Word Sprint y Pattern Hunt, solo respuestas correctas."
       />
 
       <Panel
-        title="Reaction Test · tiempos de reacción"
-        description="Cuántas respuestas cayeron en cada intervalo de 50 ms. El celular suma latencia táctil: cada dispositivo va en su propio panel."
+        title="Reaction Test: tiempos de reacción"
+        description="Respuestas en cada intervalo de 50 ms, con cada dispositivo por separado."
       >
         <div className="grid gap-4 lg:grid-cols-2">
           {sortDevices(histograms.map((h) => h.dispositivo)).map((d) => {
@@ -39,7 +39,7 @@ export default async function EnsayosPage() {
             return (
               <div key={d} className="space-y-1">
                 <p className="text-sm font-medium">
-                  {deviceLabel(d)} <span className="font-normal text-muted-foreground">· {h.n} respuestas</span>
+                  {deviceLabel(d)} <span className="font-normal text-muted-foreground">({h.n} respuestas)</span>
                 </p>
                 <ColumnChart
                   title={`Histograma de tiempos de reacción en ${deviceLabel(d)}`}
@@ -66,7 +66,7 @@ export default async function EnsayosPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Panel
-          title="Word Sprint · palabra y color"
+          title="Word Sprint: palabra y color"
           description="Tiempo medio cuando la palabra coincide con el color de la tinta y cuando no. La diferencia es la interferencia."
         >
           {stroopDevices.map((d) => {
@@ -79,7 +79,7 @@ export default async function EnsayosPage() {
                 <p className="text-sm font-medium">
                   {deviceLabel(d)}
                   {con && inc && (
-                    <span className="font-normal text-muted-foreground"> · interferencia {fmtNum(inc.promedio - con.promedio, 0)} ms</span>
+                    <span className="font-normal text-muted-foreground">, interferencia de {fmtNum(inc.promedio - con.promedio, 0)} ms</span>
                   )}
                 </p>
                 <HBarChart
@@ -92,7 +92,7 @@ export default async function EnsayosPage() {
                             label: c.condicion === "congruente" ? "Coincide" : "No coincide",
                             value: c.promedio,
                             color: deviceColor(d),
-                            tip: `${c.condicion === "congruente" ? "Coincide" : "No coincide"}\n${fmtNum(c.promedio, 0)} ms · n = ${c.n} ensayos`,
+                            tip: `${c.condicion === "congruente" ? "Coincide" : "No coincide"}\n${fmtNum(c.promedio, 0)} ms en ${c.n} ensayos`,
                           },
                         ]
                       : [],
@@ -105,7 +105,7 @@ export default async function EnsayosPage() {
         </Panel>
 
         <Panel
-          title="Pattern Hunt · tamaño del conjunto"
+          title="Pattern Hunt: tamaño del conjunto"
           description="Tiempo medio para responder según cuántas figuras hay. Una pendiente plana indica búsqueda eficiente."
         >
           {searchDevices.map((d) => {
@@ -125,7 +125,7 @@ export default async function EnsayosPage() {
                       .map((c) => ({
                         x: c.tamano,
                         y: c.promedio,
-                        tip: `${look.label} · ${c.tamano} figuras\n${fmtNum(c.promedio, 0)} ms · n = ${c.n} ensayos`,
+                        tip: `${look.label}, ${c.tamano} figuras\n${fmtNum(c.promedio, 0)} ms en ${c.n} ensayos`,
                       })),
                   }))}
                 />

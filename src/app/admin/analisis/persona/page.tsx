@@ -34,7 +34,7 @@ export default async function PersonaPage({
             param="p"
             label="Participante"
             value={selected?.participante ?? ""}
-            options={list.map((p) => ({ value: p.participante, label: `${p.participante} · ${deviceLabel(p.dispositivo)}` }))}
+            options={list.map((p) => ({ value: p.participante, label: `${p.participante} (${deviceLabel(p.dispositivo)})` }))}
           />
         )}
       </AnalysisHeader>
@@ -74,7 +74,7 @@ export default async function PersonaPage({
                   label: label(d.variable),
                   value: d.z,
                   color: d.z !== null && d.z < 0 ? "var(--viz-3)" : "var(--viz-1)",
-                  tip: `${label(d.variable)}\nz = ${fmtSigned(d.z)} · grupo n = ${d.nGrupo}`,
+                  tip: `${label(d.variable)}\nz = ${fmtSigned(d.z)}, grupo de ${d.nGrupo}`,
                 }))}
               />
             </Panel>

@@ -4,7 +4,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-08. Marcar un día es un upsert sobre unique(habito_id, fecha).
+// Marcar un día es un upsert sobre unique(habito_id, fecha).
 export async function listHabits(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("habitos")

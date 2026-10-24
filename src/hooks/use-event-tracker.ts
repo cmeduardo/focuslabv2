@@ -15,7 +15,7 @@ type PendingEvent = {
   ocurrido_en: string;
 };
 
-// RF-03: clics, cambios de pestaña e inactividad, enviados en lote.
+// Clics, cambios de pestaña e inactividad, enviados en lote.
 export function useEventTracker({
   sessionId,
   userId,

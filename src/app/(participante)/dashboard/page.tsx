@@ -34,11 +34,7 @@ export default async function DashboardPage() {
           animated
         />
         <div className="relative">
-          <span className="inline-flex items-center gap-2 rounded-full bg-background/70 px-3 py-1 text-xs font-medium tracking-wide text-primary uppercase">
-            <FocusAperture className="size-3.5" />
-            Tu sesión de hoy
-          </span>
-          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">
             ¿En qué quieres enfocarte?
           </h1>
           <p className="mt-1 max-w-xl text-muted-foreground">

@@ -11,7 +11,7 @@ export type VariableDef = {
 
 export const PASSIVE_VARIABLES = [
   { key: "cambios_pestana_por_sesion", label: "Cambios de pestaña por sesión", group: "pasiva" },
-  { key: "dr_salidas_pestana", label: "Deep Read · salidas de pestaña", group: "pasiva" },
+  { key: "dr_salidas_pestana", label: "Deep Read: salidas de pestaña", group: "pasiva" },
   { key: "inactividad_promedio_s", label: "Inactividad promedio (s)", group: "pasiva" },
   { key: "pomodoro_interrupcion_pct", label: "Interrupción de Pomodoro (%)", group: "pasiva" },
   { key: "pomodoro_pausas_promedio", label: "Pausas por Pomodoro", group: "pasiva" },
@@ -19,17 +19,17 @@ export const PASSIVE_VARIABLES = [
 ] as const satisfies readonly VariableDef[];
 
 export const COGNITIVE_VARIABLES = [
-  { key: "rt_promedio_ms", label: "Reaction Test · TR promedio (ms)", group: "cognitiva" },
-  { key: "rt_lapsos", label: "Reaction Test · lapsos", group: "cognitiva" },
-  { key: "ff_comision_pct", label: "Focus Flow · comisiones (%)", group: "cognitiva" },
-  { key: "ff_omision_pct", label: "Focus Flow · omisiones (%)", group: "cognitiva" },
-  { key: "mm_span", label: "Memory Matrix · span", group: "cognitiva", higherIsEasier: true },
-  { key: "ws_interferencia_ms", label: "Word Sprint · interferencia (ms)", group: "cognitiva" },
-  { key: "ph_deteccion_ms", label: "Pattern Hunt · detección (ms)", group: "cognitiva" },
-  { key: "ph_pendiente_conjuncion", label: "Pattern Hunt · pendiente conjunción", group: "cognitiva" },
+  { key: "rt_promedio_ms", label: "Reaction Test: TR promedio (ms)", group: "cognitiva" },
+  { key: "rt_lapsos", label: "Reaction Test: lapsos", group: "cognitiva" },
+  { key: "ff_comision_pct", label: "Focus Flow: comisiones (%)", group: "cognitiva" },
+  { key: "ff_omision_pct", label: "Focus Flow: omisiones (%)", group: "cognitiva" },
+  { key: "mm_span", label: "Memory Matrix: span", group: "cognitiva", higherIsEasier: true },
+  { key: "ws_interferencia_ms", label: "Word Sprint: interferencia (ms)", group: "cognitiva" },
+  { key: "ph_deteccion_ms", label: "Pattern Hunt: detección (ms)", group: "cognitiva" },
+  { key: "ph_pendiente_conjuncion", label: "Pattern Hunt: pendiente conjunción", group: "cognitiva" },
   {
     key: "dr_comprension",
-    label: "Deep Read · comprensión (aciertos)",
+    label: "Deep Read: comprensión (aciertos)",
     group: "cognitiva",
     higherIsEasier: true,
   },

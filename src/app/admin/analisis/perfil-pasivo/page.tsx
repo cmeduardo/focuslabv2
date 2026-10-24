@@ -60,7 +60,7 @@ export default async function PerfilPasivoPage({
         label: r.participante,
         value: v,
         color: deviceColor(deviceOf(r)),
-        tip: `${r.participante} · ${deviceLabel(deviceOf(r))}\n${fmtNum(v, digits)}`,
+        tip: `${r.participante} (${deviceLabel(deviceOf(r))})\n${fmtNum(v, digits)}`,
       };
     });
   const withPomodoro = rows.filter((r) => toNumber(r.pomodoro_interrupcion_pct) !== null).length;
@@ -71,7 +71,7 @@ export default async function PerfilPasivoPage({
       <AnalysisHeader
         current="/admin/analisis/perfil-pasivo"
         title="Variables pasivas y perfil"
-        description="Lo que aportan los datos pasivos más allá del puntaje: una fila por participante, para cotejar con su informe."
+        description="Una fila por participante con su desempeño y sus datos pasivos."
       >
         <SelectNav param="dispositivo" label="Dispositivo" value={device} options={DEVICE_FILTER_OPTIONS} />
       </AnalysisHeader>
@@ -79,7 +79,7 @@ export default async function PerfilPasivoPage({
         Úsala para conversar sobre estilos: un valor aislado no describe a la persona.
       </ExploratoryNote>
 
-      <Panel title="Participantes" description="Toca el título de una columna para ordenar. Desliza hacia el lado para ver todas.">
+      <Panel title="Participantes" description="Toca el título de una columna para ordenar.">
         <div className="max-h-[32rem] overflow-auto rounded-lg border border-border">
           <table className="w-max min-w-full text-xs" data-testid="participants-table">
             <thead className="sticky top-0 z-10 bg-card">
@@ -124,13 +124,13 @@ export default async function PerfilPasivoPage({
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
           title="Interrupción de Pomodoro (%)"
-          description={`Porcentaje de bloques detenidos antes de tiempo. n = ${withPomodoro}; color según el dispositivo.`}
+          description={`Bloques detenidos antes de tiempo, n = ${withPomodoro}.`}
         >
           <HBarChart title="Interrupción de Pomodoro por participante" data={bars("pomodoro_interrupcion_pct", 0)} domain={[0, 100]} format={(v) => `${fmtNum(v, 0)} %`} />
         </Panel>
         <Panel
           title="Pulso de concentración (1 a 5)"
-          description={`Promedio de lo que cada persona indicó durante la sesión. n = ${withPulse}.`}
+          description={`Promedio de lo que cada persona indicó durante la sesión, n = ${withPulse}.`}
         >
           <HBarChart title="Pulso de concentración por participante" data={bars("pulso_concentracion_promedio")} domain={[0, 5]} />
         </Panel>

@@ -181,7 +181,7 @@ export async function flushPendingRuns(supabase: Client, userId: string) {
   const remaining: CompletedRunPayload[] = [];
   let saved = 0;
   for (const payload of pending) {
-    // Solo los del usuario actual (laptop compartida en el taller).
+    // Solo los del usuario actual: la laptop puede ser compartida.
     if (payload.userId !== userId) {
       remaining.push(payload);
       continue;

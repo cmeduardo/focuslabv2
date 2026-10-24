@@ -96,8 +96,7 @@ export default async function AdminDashboardPage() {
             Panel agregado
           </h1>
           <p className="text-muted-foreground">
-            Resultados del taller piloto, siempre agregados y sin datos
-            individuales. Solo participantes y desafíos actuales.
+            Resultados agregados del taller piloto, sin datos individuales.
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 text-sm">

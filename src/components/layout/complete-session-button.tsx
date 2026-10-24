@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Sparkles } from "lucide-react";
+import { Flag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export function CompleteSessionButton({ sessionId }: { sessionId: string }) {
         })
       }
     >
-      <Sparkles className="size-3.5" />
+      <Flag className="size-3.5" />
       {isPending ? (
         "Generando…"
       ) : (

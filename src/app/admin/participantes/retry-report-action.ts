@@ -6,7 +6,7 @@ import { retryAiReport } from "@/lib/services/ai-reports";
 import { sesionStaffVerificada } from "@/lib/services/verificacion-staff";
 import { createClient } from "@/lib/supabase/server";
 
-// RS-04: solo el investigador.
+// Solo el investigador.
 export async function retryReportAction(sessionId: string) {
   const supabase = await createClient();
   const {

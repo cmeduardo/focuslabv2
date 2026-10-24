@@ -156,7 +156,7 @@ export function correosParaEvento(evento: EventoCorreoAuth, origenApp: string): 
       ];
     case "email_change": {
       const nuevo = evento.user.new_email;
-      // Ojo: los nombres están cruzados en Supabase. token_hash_new va con el correo actual
+      // Los nombres están cruzados en Supabase: token_hash_new va con el correo actual
       // y token_hash con el nuevo.
       const correos: CorreoSaliente[] = [];
       if (token_hash_new) {

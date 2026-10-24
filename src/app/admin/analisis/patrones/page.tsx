@@ -1,4 +1,4 @@
-import { DivergingKey, divergingCell, ScatterChart } from "@/components/analysis/charts";
+import { divergingTone, ScatterChart } from "@/components/analysis/charts";
 import { SelectNav } from "@/components/analysis/select-nav";
 import {
   AnalysisHeader,
@@ -14,6 +14,7 @@ import { correlationMatrix, deviceOf } from "@/lib/analysis/participants";
 import { filterByDevice, H1_PAIRS, label, scatterPoints } from "@/lib/analysis/points";
 import { COGNITIVE_VARIABLES, PASSIVE_VARIABLES } from "@/lib/analysis/variables";
 import { getParticipantRows, requireResearcher } from "@/lib/services/analysis";
+import { cn } from "@/lib/utils";
 
 export default async function PatronesPage({
   searchParams,
@@ -32,12 +33,12 @@ export default async function PatronesPage({
       <AnalysisHeader
         current="/admin/analisis/patrones"
         title="Patrones diferenciados"
-        description="Cada punto es un participante: su actividad pasiva (cambios de pestaña, inactividad) junto a su desempeño en los desafíos."
+        description="Cada punto es un participante: su actividad pasiva frente a su desempeño en los desafíos."
       >
         <SelectNav param="dispositivo" label="Dispositivo" value={device} options={DEVICE_FILTER_OPTIONS} />
       </AnalysisHeader>
       <ExploratoryNote n={rows.length}>
-        Los tiempos de celular y laptop se distinguen por color y no se interpretan como un mismo grupo.
+        Celular y laptop se distinguen por color y no se mezclan.
       </ExploratoryNote>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -48,7 +49,7 @@ export default async function PatronesPage({
             <Panel
               key={`${x}-${y}`}
               title={`${label(x)} y ${label(y)}`}
-              description={`r = ${r.r === null ? "—" : fmtSigned(r.r)} · n = ${r.n}`}
+              description={`r = ${r.r === null ? "—" : fmtSigned(r.r)}, n = ${r.n}`}
             >
               <ScatterChart points={points} series={series} xLabel={label(x)} yLabel={label(y)} title={`${label(x)} frente a ${label(y)}`} />
               <DataTable
@@ -63,9 +64,8 @@ export default async function PatronesPage({
 
       <Panel
         title="Correlaciones entre variables pasivas y desafíos"
-        description="Pearson sobre las personas que tienen ambos valores. Con menos de 5 pares se muestra “—”."
+        description="Correlación de Pearson. Se resaltan los valores desde ±0.3: en violeta las relaciones directas y en ámbar las inversas."
       >
-        <DivergingKey low="−1 (relación inversa)" high="+1 (relación directa)" />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-xs" data-testid="correlation-matrix">
             <thead>
@@ -80,20 +80,18 @@ export default async function PatronesPage({
             </thead>
             <tbody>
               {PASSIVE_VARIABLES.map((p) => (
-                <tr key={p.key}>
-                  <th className="py-1 pr-2 text-left font-normal">{p.label}</th>
+                <tr key={p.key} className="border-t border-border">
+                  <th className="py-2 pr-2 text-left font-normal">{p.label}</th>
                   {COGNITIVE_VARIABLES.map((c) => {
                     const m = cell(p.key, c.key);
                     return (
-                      <td key={c.key} className="p-0.5">
-                        <div
-                          className="flex h-11 flex-col items-center justify-center rounded-md tabular-nums"
-                          style={divergingCell(m.r, 1)}
-                          title={`${p.label} · ${c.label}: r = ${fmtSigned(m.r)}, n = ${m.n}`}
-                        >
-                          <span className="font-semibold">{fmtSigned(m.r)}</span>
-                          <span className="text-[10px] opacity-80">n = {m.n}</span>
-                        </div>
+                      <td
+                        key={c.key}
+                        className="px-1 py-2 text-center tabular-nums"
+                        title={`${p.label} y ${c.label}: r = ${fmtSigned(m.r)}, n = ${m.n}`}
+                      >
+                        <span className={cn("block text-sm", divergingTone(m.r, 0.3))}>{fmtSigned(m.r)}</span>
+                        <span className="block text-[10px] text-muted-foreground">n = {m.n}</span>
                       </td>
                     );
                   })}

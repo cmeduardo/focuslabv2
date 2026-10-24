@@ -20,7 +20,7 @@ export type TrialRecord = {
   responseAtMs: number | null;
   rtMs: number | null;
   response: string | null;
-  // Detalle opcional de la respuesta (→ ensayos_actividad.detalle_respuesta).
+  // Detalle opcional de la respuesta (ensayos_actividad.detalle_respuesta).
   detail?: JsonObject | null;
   correct: boolean | null;
   classification: string | null;
@@ -41,11 +41,11 @@ export type DeviceContext = {
 };
 
 export type ActivitySummary = {
-  // RF-05: precisión (0–100) y nivel cuando aplique.
+  // Precisión (0 a 100) y nivel cuando aplique.
   accuracy: number | null;
   levelReached: number | null;
   primary: { key: string; label: string; value: number | null; unit: string };
-  // Todas las métricas calculadas → resultados_actividad.metricas.
+  // Todas las métricas calculadas (resultados_actividad.metricas).
   metrics: JsonObject;
   // Subconjunto curado que viaja a n8n para el agente de IA.
   report: JsonObject;

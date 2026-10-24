@@ -85,7 +85,6 @@ function tone(
     oscillator.start(start);
     oscillator.stop(end + 0.02);
   } catch {
-    // silencio — el sonido nunca debe romper el juego
   }
 }
 

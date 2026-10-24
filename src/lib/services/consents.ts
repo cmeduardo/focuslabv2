@@ -8,7 +8,6 @@ const CURRENT_CONSENT_VERSION = "v1";
 
 type Client = SupabaseClient<Database>;
 
-// RS-05
 export async function hasAcceptedConsent(supabase: Client, userId: string) {
   const { data } = await supabase
     .from("consentimientos")

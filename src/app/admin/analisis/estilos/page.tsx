@@ -29,7 +29,7 @@ export default async function EstilosPage() {
       <AnalysisHeader
         current="/admin/analisis/estilos"
         title="Perfiles atencionales"
-        description="Índice de actividad pasiva: promedio de los z de cambios de pestaña, inactividad y Pomodoro. Índice de dificultad: promedio de los z de los desafíos, con span y comprensión invertidos (más alto = más exigente)."
+        description="Cuatro estilos según dos índices: la actividad pasiva y la dificultad en los desafíos. En ambos, un valor más alto indica más actividad o más exigencia."
       />
       <ExploratoryNote n={placed.length}>
         Los estilos describen tendencias dentro de este grupo, no categorías fijas de las personas.
@@ -48,7 +48,7 @@ export default async function EstilosPage() {
               x: p.pasivo as number,
               y: p.dificultad as number,
               series: p.estilo,
-              tip: `${p.participante} · ${deviceLabel(p.dispositivo)}\n${byStyle.get(p.estilo)?.label}\nPasivo ${fmtSigned(p.pasivo)} · dificultad ${fmtSigned(p.dificultad)}`,
+              tip: `${p.participante} (${deviceLabel(p.dispositivo)})\n${byStyle.get(p.estilo)?.label}\nPasivo ${fmtSigned(p.pasivo)}, dificultad ${fmtSigned(p.dificultad)}`,
             }))}
           />
         </Panel>
@@ -65,7 +65,7 @@ export default async function EstilosPage() {
         </Panel>
       </div>
 
-      <Panel title="Promedios por estilo" description="Valores originales (no z) de algunas variables, para darle contenido a cada estilo.">
+      <Panel title="Promedios por estilo" description="Valores originales de algunas variables en cada estilo.">
         <DataTable
           open
           caption="Promedios por estilo atencional"

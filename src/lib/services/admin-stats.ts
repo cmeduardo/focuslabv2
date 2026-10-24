@@ -7,7 +7,7 @@ import type { Database, UserRole } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-13/RF-14: las vistas vw_* filtran por rol en la base y nunca exponen perfil_id (RS-04).
+// Las vistas vw_* filtran por rol en la base y nunca exponen perfil_id.
 // aggregate: investigador y autoridad. participant: solo investigador.
 export const EXPORT_DATASETS = {
   dimensiones: {

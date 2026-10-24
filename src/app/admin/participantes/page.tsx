@@ -47,7 +47,7 @@ export default async function ParticipantesPage() {
     .eq("id", user!.id)
     .single();
 
-  // RS-04: datos identificables, solo para el investigador.
+  // Datos identificables: solo para el investigador.
   if (profile?.rol !== "investigador") {
     redirect("/admin");
   }
@@ -152,14 +152,14 @@ export default async function ParticipantesPage() {
                       </Badge>
                     </td>
                     <td className="py-2 pr-4">
-                      {p.completedSessions} / {p.totalSessions} completadas
+                      {p.completedSessions} de {p.totalSessions} completadas
                     </td>
                     <td className="py-2 pr-4">
                       {p.lastReport ? (
                         <span>
                           {STATUS_LABEL[p.lastReport.estado]}{" "}
                           <span className="text-muted-foreground">
-                            · {formatDate(p.lastReport.solicitado_en)}
+                            {formatDate(p.lastReport.solicitado_en)}
                           </span>
                         </span>
                       ) : (

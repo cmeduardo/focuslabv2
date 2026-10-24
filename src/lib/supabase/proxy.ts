@@ -18,7 +18,7 @@ function isPublicPath(pathname: string) {
   );
 }
 
-// RS-01. La autorización por rol se resuelve en app/admin/layout.tsx.
+// La autorización por rol se resuelve en app/admin/layout.tsx.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 

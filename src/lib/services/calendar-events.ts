@@ -4,7 +4,6 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-09: calendario semanal simple.
 export async function listCalendarEventsForWeek(
   supabase: Client,
   userId: string,

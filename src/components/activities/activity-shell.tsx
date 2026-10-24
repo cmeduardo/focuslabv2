@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { CloudOff, Play, RotateCcw, Smartphone, Sparkles, Volume2, VolumeX, X } from "lucide-react";
+import { ChevronLeft, CloudOff, Play, RotateCcw, Smartphone, Trophy, Volume2, VolumeX, X } from "lucide-react";
 
 import { useEventLogger } from "@/components/tracking/event-tracker-provider";
 import { Button } from "@/components/ui/button";
@@ -337,9 +337,10 @@ export function ActivityShell({
     <div className="space-y-6">
       <Link
         href="/actividades"
-        className="inline-flex min-h-12 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex min-h-12 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        ← Desafíos
+        <ChevronLeft className="size-4" />
+        Desafíos
       </Link>
       <div className="flex items-center gap-3">
         <span className="inline-flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
@@ -508,7 +509,7 @@ function ResultCard({
   return (
     <section data-testid="activity-result" className="rounded-2xl border border-border bg-card p-5 sm:p-6">
       <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-primary">
-        <Sparkles className="size-5" />
+        <Trophy className="size-5" />
       </span>
       <h2 className="mt-3 font-heading text-xl font-semibold">Tu resultado</h2>
       <p className="mt-4 text-sm text-muted-foreground">{primary.label}</p>

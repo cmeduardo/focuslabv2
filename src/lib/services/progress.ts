@@ -5,7 +5,7 @@ import type { Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-12. Solo protocolo v2: las filas v1 no son comparables.
+// Solo protocolo v2: las filas v1 no son comparables.
 export async function listProgressRows(
   supabase: Client,
   userId: string,

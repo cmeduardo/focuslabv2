@@ -4,7 +4,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-01. La plantilla de correo de Supabase apunta aquí con {{ .TokenHash }}.
+// Los enlaces de los correos de Auth apuntan aquí con el token_hash.
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");

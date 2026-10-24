@@ -13,7 +13,7 @@ export const SHELL_CONFIG = {
   refreshSampleFrames: 30,
 } as const;
 
-// Reaction Test — alerta / vigilancia (Psychomotor Vigilance Task,
+// Reaction Test: alerta / vigilancia (Psychomotor Vigilance Task,
 // Dinges & Powell, 1985).
 export const REACTION_TEST_CONFIG = {
   registeredTrials: 22,
@@ -32,7 +32,7 @@ export const REACTION_TEST_CONFIG = {
 
 export type ReactionTestConfig = typeof REACTION_TEST_CONFIG;
 
-// Focus Flow — atención sostenida (Sustained Attention to Response Task,
+// Focus Flow: atención sostenida (Sustained Attention to Response Task,
 // Robertson et al., 1997). 12 apariciones de cada dígito del 1 al 9: 108
 // ensayos, 12 objetivos "3" (11,1 %).
 export const FOCUS_FLOW_CONFIG = {
@@ -50,7 +50,7 @@ export const FOCUS_FLOW_CONFIG = {
 
 export type FocusFlowConfig = typeof FOCUS_FLOW_CONFIG;
 
-// Memory Matrix — memoria de trabajo visoespacial (bloques de Corsi, 1972).
+// Memory Matrix: memoria de trabajo visoespacial (bloques de Corsi, 1972).
 export const MEMORY_MATRIX_CONFIG = {
   blockCount: 9,
   startLength: 2,
@@ -68,7 +68,7 @@ export const MEMORY_MATRIX_CONFIG = {
 
 export type MemoryMatrixConfig = typeof MEMORY_MATRIX_CONFIG;
 
-// Word Sprint — atención selectiva e inhibición (efecto Stroop, 1935).
+// Word Sprint: atención selectiva e inhibición (efecto Stroop, 1935).
 // 48 ensayos: 24 congruentes (6 por color) y 24 incongruentes (cada
 // palabra con cada una de las otras 3 tintas, 2 veces).
 export const WORD_SPRINT_CONFIG = {
@@ -83,7 +83,7 @@ export const WORD_SPRINT_CONFIG = {
 
 export type WordSprintConfig = typeof WORD_SPRINT_CONFIG;
 
-// Pattern Hunt — búsqueda visual (Treisman & Gelade, 1980). 2 tipos × 3
+// Pattern Hunt: búsqueda visual (Treisman & Gelade, 1980). 2 tipos × 3
 // tamaños de conjunto × presente/ausente × 4 repeticiones = 48 ensayos.
 export const PATTERN_HUNT_CONFIG = {
   setSizes: [6, 12, 18],
@@ -101,7 +101,7 @@ export const PATTERN_HUNT_CONFIG = {
 
 export type PatternHuntConfig = typeof PATTERN_HUNT_CONFIG;
 
-// Deep Read — resistencia a la distracción durante la lectura.
+// Deep Read: resistencia a la distracción durante la lectura.
 export const DEEP_READ_CONFIG = {
   notificationAtMs: FAST ? [300, 800, 1300] : [18_000, 50_000, 85_000],
   practiceNotificationAtMs: FAST ? [200] : [4000],

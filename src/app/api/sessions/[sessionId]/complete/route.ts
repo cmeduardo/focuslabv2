@@ -3,7 +3,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { completeSessionAndRequestReport } from "@/lib/services/ai-reports";
 import { createClient } from "@/lib/supabase/server";
 
-// RF-10
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> },

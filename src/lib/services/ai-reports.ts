@@ -24,7 +24,7 @@ export async function createPendingAiReport(
   }
 }
 
-// El mismo workflow atiende dev y producción: la URL de retorno va en cada request.
+// La URL de retorno va en cada request: el mismo workflow atiende desarrollo y producción.
 function getCallbackUrl() {
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const origin = productionHost
@@ -142,7 +142,7 @@ export async function generateAttentionReport(
   }
 }
 
-// RF-10. null si la sesión no es del usuario o ya estaba cerrada; "sin_desafios" (sin
+// null si la sesión no es del usuario o ya estaba cerrada; "sin_desafios" (sin
 // cerrarla) si no completó ningún desafío.
 export async function completeSessionAndRequestReport(
   supabase: Client,
@@ -218,7 +218,6 @@ export async function retryAiReport(sessionId: string) {
   return true;
 }
 
-// RF-12
 export async function listAiReports(supabase: Client, userId: string) {
   const { data: reports, error } = await supabase
     .from("informes_ia")
@@ -252,7 +251,7 @@ export async function listAiReports(supabase: Client, userId: string) {
   }));
 }
 
-// RF-11. El filtro por perfil_id es defensa en profundidad (RLS ya restringe).
+// RLS ya restringe; el filtro por perfil_id es una segunda barrera.
 export async function getAiReport(
   supabase: Client,
   sessionId: string,

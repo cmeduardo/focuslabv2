@@ -68,7 +68,7 @@ test("Tu progreso: estado vacío y luego mejores marcas propias", async ({ page 
   await page.reload();
 
   await expect(section).not.toHaveAttribute("data-empty", "true");
-  await expect(section).toContainText("5 desafíos completados · 2 sesiones · 2 días activos");
+  await expect(section).toContainText("5 desafíos completados, 2 sesiones y 2 días activos");
 
   // Tiempo: menos es mejor → el último (290) es la mejor marca.
   const reaction = page.getByTestId("progress-reaction_test");

@@ -4,7 +4,6 @@ import type { ActivityType, Database } from "@/lib/types/database";
 
 type Client = SupabaseClient<Database>;
 
-// RF-05
 export async function saveActivityResult(
   supabase: Client,
   params: {

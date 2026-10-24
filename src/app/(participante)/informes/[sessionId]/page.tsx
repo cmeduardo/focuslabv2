@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Loader2, XCircle } from "lucide-react";
 
 import { PendingAutoRefresh } from "@/components/reports/pending-auto-refresh";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +68,10 @@ export default async function InformeDetallePage({
     <div className="space-y-6">
       <Link
         href="/informes"
-        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        ← Mis informes
+        <ChevronLeft className="size-4" />
+        Mis informes
       </Link>
 
       {report.estado === "pendiente" && (
